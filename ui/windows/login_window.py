@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 from services.auth_service import AuthService
+from ui.windows.dashboard_window import DashboardWindow
 
 
 class LoginWindow(tk.Tk):
@@ -32,7 +33,11 @@ class LoginWindow(tk.Tk):
 
         usuario = self.auth_service.login(nombre)
         if usuario:
-            messagebox.showinfo("Éxito", f"Bienvenido {usuario.nombre}")
-            # Aquí después conectaremos con el dashboard
+            self.withdraw()  # Oculta la ventana de login
+            dashboard = DashboardWindow(usuario)
+            dashboard.protocol(
+                "WM_DELETE_WINDOW",
+                lambda: (self.deiconify(), dashboard.destroy())
+            )
         else:
             messagebox.showerror("Error", "Usuario no encontrado")
