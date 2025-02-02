@@ -23,3 +23,9 @@ class UserStorage:
         )
         self.db.conn.commit()
         return User(id=cursor.lastrowid, nombre=nombre, rol=rol)
+
+    def get_all(self) -> list[User]:
+        """Obtiene todos los usuarios"""
+        cursor = self.db.conn.execute("SELECT id, nombre, rol FROM users")
+        return [User(id=row[0], nombre=row[1], rol=row[2])
+                for row in cursor.fetchall()]

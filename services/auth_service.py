@@ -19,3 +19,7 @@ class AuthService:
         Por defecto asigna rol=2 (asumiendo 1=admin, 2=usuario normal)
         """
         return self.user_storage.crear_usuario(nombre, rol)
+
+    def get_all_users(self):
+        """Obtiene todos los usuarios"""
+        return self.user_storage.get_all()

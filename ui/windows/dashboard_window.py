@@ -48,5 +48,5 @@ class DashboardWindow(tk.Toplevel):
         ).pack(pady=5)
 
     def gestionar_usuarios(self):
-        # Por implementar
-        pass
+        from ui.windows.users_window import UsersWindow
+        UsersWindow()
