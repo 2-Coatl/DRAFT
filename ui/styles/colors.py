@@ -1,29 +1,40 @@
-class ColorScheme:
-    # Primary colors
-    PRIMARY = "#1976D2"
-    PRIMARY_HOVER = "#1565C0"
-    PRIMARY_DARK = "#0D47A1"
+# ui/styles/colors.py
 
-    # Secondary colors
-    SECONDARY = "#E0E0E0"
-    SECONDARY_HOVER = "#BDBDBD"
-    SECONDARY_DARK = "#9E9E9E"
+class Colors:
+    """Define la estructura de colores para un tema.
 
-    # Background colors
-    BACKGROUND = "#FFFFFF"
-    BACKGROUND_SECONDARY = "#F5F5F5"
+    Esta clase actúa como contenedor de colores sin valores predeterminados,
+    permitiendo que cada tema defina sus propios valores.
 
-    # Text colors
-    TEXT_PRIMARY = "#212121"
-    TEXT_SECONDARY = "#757575"
-    TEXT_DISABLED = "#9E9E9E"
+    Attributes:
+        primary (str): Color principal del tema
+        secondary (str): Color secundario del tema
+        bg (str): Color de fondo
+        fg (str): Color de texto
+        selectbg (str): Color de fondo para selección
+        selectfg (str): Color de texto para selección
+        border (str): Color de bordes
+    """
 
-    # Status colors
-    SUCCESS = "#4CAF50"
-    ERROR = "#F44336"
-    WARNING = "#FFC107"
-    INFO = "#2196F3"
+    def __init__(self, **colors):
+        """Inicializa un nuevo objeto Colors.
 
-    # Border colors
-    BORDER = "#E0E0E0"
-    BORDER_DARK = "#BDBDBD"
+        Args:
+            **colors: Diccionario de colores a configurar
+        """
+        for name, value in colors.items():
+            setattr(self, name, value)
+
+    def get_color(self, name):
+        """Obtiene un color por su nombre.
+
+        Args:
+            name (str): Nombre del color a obtener
+
+        Returns:
+            str: Valor hexadecimal del color
+
+        Raises:
+            AttributeError: Si el color no existe
+        """
+        return getattr(self, name)

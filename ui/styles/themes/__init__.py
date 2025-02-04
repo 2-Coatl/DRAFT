@@ -1,65 +1,37 @@
-from typing import Dict, Tuple, Any
+from abc import ABC, abstractmethod
+from ..colors import Colors
 
 
-class ThemeBase:
-    name: str
-    type: str  # 'light' o 'dark'
+class ThemeBase(ABC):
+    """Base abstracta para todos los temas.
 
-    # Colores del tema
-    colors: Dict[str, str] = {}
+    Propósito:
+        Definir la interfaz común que todos los temas deben implementar
+        para mantener consistencia en el sistema
 
-    # Configuración de tipografía
-    fonts: Dict[str, Tuple[str, int, str]] = {
-        "default": ("Arial", 10),
-        "heading": ("Arial", 12, "bold"),
-        "title": ("Arial", 14, "bold"),
-        "small": ("Arial", 9),
-    }
+    Uso:
+        class MyTheme(ThemeBase):
+            def get_colors(self) -> Colors:
+                return Colors(primary='#ff0000', ...)
+    """
 
-    # Espaciado y dimensiones
-    spacing: Dict[str, int] = {
-        "small": 5,
-        "medium": 10,
-        "large": 20,
-        "xlarge": 30
-    }
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Nombre identificador del tema"""
+        pass
 
-    # Bordes y radios
-    geometry: Dict[str, Any] = {
-        "border_width": 1,
-        "border_radius": 4,
-        "button_padding": (10, 5),
-        "input_padding": (5, 5),
-        "widget_height": 30
-    }
+    @property
+    @abstractmethod
+    def type(self) -> str:
+        """Tipo de tema (light/dark)"""
+        pass
 
-    # Configuraciones específicas de widgets
-    widgets: Dict[str, Dict[str, Any]] = {
-        "button": {
-            "height": 30,
-            "padding": (10, 5),
-            "font": ("Arial", 10)
-        },
-        "entry": {
-            "height": 25,
-            "padding": 5,
-            "font": ("Arial", 10)
-        },
-        "treeview": {
-            "row_height": 25,
-            "header_height": 30,
-            "font": ("Arial", 10)
-        }
-    }
+    @abstractmethod
+    def get_colors(self) -> Colors:
+        """Retorna la configuración de colores del tema
 
-    @classmethod
-    def get_font(cls, font_type: str) -> Tuple[str, int, str]:
-        return cls.fonts.get(font_type, cls.fonts["default"])
-
-    @classmethod
-    def get_spacing(cls, size: str) -> int:
-        return cls.spacing.get(size, cls.spacing["medium"])
-
-    @classmethod
-    def get_widget_config(cls, widget_type: str) -> Dict[str, Any]:
-        return cls.widgets.get(widget_type, {})
+        Returns:
+            Colors: Objeto con la configuración de colores
+        """
+        pass

@@ -1,38 +1,36 @@
-import unittest
-from tkinter import ttk
-import tkinter as tk
-from ui.styles.events import Channel, Publisher
+from unittest.mock import Mock
 from ui.styles.theme_manager import ThemeManager
+from ui.styles.events import Channel, Publisher
 
-class TestThemeManagerEvents(unittest.TestCase):
-    def setUp(self):
-        self.root = tk.Tk()
-        self.theme_manager = ThemeManager()
-        self.callback_called = False
-        self.theme_name_received = None
 
-    def test_theme_change_notification(self):
-        """Probar que el cambio de tema notifica correctamente"""
-        def callback(*args):
-            self.callback_called = True
-            if args:
-                self.theme_name_received = args[0]
+def test_theme_change_notification():
+    # Preparar
+    tm = ThemeManager()
+    mock_callback = Mock()
+    Publisher.subscribe("test_widget", mock_callback, Channel.STD)
 
-        # Crear un widget y suscribirlo
-        test_button = ttk.Button(self.root)
-        widget_id = str(test_button.winfo_id())
-        Publisher.subscribe(widget_id, callback, Channel.TTK)
+    # Ejecutar
+    tm.set_theme("sandstone")
 
-        # Cambiar tema
-        self.theme_manager.set_theme('sandstone')
+    # Verificar
+    mock_callback.assert_called_once()
+    # Limpiar
+    Publisher.unsubscribe("test_widget")
 
-        # Verificar notificación
-        self.assertTrue(self.callback_called)
-        self.assertEqual(self.theme_name_received, 'sandstone')
 
-    def tearDown(self):
-        self.root.destroy()
-        Publisher._subscribers.clear()
+def test_theme_manager_singleton():
+    tm1 = ThemeManager()
+    tm2 = ThemeManager()
+    assert tm1 is tm2
+    assert tm1._available_themes == tm2._available_themes
 
-if __name__ == '__main__':
-    unittest.main()
+
+def test_invalid_theme_no_notification():
+    tm = ThemeManager()
+    mock_callback = Mock()
+    Publisher.subscribe("test_widget", mock_callback, Channel.STD)
+
+    assert tm.set_theme("nonexistent") is False
+    mock_callback.assert_not_called()
+
+    Publisher.unsubscribe("test_widget")
