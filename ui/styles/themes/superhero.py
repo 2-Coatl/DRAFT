@@ -1,46 +1,29 @@
-# ui/styles/themes/superhero.py
-
-from . import ThemeBase
-from ..colors import Colors
+from typing import Dict
+from ..theme_definition import ThemeDefinition
 
 
-class SuperheroTheme(ThemeBase):
-    """Tema Superhero.
+class SuperheroTheme(ThemeDefinition):
+    """Implementación del tema oscuro por defecto."""
 
-    Implementa un tema oscuro con acentos en tonos azules,
-    proporcionando un contraste alto y buena legibilidad.
-    """
+    def __init__(self):
+        super().__init__("dark", is_light=False)
 
-    @property
-    def name(self) -> str:
-        return "superhero"
-
-    @property
-    def type(self) -> str:
-        return "dark"
-
-    def get_colors(self) -> Colors:
-        """Define los colores específicos del tema Superhero"""
-        return Colors(
-            # Colores principales
-            primary="#4c9be8",
-            secondary="#4e5d6c",
-            success="#5cb85c",
-            info="#5bc0de",
-            warning="#f0ad4e",
-            danger="#d9534f",
-
-            # Colores de interfaz
-            light="#ABB6C2",
-            dark="#20374C",
-            bg="#2b3e50",
-            fg="#ffffff",
-
-            # Colores de selección y estados
-            selectbg="#526170",
-            selectfg="#ffffff",
-            border="#222222",
-            inputfg="#ebebeb",
-            inputbg="#32465a",
-            active="#2B4155"
-        )
+    def _get_theme_colors(self) -> Dict[str, str]:
+        return {
+            'primary': '#375a7f',
+            'secondary': '#444444',
+            'success': '#00bc8c',
+            'info': '#3498db',
+            'warning': '#f39c12',
+            'danger': '#e74c3c',
+            'light': '#adb5bd',
+            'dark': '#303030',
+            'bg': '#222222',
+            'fg': '#ffffff',
+            'selectbg': '#2b4764',
+            'selectfg': '#ffffff',
+            'border': '#444444',
+            'inputfg': '#ffffff',
+            'inputbg': '#303030',
+            'active': '#2b4764'
+        }

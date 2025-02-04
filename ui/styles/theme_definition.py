@@ -1,13 +1,28 @@
+from abc import ABC, abstractmethod
 from typing import Dict
 from .colors import Colors
-from .constants import REQUIRED_COLORS
 
 
-class ThemeDefinition:
-    """Define la estructura base para todos los temas.
+class ThemeDefinition(ABC):
+    """Base abstracta para definir temas personalizados.
 
-    Esta clase actúa como base para implementar temas específicos,
-    proporcionando la estructura y validación necesaria.
+    Esta clase sirve como base para implementar temas específicos,
+    proporcionando la estructura y métodos necesarios para crear
+    nuevos temas.
+
+    Examples:
+        ```python
+        class LightTheme(ThemeDefinition):
+            def __init__(self):
+                super().__init__("light", is_light=True)
+
+            def _get_theme_colors(self):
+                return {
+                    'primary': '#007bff',
+                    'secondary': '#6c757d',
+                    ...
+                }
+        ```
     """
 
     def __init__(self, name: str, is_light: bool):
@@ -28,17 +43,17 @@ class ThemeDefinition:
             Objeto Colors con la definición de colores del tema
 
         Raises:
-            NotImplementedError: Si la clase hija no implementa _get_theme_colors
+            ValueError: Si faltan colores requeridos en la implementación
         """
         if self._colors is None:
-            colors_dict = self._get_theme_colors()
-            # Validar que estén todos los colores requeridos
-            missing = [color for color in REQUIRED_COLORS if color not in colors_dict]
-            if missing:
-                raise ValueError(f"Faltan colores requeridos: {', '.join(missing)}")
-            self._colors = Colors(**colors_dict)
+            try:
+                colors_dict = self._get_theme_colors()
+                self._colors = Colors(**colors_dict)
+            except TypeError as e:
+                raise ValueError("Faltan colores requeridos en la definición del tema") from e
         return self._colors
 
+    @abstractmethod
     def _get_theme_colors(self) -> Dict[str, str]:
         """Debe ser implementado por las clases hijas para definir los colores.
 
@@ -46,6 +61,14 @@ class ThemeDefinition:
             Diccionario con los colores del tema
 
         Raises:
-            NotImplementedError: Este metodo debe ser implementado
+            NotImplementedError: Si la clase hija no implementa este método
         """
-        raise NotImplementedError("Las clases hijas deben implementar _get_theme_colors")
+        pass
+
+    def __str__(self) -> str:
+        """Representación string del tema.
+
+        Returns:
+            Descripción del tema
+        """
+        return f"{self.name} ({'light' if self.is_light else 'dark'} theme)"
