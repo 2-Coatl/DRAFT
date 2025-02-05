@@ -1,67 +1,93 @@
-"""
-Módulo de gestión de eventos para el sistema de temas.
-Maneja la notificación de cambios de tema a los widgets.
-"""
-
 from enum import Enum
-from typing import Dict, Callable
-
+from typing import List, Callable, Dict
 
 class Channel(Enum):
-    """Define los canales de suscripción para widgets.
+    """Un agrupamiento para suscriptores del Publisher. Indica si el
+    widget es un widget tk heredado 'STD' o un widget 'TTK' con estilo.
 
     Attributes:
-        STD: Widgets tkinter tradicionales
-        TTK: Widgets tkinter temáticos
+        STD (1): Widgets tkinter heredados/tradicionales.
+        TTK (2): Widgets tkinter temáticos.
     """
     STD = 1
     TTK = 2
 
-
 class Subscriber:
-    """Almacena información de un widget suscrito a cambios de tema."""
+    """Una clase de datos para almacenar información sobre un suscriptor
+    específico del Publisher."""
 
-    def __init__(self, widget_id: str, callback: Callable, channel: Channel):
-        """Inicializa un suscriptor.
+    def __init__(self, name: str, func: Callable, channel: Channel):
+        """Crea un suscriptor.
 
         Args:
-            widget_id: Identificador único del widget
-            callback: Función a llamar cuando hay cambios
-            channel: Canal de suscripción (STD o TTK)
+            name: El nombre del suscriptor
+            func: La función a llamar al enviar mensajes
+            channel: El canal de suscripción
         """
-        self.widget_id = widget_id
-        self.callback = callback
+        self.name = name
+        self.func = func
         self.channel = channel
 
-
 class Publisher:
-    """Gestiona notificaciones de cambios de tema a widgets suscritos."""
+    """Clase utilizada para publicar eventos de actualización de widgets
+    para cambios de tema o configuraciones."""
 
-    _subscribers: Dict[str, Subscriber] = {}
+    __subscribers: Dict[str, Subscriber] = {}
 
     @staticmethod
-    def subscribe(widget_id: str, callback: Callable, channel: Channel) -> None:
-        """Suscribe un widget para recibir notificaciones.
+    def subscriber_count() -> int:
+        """Retorna el número total de suscriptores."""
+        return len(Publisher.__subscribers)
+
+    @staticmethod
+    def subscribe(name: str, func: Callable, channel: Channel) -> None:
+        """Suscribe a un evento.
 
         Args:
-            widget_id: Identificador único del widget
-            callback: Función a llamar en cambios de tema
-            channel: Canal de suscripción
+            name: El nombre tkinter/tcl del widget
+            func: Función a llamar al pasar un mensaje
+            channel: Indica el canal que agrupa los suscriptores
         """
-        Publisher._subscribers[widget_id] = Subscriber(widget_id, callback, channel)
+        Publisher.__subscribers[name] = Subscriber(name, func, channel)
 
     @staticmethod
-    def unsubscribe(widget_id: str) -> None:
-        """Elimina la suscripción de un widget."""
-        Publisher._subscribers.pop(widget_id, None)
+    def unsubscribe(name: str) -> None:
+        """Elimina un suscriptor.
+
+        Args:
+            name: El nombre tkinter/tcl del widget
+        """
+        try:
+            del Publisher.__subscribers[str(name)]
+        except:
+            pass
+
+    @staticmethod
+    def get_subscribers(channel: Channel) -> List[Subscriber]:
+        """Retorna una lista de suscriptores.
+
+        Args:
+            channel: Canal del que obtener suscriptores
+
+        Returns:
+            Lista de suscriptores del canal especificado
+        """
+        subs = Publisher.__subscribers.values()
+        return [s for s in subs if s.channel == channel]
 
     @staticmethod
     def publish_message(channel: Channel, *args) -> None:
-        """Notifica a todos los suscriptores de un canal específico."""
-        for subscriber in Publisher._subscribers.values():
-            if subscriber.channel == channel:
-                try:
-                    subscriber.callback(*args)
-                except Exception as e:
-                    print(f"Error notificando a {subscriber.widget_id}: {e}")
-                    Publisher.unsubscribe(subscriber.widget_id)
+        """Publica un mensaje a todos los suscriptores.
+
+        Args:
+            channel: El nombre del canal al que suscribirse
+            *args: Argumentos opcionales para pasar a los suscriptores
+        """
+        subs: List[Subscriber] = Publisher.get_subscribers(channel)
+        for sub in subs:
+            sub.func(*args)
+
+    @staticmethod
+    def clear_subscribers() -> None:
+        """Reinicia todas las suscripciones."""
+        Publisher.__subscribers.clear()
