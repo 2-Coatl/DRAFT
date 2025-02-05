@@ -1,72 +1,85 @@
 import unittest
 from unittest.mock import Mock
 from ui.styles.style_builder_tk import StyleBuilderTK
-from ui.styles.colors import Colors
 from ui.styles.theme_definition import ThemeDefinition
+from ui.styles.constants import STANDARD_THEMES
 
 
 class TestStyleBuilderTK(unittest.TestCase):
 
     def setUp(self):
         """Configuración inicial para cada test."""
-        # Mock de Colors
-        self.colors_mock = Mock(spec=Colors)
-        self.colors_mock.get.side_effect = lambda x: {
-            'primary': '#007bff',
-            'selectfg': '#ffffff',
-            'active': '#0056b3',
-            'bg': '#ffffff',
-            'fg': '#212529',
-            'inputbg': '#ffffff',
-            'inputfg': '#495057'
-        }.get(x)
+        # Mock del objeto Style
+        self.style_mock = Mock()
 
-        # Mock de ThemeDefinition
-        self.theme_mock = Mock(spec=ThemeDefinition)
+        # Crear un tema real para las pruebas
+        self.theme = ThemeDefinition(
+            name='test_theme',
+            colors=STANDARD_THEMES['light']['colors']
+        )
 
-        # Instancia de StyleBuilderTK
-        self.builder = StyleBuilderTK(self.colors_mock, self.theme_mock)
+        # Configurar el mock de Style para devolver el tema
+        self.style_mock.theme = self.theme
+
+        # Crear el builder
+        self.builder = StyleBuilderTK(self.style_mock)
+
+    def test_theme_property(self):
+        """Prueba el acceso a la propiedad theme."""
+        self.assertEqual(self.builder.theme, self.theme)
+
+    def test_colors_property(self):
+        """Prueba el acceso a la propiedad colors."""
+        self.assertEqual(self.builder.colors, self.theme.colors)
+
+    def test_update_window_style(self):
+        """Prueba la actualización de estilo de ventana."""
+        widget_mock = Mock()
+        self.builder.update_window_style(widget_mock)
+        widget_mock.configure.assert_called_with(
+            background=self.theme.colors.bg
+        )
 
     def test_update_button_style(self):
         """Prueba la actualización de estilo de botón."""
-        button_mock = Mock()
-        self.builder.update_button_style(button_mock)
-
-        button_mock.configure.assert_called_once_with(
-            bg='#007bff',
-            fg='#ffffff',
-            activebackground='#0056b3',
-            activeforeground='#ffffff'
-        )
-
-    def test_update_label_style(self):
-        """Prueba la actualización de estilo de label."""
-        label_mock = Mock()
-        self.builder.update_label_style(label_mock)
-
-        label_mock.configure.assert_called_once_with(
-            bg='#ffffff',
-            fg='#212529'
-        )
-
-    def test_update_entry_style(self):
-        """Prueba la actualización de estilo de entry."""
-        entry_mock = Mock()
-        self.builder.update_entry_style(entry_mock)
-
-        entry_mock.configure.assert_called_once_with(
-            bg='#ffffff',
-            fg='#495057',
-            insertbackground='#495057'
+        widget_mock = Mock()
+        self.builder.update_button_style(widget_mock)
+        widget_mock.configure.assert_called_with(
+            background=self.theme.colors.primary,
+            foreground=self.theme.colors.selectfg,
+            activebackground=self.theme.colors.active,
+            activeforeground=self.theme.colors.selectfg,
+            highlightbackground=self.theme.colors.border
         )
 
     def test_update_frame_style(self):
         """Prueba la actualización de estilo de frame."""
-        frame_mock = Mock()
-        self.builder.update_frame_style(frame_mock)
+        widget_mock = Mock()
+        self.builder.update_frame_style(widget_mock)
+        widget_mock.configure.assert_called_with(
+            background=self.theme.colors.bg,
+            highlightbackground=self.theme.colors.border
+        )
 
-        frame_mock.configure.assert_called_once_with(
-            bg='#ffffff'
+    def test_update_label_style(self):
+        """Prueba la actualización de estilo de label."""
+        widget_mock = Mock()
+        self.builder.update_label_style(widget_mock)
+        widget_mock.configure.assert_called_with(
+            background=self.theme.colors.bg,
+            foreground=self.theme.colors.fg
+        )
+
+    def test_update_entry_style(self):
+        """Prueba la actualización de estilo de entry."""
+        widget_mock = Mock()
+        self.builder.update_entry_style(widget_mock)
+        widget_mock.configure.assert_called_with(
+            background=self.theme.colors.inputbg,
+            foreground=self.theme.colors.inputfg,
+            insertbackground=self.theme.colors.inputfg,
+            selectbackground=self.theme.colors.selectbg,
+            selectforeground=self.theme.colors.selectfg
         )
 
 

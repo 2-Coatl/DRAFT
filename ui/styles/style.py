@@ -1,5 +1,8 @@
 from tkinter import ttk
 from typing import Optional, Dict, Set, Any, Callable
+
+from .constants import USER_THEMES, STANDARD_THEMES
+from .style_builder_ttk import StyleBuilderTTK
 from .theme_definition import ThemeDefinition
 from .colors import Colors
 from .events import Publisher, Channel
@@ -20,7 +23,7 @@ class Style(ttk.Style):
         style = Style()
 
         # Instanciar con tema específico
-        style = Style(theme='dark')
+        style = Style(theme='superhero')
 
         # Ver temas disponibles
         for theme in style.theme_names():
@@ -38,10 +41,9 @@ class Style(ttk.Style):
         return Style.instance
 
     def __init__(self, theme=DEFAULT_THEME):
-        """Inicializa el gestor de estilos.
-
-        Args:
-            theme: Nombre del tema a usar inicialmente
+        """
+        Parameters:
+            theme (str): Nombre del tema a usar al iniciar
         """
         if Style.instance is not None:
             if theme != self.DEFAULT_THEME:
@@ -54,8 +56,9 @@ class Style(ttk.Style):
         self._style_registry: Set[str] = set()  # Estilos usados
         self._theme_styles: Dict[str, Set[str]] = {}  # Estilos por tema
         self._theme_names: Set[str] = set()
+        self.theme = None  # Tema actual
 
-        # Cargar temas
+        # Cargar temas y configurar
         self._load_themes()
 
         super().__init__()
@@ -120,14 +123,58 @@ class Style(ttk.Style):
         self._theme_definitions[theme] = definition
         self._theme_styles[theme] = set()
 
+    def _load_themes(self) -> None:
+        """Carga todos los temas definidos."""
+        # Combinar temas estándar con temas de usuario
+        if USER_THEMES:
+            STANDARD_THEMES.update(USER_THEMES)
+
+        theme_settings = {"themes": STANDARD_THEMES}
+
+        # Registrar cada tema
+        for name, definition in theme_settings["themes"].items():
+            self.register_theme(
+                ThemeDefinition(
+                    name=name,
+                    themetype=definition["type"],
+                    colors=definition["colors"]
+                )
+            )
+
+    def load_user_themes(self, file: str) -> None:
+        """Carga temas personalizados desde un archivo JSON.
+
+        Parameters:
+            file: Ruta al archivo JSON con definiciones de temas
+        """
+        import json
+        try:
+            with open(file, encoding='utf-8') as f:
+                data = json.load(f)
+                themes = data['themes']
+            for theme in themes:
+                for name, definition in theme.items():
+                    self.register_theme(
+                        ThemeDefinition(
+                            name=name,
+                            themetype=definition["type"],
+                            colors=definition["colors"]
+                        )
+                    )
+        except Exception as e:
+            raise ValueError(f"Error loading user themes: {str(e)}")
+
     def theme_use(self, themename: Optional[str] = None):
         """Cambia o consulta el tema en uso.
 
-        Args:
+        Si themename es None, retorna el tema actual. De lo contrario,
+        establece el tema especificado y emite un evento de cambio.
+
+        Parameters:
             themename: Nombre del tema a usar
 
         Returns:
-            Nombre del tema actual si themename es None
+            str: Nombre del tema actual si themename es None
 
         Raises:
             TclError: Si el tema no existe
@@ -135,18 +182,21 @@ class Style(ttk.Style):
         if not themename:
             return super().theme_use()
 
+        # Cambiar a tema existente
         if themename in super().theme_names():
             self.theme = self._theme_definitions.get(themename)
             super().theme_use(themename)
             self._create_ttk_styles_on_theme_change()
             Publisher.publish_message(Channel.STD)
+        # Configurar nuevo tema
         elif themename in self._theme_names:
             self.theme = self._theme_definitions.get(themename)
-            self._theme_objects[themename] = StyleBuilderTTK()
+            self._theme_objects[themename] = StyleBuilderTTK(self)
             self._create_ttk_styles_on_theme_change()
             Publisher.publish_message(Channel.STD)
         else:
-            raise TclError(themename, "no es un tema válido.")
+            raise TclError(themename, "is not a valid theme.")
+        return themename
 
     def style_exists_in_theme(self, ttkstyle: str) -> bool:
         """Verifica si un estilo existe en el tema actual.

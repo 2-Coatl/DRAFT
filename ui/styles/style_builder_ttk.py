@@ -1,8 +1,8 @@
-from typing import Optional, Callable, Dict
-from .colors import Colors
-from .style_builder_tk import StyleBuilderTK
+from typing import Any, Optional, Callable
+from tkinter import ttk
 from .theme_definition import ThemeDefinition
-from .constants import Keywords
+from .colors import Colors
+
 
 class StyleBuilderTTK:
     """Constructor de estilos para widgets ttk.
@@ -11,44 +11,48 @@ class StyleBuilderTTK:
     manteniendo la consistencia con el tema actual.
     """
 
-    def __init__(self, colors: Colors, definition: ThemeDefinition):
-        """Inicializa el constructor de estilos ttk.
-
-        Args:
-            colors: Objeto Colors del tema actual
-            definition: Definición del tema actual
+    def __init__(self, style: Any):
         """
-        self.colors = colors
-        self.definition = definition
-        self.is_light = definition.is_light
-        self.style_cache: Dict[str, bool] = {}
-        self.builder_tk = StyleBuilderTK(colors, definition)
+        Parameters:
+            style: Referencia al objeto Style
+        """
+        self.style = style
+        self.builder_tk = None  # Se inicializará bajo demanda
+
+    @property
+    def theme(self) -> ThemeDefinition:
+        """Referencia al ThemeDefinition del tema actual."""
+        return self.style.theme
+
+    @property
+    def colors(self) -> Colors:
+        """Referencia a los colores del tema actual."""
+        return self.theme.colors
 
     def name_to_method(self, method_name: str) -> Optional[Callable]:
-        """Obtiene el método correspondiente al nombre.
+        """Obtiene el método de creación de estilo por nombre.
 
-        Args:
-            method_name: Nombre del método a obtener
+        Parameters:
+            method_name: Nombre del método a buscar
 
         Returns:
-            Método correspondiente o None si no existe
+            Callable o None si no existe el método
         """
-        method = getattr(self, method_name, None)
-        if callable(method):
-            return method
-        return None
+        if not method_name:
+            return None
+        return getattr(self, method_name, None)
 
-    def create_button_style(self, color: str) -> None:
-        """Crea el estilo para botones.
+    def create_button_style(self, color: str = "") -> None:
+        """Crea el estilo para botones ttk.
 
-        Args:
-            color: Color base para el estilo
+        Parameters:
+            color: Color base opcional para el botón
         """
-        foreground = self.colors.get('selectfg')
+        foreground = self.colors.selectfg
         if not color:
-            background = self.colors.get('primary')
+            background = self.colors.primary
         else:
-            background = self.colors.get(color)
+            background = getattr(self.colors, color, self.colors.primary)
 
         # Estilo normal
         self.style.configure(
@@ -58,7 +62,7 @@ class StyleBuilderTTK:
             padding=(10, 5)
         )
 
-        # Estilo al pasar el mouse
+        # Estilo hover/active
         hover_bg = self.colors.update_hsv(background, vd=0.1)
         self.style.map(
             "TButton",
@@ -66,84 +70,49 @@ class StyleBuilderTTK:
             background=[("active", hover_bg)]
         )
 
-    def create_outline_button_style(self, color: str) -> None:
+    def create_outline_button_style(self, color: str = "") -> None:
         """Crea el estilo para botones con contorno.
 
-        Args:
-            color: Color base para el estilo
+        Parameters:
+            color: Color base opcional para el botón
         """
         if not color:
-            base_color = self.colors.get('primary')
+            base_color = self.colors.primary
         else:
-            base_color = self.colors.get(color)
+            base_color = getattr(self.colors, color, self.colors.primary)
+
+        style_name = f"{color}.Outline.TButton" if color else "Outline.TButton"
 
         # Estilo normal
         self.style.configure(
-            f"{color}.Outline.TButton",
+            style_name,
             foreground=base_color,
-            background=self.colors.get('bg'),
+            background=self.colors.bg,
             bordercolor=base_color,
             padding=(10, 5)
         )
 
-        # Estilo al pasar el mouse
+        # Estilo hover/active
         hover_bg = self.colors.update_hsv(base_color, vd=0.1)
         self.style.map(
-            f"{color}.Outline.TButton",
-            foreground=[("active", self.colors.get('selectfg'))],
+            style_name,
+            foreground=[("active", self.colors.selectfg)],
             background=[("active", hover_bg)]
         )
 
-    def update_combobox_popdown_style(self, widget) -> None:
+    def update_combobox_popdown_style(self, widget: ttk.Combobox) -> None:
         """Actualiza el estilo del popdown de un Combobox.
 
-        Args:
+        Parameters:
             widget: Widget Combobox a actualizar
         """
         try:
             popdown = widget.winfo_children()[0]
             popdown.configure(
-                background=self.colors.get('bg'),
-                foreground=self.colors.get('fg'),
-                selectbackground=self.colors.get('selectbg'),
-                selectforeground=self.colors.get('selectfg')
+                background=self.colors.bg,
+                foreground=self.colors.fg,
+                selectbackground=self.colors.selectbg,
+                selectforeground=self.colors.selectfg
             )
-        except Exception:
+        except (IndexError, AttributeError):
             pass
-
-    # ... Otros métodos de creación de estilos para cada tipo de widget ...
-
-    def _get_style_elements(self, style_name: str) -> tuple:
-        """Obtiene los elementos de un nombre de estilo.
-
-        Args:
-            style_name: Nombre del estilo a analizar
-
-        Returns:
-            Tupla con (color, tipo, orientación, clase)
-        """
-        parts = [part.lower() for part in style_name.split('.')]
-
-        # Color (case sensitive)
-        color = ""
-        if parts and parts[0] in Keywords.COLORS:
-            color = parts[0]
-
-        # Tipo (debe coincidir con Keywords.TYPES)
-        widget_type = ""
-        for part in parts:
-            if part in Keywords.TYPES:
-                widget_type = part.title()  # Convertimos a Title case para el resultado
-                break
-
-        # Orientación
-        orient = ""
-        for part in parts:
-            if part in Keywords.ORIENTS:
-                orient = part.title()  # Convertimos a Title case para el resultado
-                break
-
-        # Clase (último elemento)
-        widget_class = style_name.split('.')[-1]  # Mantenemos el caso original de la clase
-
-        return color, widget_type, orient, widget_class
