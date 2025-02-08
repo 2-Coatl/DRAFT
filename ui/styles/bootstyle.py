@@ -1,7 +1,7 @@
 from typing import Optional, Any, Callable
 from tkinter import ttk
 from .constants import Keywords
-from .style import Style
+from .events import Publisher, Channel
 
 
 class Bootstyle:
@@ -211,6 +211,7 @@ class Bootstyle:
         Returns:
             Constructor modificado
         """
+        from .style import Style
 
         def __init__(self, *args, **kwargs):
             # Capturar argumentos de estilo
@@ -286,6 +287,7 @@ class Bootstyle:
             style_string: Optional[str] = None,
             **kwargs
     ) -> str:
+        from .style import Style
         """Actualiza o crea un estilo ttk.
 
         Args:
