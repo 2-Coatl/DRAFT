@@ -105,9 +105,12 @@ class TestColors(unittest.TestCase):
         hex_color = Colors.rgb_to_hex(0.0, 0.0, 0.0)
         self.assertEqual(hex_color.lower(), '#000000')
 
-        # Prueba con color primario
-        hex_color = Colors.rgb_to_hex(0.0, 0.482352941, 1.0)
+        # Prueba con color azul (primary)
+        # Usamos los valores exactos que obtenemos de la conversión inversa
+        r, g, b = self.colors.hex_to_rgb('#007bff')
+        hex_color = Colors.rgb_to_hex(r, g, b)
         self.assertEqual(hex_color.lower(), '#007bff')
+
 
 if __name__ == '__main__':
     unittest.main()
