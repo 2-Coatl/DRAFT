@@ -1,6 +1,9 @@
 from typing import Dict, Optional, Set
 from tkinter import ttk
 from tkinter import TclError
+
+from .notifications.channel import Channel
+from .notifications.publisher import Publisher
 from .theme_definition import ThemeDefinition
 from .color import Colors
 from .constants import STANDARD_THEMES, USER_THEMES, DEFAULT_THEME
@@ -62,16 +65,45 @@ class Style(ttk.Style):
         self._theme_definitions[theme] = definition
         self._theme_objects[theme] = None
 
-    def theme_use(self, themename: Optional[str] = None) -> Optional[str]:
-        """Cambia o consulta el tema en uso."""
+    def theme_use(self, themename=None):
+        """Cambia el tema utilizado en la renderización de los widgets.
+
+        Si themename es None, retorna el tema actual. En caso contrario,
+        establece el nuevo tema y notifica del cambio a los widgets.
+
+        Este método debe usarse solo para cambiar el tema durante la
+        ejecución. Para el tema inicial, use el constructor de Style.
+
+        Args:
+            themename: Nombre del tema a aplicar. Si es None, retorna
+                      el tema actual.
+
+        Returns:
+            str | None: Nombre del tema actual si themename es None,
+                       None en caso contrario.
+
+        Raises:
+            TclError: Si el tema especificado no es válido.
+        """
         if not themename:
             return super().theme_use()
 
-        if themename in self._theme_names:
-            self.theme = self._theme_definitions.get(themename)
-            return themename
-        else:
-            raise TclError(f"{themename} is not a valid theme.")
+        existing_themes = super().theme_names()
+
+        # Validar si el tema existe
+        if themename not in existing_themes and themename not in self._theme_names:
+            raise TclError(f"'{themename}' no es un tema válido.")
+
+        # Actualizar el tema actual
+        self.theme = self._theme_definitions.get(themename)
+
+        # Aplicar el tema si ya existe
+        if themename in existing_themes:
+            super().theme_use(themename)
+
+        # Notificar a ambos tipos de widgets sobre el cambio de tema
+        Publisher.publish_message(Channel.TTK, themename)
+        Publisher.publish_message(Channel.STD, themename)
 
     def theme_names(self) -> list:
         """Obtiene la lista de temas disponibles."""
