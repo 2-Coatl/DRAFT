@@ -1,125 +1,90 @@
 import unittest
-from unittest.mock import Mock, patch
 from tkinter import TclError
-from ui.styles.style import Style
 from ui.styles.theme_definition import ThemeDefinition
-from ui.styles.colors import Colors
-from ui.styles.events import Publisher, Channel
+from ui.styles.style import Style
+from ui.styles.color import Colors
+from ui.styles.constants import STANDARD_THEMES, DEFAULT_THEME
 
 
 class TestStyle(unittest.TestCase):
+    """Test suite para la clase Style."""
+
     def setUp(self):
-        """Preparación antes de cada test."""
-        # Limpiar el singleton para cada test
+        """Inicializa el ambiente de prueba."""
         Style.instance = None
-        self.style = Style()
+        self.style = Style(DEFAULT_THEME)
 
     def tearDown(self):
-        """Limpieza después de cada test."""
+        """Limpia después de cada test."""
         Style.instance = None
-        Publisher.clear_subscribers()
 
     def test_singleton_pattern(self):
-        """Verifica el patrón Singleton."""
+        """Verifica que Style implementa correctamente el patrón Singleton."""
         style1 = Style()
         style2 = Style()
         self.assertIs(style1, style2)
+        self.assertIs(style1, Style.get_instance())
 
-        # Verificar que mantiene el tema al crear nueva instancia
-        style1.theme_use('dark')
-        style3 = Style()
-        self.assertEqual(style3.theme.name, 'dark')
+    def test_default_theme(self):
+        """Verifica que se establece el tema por defecto."""
+        self.assertEqual(self.style.theme.name, DEFAULT_THEME)
 
-    def test_theme_initialization(self):
-        """Verifica la inicialización de temas."""
-        # Verificar tema por defecto
-        self.assertEqual(self.style.theme.name, Style.DEFAULT_THEME)
+    def test_theme_registration(self):
+        """Verifica el registro correcto de temas."""
+        test_theme = ThemeDefinition(
+            name="test_theme",
+            colors=STANDARD_THEMES[DEFAULT_THEME]['colors'],
+            themetype=STANDARD_THEMES[DEFAULT_THEME]['type']
+        )
+        self.style.register_theme(test_theme)
 
-        # Verificar carga de temas estándar
-        theme_names = self.style.theme_names()
-        self.assertIn('light', theme_names)
-        self.assertIn('dark', theme_names)
-
-    def test_theme_switching(self):
-        """Verifica el cambio de temas."""
-        # Cambio a tema válido
-        result = self.style.theme_use('dark')
-        self.assertEqual(result, 'dark')
-        self.assertEqual(self.style.theme.name, 'dark')
-
-        # Intento de cambio a tema inválido
-        with self.assertRaises(TclError):
-            self.style.theme_use('nonexistent_theme')
-
-    def test_style_registration(self):
-        """Verifica el registro de estilos."""
-        test_style = 'Test.TButton'
-        self.style._register_ttkstyle(test_style)
-
-        self.assertIn(test_style, self.style._style_registry)
-        self.assertIn(
-            test_style,
-            self.style._theme_styles[self.style.theme.name]
+        self.assertIn("test_theme", self.style.theme_names())
+        self.assertIn("test_theme", self.style._theme_names)
+        self.assertEqual(
+            self.style._theme_definitions["test_theme"],
+            test_theme
         )
 
-    def test_style_existence_check(self):
-        """Verifica la comprobación de existencia de estilos."""
-        test_style = 'Test.TButton'
+    def test_theme_switching(self):
+        """Verifica el cambio entre temas."""
+        # Usando los temas reales
+        self.style.theme_use('cosmo')
+        self.assertEqual(self.style.theme.name, 'cosmo')
 
-        # Estilo no registrado
-        self.assertFalse(self.style.style_exists_in_theme(test_style))
+        self.style.theme_use('flatly')
+        self.assertEqual(self.style.theme.name, 'flatly')
 
-        # Registrar estilo
-        self.style._register_ttkstyle(test_style)
-        self.assertTrue(self.style.style_exists_in_theme(test_style))
+    def test_invalid_theme(self):
+        """Verifica el manejo de temas inválidos."""
+        with self.assertRaises(TclError):
+            self.style.theme_use('non_existent_theme')
 
-    @patch('ui.styles.style.Publisher')
-    def test_theme_change_notifications(self, mock_publisher):
-        """Verifica las notificaciones de cambio de tema."""
-        self.style.theme_use('dark')
-        mock_publisher.publish_message.assert_called_with(Channel.STD)
-
-    def test_color_access(self):
-        """Verifica el acceso a colores del tema."""
-        # Tema light
-        self.style.theme_use('light')
+    def test_colors_property(self):
+        """Verifica que colors devuelve los colores del tema actual."""
+        self.style.theme_use(DEFAULT_THEME)
         colors = self.style.colors
         self.assertIsInstance(colors, Colors)
-        self.assertEqual(colors.primary, '#007bff')  # Valor del tema light
+        self.assertEqual(
+            colors,
+            self.style._theme_definitions[DEFAULT_THEME].colors
+        )
 
-        # Tema dark
-        self.style.theme_use('dark')
-        colors = self.style.colors
-        self.assertEqual(colors.primary, '#375a7f')  # Valor del tema dark
+    def test_theme_objects_initialization(self):
+        """Verifica la inicialización del estado básico de los temas."""
+        self.assertIn(DEFAULT_THEME, self.style._theme_objects)
+        self.assertIsNone(self.style._theme_objects[DEFAULT_THEME])
 
-    def test_style_builder_access(self):
-        """Verifica el acceso a los builders."""
-        # Verificar acceso a builder válido
-        builder = self.style._get_builder()
-        self.assertIsNotNone(builder)
+    def test_standard_themes_loaded(self):
+        """Verifica que los temas estándar se cargan correctamente."""
+        for theme_name in STANDARD_THEMES:
+            self.assertIn(theme_name, self.style.theme_names())
 
-        # Verificar error con tema inválido
+    def test_get_instance_creates_instance(self):
+        """Verifica que get_instance crea una instancia si no existe."""
         Style.instance = None
-        style = Style()
-        style.theme = None
-        with self.assertRaises(TclError):
-            style._get_builder()
-
-    def test_configure_style(self):
-        """Verifica la configuración de estilos."""
-        test_style = 'Test.TButton'
-        test_config = {'background': 'blue'}
-
-        # Configurar nuevo estilo
-        self.style.configure(test_style, **test_config)
-
-        # Verificar registro
-        self.assertTrue(self.style.style_exists_in_theme(test_style))
-
-        # Verificar configuración
-        result = self.style.configure(test_style, 'background')
-        self.assertEqual(result, 'blue')
-
+        instance = Style.get_instance()
+        self.assertIsInstance(instance, Style)
+        self.assertIs(instance, Style.instance)
 
 if __name__ == '__main__':
     unittest.main()

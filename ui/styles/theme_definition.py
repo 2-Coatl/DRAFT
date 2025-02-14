@@ -1,6 +1,5 @@
-# ui/styles/theme_definition.py
 from typing import Dict
-from .colors import Colors
+from .color import Colors
 
 # Constantes para tipo de tema
 LIGHT = "light"
