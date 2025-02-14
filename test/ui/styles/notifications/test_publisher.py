@@ -58,6 +58,3 @@ class TestPublisher:
         assert Publisher.subscriber_count() == 2
         Publisher.clear_subscribers()
         assert Publisher.subscriber_count() == 0
-
-if __name__ == '__main__':
-    pytest.main()

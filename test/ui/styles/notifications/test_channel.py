@@ -25,6 +25,3 @@ class TestChannel:
         """Verifica que los canales no puedan ser modificados."""
         with pytest.raises(AttributeError):
             Channel.STD = 3
-
-if __name__ == '__main__':
-    pytest.main()

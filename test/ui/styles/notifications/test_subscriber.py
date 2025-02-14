@@ -41,6 +41,3 @@ class TestSubscriber:
         assert isinstance(subscriber.name, str)
         assert callable(subscriber.callback)
         assert isinstance(subscriber.channel, Channel)
-
-if __name__ == '__main__':
-    pytest.main()
