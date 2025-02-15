@@ -1,116 +1,106 @@
-import unittest
+import pytest
 from ui.styles.color import Colors
 
 
-class TestColors(unittest.TestCase):
-    def setUp(self):
-        """Configura un conjunto de colores de prueba."""
-        self.colors = Colors(
-            primary='#007bff',
-            secondary='#6c757d',
-            success='#28a745',
-            info='#17a2b8',
-            warning='#ffc107',
-            danger='#dc3545',
-            light='#f8f9fa',
-            dark='#343a40',
-            bg='#ffffff',
-            fg='#000000',
-            selectbg='#0075e5',
-            selectfg='#ffffff',
-            border='#ced4da',
-            inputfg='#495057',
-            inputbg='#ffffff',
-            active='#0056b3'
+class TestColors:
+    """Pruebas para la clase Colors."""
+
+    @pytest.fixture
+    def default_colors(self):
+        """Fixture que proporciona una instancia de Colors con valores por defecto.
+
+        Returns:
+            Colors: Instancia con colores predeterminados para pruebas.
+        """
+        return Colors(
+            primary="#007bff",
+            secondary="#6c757d",
+            success="#28a745",
+            info="#17a2b8",
+            warning="#ffc107",
+            danger="#dc3545",
+            light="#f8f9fa",
+            dark="#343a40",
+            bg="#ffffff",
+            fg="#000000",
+            selectbg="#0d6efd",
+            selectfg="#ffffff",
+            border="#dee2e6",
+            inputfg="#000000",
+            inputbg="#ffffff",
+            active="#0d6efd"
         )
 
-    def test_get_color(self):
-        """Prueba la obtención de colores específicos."""
-        self.assertEqual(self.colors.get_color('primary'), '#007bff')
-        self.assertEqual(self.colors.get_color('secondary'), '#6c757d')
-        self.assertIsNone(self.colors.get_color('non_existent'))
+    def test_init(self, default_colors):
+        """Verifica la inicialización correcta de Colors."""
+        assert default_colors.primary == "#007bff"
+        assert default_colors.secondary == "#6c757d"
+        assert default_colors.success == "#28a745"
+        # Verificamos algunos colores representativos
+        assert default_colors.bg == "#ffffff"
+        assert default_colors.fg == "#000000"
 
-    def test_set_color(self):
-        """Prueba la modificación de colores."""
-        self.colors.set_color('primary', '#0066cc')
-        self.assertEqual(self.colors.get_color('primary'), '#0066cc')
+    def test_get_method(self, default_colors):
+        """Verifica el funcionamiento del método get."""
+        assert default_colors.get("primary") == "#007bff"
+        assert default_colors.get("bg") == "#ffffff"
+        assert default_colors.get("nonexistent") is None
 
-        # No debería modificar colores inexistentes
-        self.colors.set_color('non_existent', '#ffffff')
-        self.assertIsNone(self.colors.get_color('non_existent'))
+    def test_set_method(self, default_colors):
+        """Verifica el funcionamiento del método set."""
+        default_colors.set("primary", "#ff0000")
+        assert default_colors.primary == "#ff0000"
+        assert default_colors.get("primary") == "#ff0000"
 
-    def test_get_foreground_color(self):
-        """Prueba la obtención de colores de texto apropiados."""
-        self.assertEqual(self.colors.get_foreground_color('light'), '#343a40')
-        self.assertEqual(self.colors.get_foreground_color('dark'), '#f8f9fa')
-        self.assertEqual(
-            self.colors.get_foreground_color('other'),
-            self.colors.get_color('selectfg')
-        )
+    def test_get_foreground(self, default_colors):
+        """Verifica el método get_foreground."""
+        assert default_colors.get_foreground("light") == default_colors.dark
+        assert default_colors.get_foreground("dark") == default_colors.light
+        assert default_colors.get_foreground("other") == default_colors.selectfg
 
-    def test_get_primary_colors(self):
-        """Prueba la obtención de la lista de colores primarios."""
-        primary_colors = self.colors.get_primary_colors()
-        self.assertEqual(len(primary_colors), 6)
-        self.assertIn('primary', primary_colors)
-        self.assertIn('secondary', primary_colors)
-        self.assertIn('success', primary_colors)
-        self.assertIn('info', primary_colors)
-        self.assertIn('warning', primary_colors)
-        self.assertIn('danger', primary_colors)
-
-    def test_get_all_colors(self):
-        """Prueba la obtención de todos los colores disponibles."""
-        all_colors = self.colors.get_all_colors()
-        self.assertEqual(len(all_colors), 16)  # Número total de colores definidos
-        self.assertIn('primary', all_colors)
-        self.assertIn('bg', all_colors)
-        self.assertIn('fg', all_colors)
-        self.assertIn('active', all_colors)
-
-    def test_string_representation(self):
-        """Prueba la representación en string de la clase."""
-        str_rep = str(self.colors)
-        self.assertIn('Colors(', str_rep)
-        self.assertIn('primary=#007bff', str_rep)
-        self.assertIn('secondary=#6c757d', str_rep)
+    def test_make_transparent(self):
+        """Verifica el método make_transparent."""
+        # Negro con 50% de transparencia sobre blanco debe dar gris medio
+        result = Colors.make_transparent(0.5, "#000000", "#ffffff")
+        assert result.lower() == "#7f7f7f"
 
     def test_hex_to_rgb(self):
-        """Prueba la conversión de hexadecimal a RGB."""
-        # Prueba con color blanco
-        r, g, b = self.colors.hex_to_rgb('#ffffff')
-        self.assertAlmostEqual(r, 1.0)
-        self.assertAlmostEqual(g, 1.0)
-        self.assertAlmostEqual(b, 1.0)
-
-        # Prueba con color negro
-        r, g, b = self.colors.hex_to_rgb('#000000')
-        self.assertAlmostEqual(r, 0.0)
-        self.assertAlmostEqual(g, 0.0)
-        self.assertAlmostEqual(b, 0.0)
-
-        # Prueba con color primario
-        r, g, b = self.colors.hex_to_rgb('#007bff')
-        self.assertAlmostEqual(r, 0.0)
-        self.assertAlmostEqual(g, 0.482352941, places=6)
-        self.assertAlmostEqual(b, 1.0)
+        """Verifica la conversión de hexadecimal a RGB."""
+        r, g, b = Colors.hex_to_rgb("#ff0000")
+        assert (r, g, b) == (1.0, 0.0, 0.0)
 
     def test_rgb_to_hex(self):
-        """Prueba la conversión de RGB a hexadecimal."""
-        # Prueba con color blanco
-        hex_color = Colors.rgb_to_hex(1.0, 1.0, 1.0)
-        self.assertEqual(hex_color.lower(), '#ffffff')
+        """Verifica la conversión de RGB a hexadecimal."""
+        hex_color = Colors.rgb_to_hex(1.0, 0.0, 0.0)
+        assert hex_color.lower() == "#ff0000"
 
-        # Prueba con color negro
-        hex_color = Colors.rgb_to_hex(0.0, 0.0, 0.0)
-        self.assertEqual(hex_color.lower(), '#000000')
+    def test_update_hsv(self):
+        """Verifica la actualización de colores HSV."""
+        # Aumentar el valor debe aclarar el color
+        lighter = Colors.update_hsv("#ff0000", vd=0.1)
+        assert lighter != "#ff0000"
 
-        # Prueba con color azul (primary)
-        # Usamos los valores exactos que obtenemos de la conversión inversa
-        r, g, b = self.colors.hex_to_rgb('#007bff')
-        hex_color = Colors.rgb_to_hex(r, g, b)
-        self.assertEqual(hex_color.lower(), '#007bff')
+        # Reducir la saturación debe hacer el color más gris
+        desaturated = Colors.update_hsv("#ff0000", sd=-0.5)
+        assert desaturated != "#ff0000"
 
+    def test_iteration(self, default_colors):
+        """Verifica la iteración sobre los colores principales."""
+        colors_list = list(default_colors)
+        assert len(colors_list) == 8  # Los 8 colores principales
+        assert "primary" in colors_list
+        assert "secondary" in colors_list
 
-if __name__ == '__main__':
-    unittest.main()
+    def test_label_iter(self):
+        """Verifica la iteración sobre todas las etiquetas de color."""
+        all_labels = list(Colors.label_iter())
+        assert len(all_labels) == 16  # Todos los colores
+        assert "primary" in all_labels
+        assert "bg" in all_labels
+        assert "inputfg" in all_labels
+
+    def test_repr(self, default_colors):
+        """Verifica la representación en string del objeto."""
+        repr_str = repr(default_colors)
+        assert "primary" in repr_str
+        assert "#007bff" in repr_str
