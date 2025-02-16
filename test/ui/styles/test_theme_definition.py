@@ -1,6 +1,6 @@
 import unittest
-from ui.styles.theme_definition import ThemeDefinition, LIGHT, DARK
-from ui.styles.constants import STANDARD_THEMES
+from ui.styles.theme_definition import ThemeDefinition
+from ui.styles.constants import STANDARD_THEMES, LIGHT, DARK
 
 
 class TestThemeDefinition(unittest.TestCase):

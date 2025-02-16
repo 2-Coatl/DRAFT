@@ -1,9 +1,6 @@
 from typing import Dict
 from .color import Colors
-
-# Constantes para tipo de tema
-LIGHT = "light"
-DARK = "dark"
+from .constants import LIGHT
 
 class ThemeDefinition:
     """Define un tema incluyendo sus colores y tipo."""

@@ -1,6 +1,7 @@
 import tkinter as tk
 from ui.styles.color import Colors
-from ui.styles.theme_definition import ThemeDefinition, LIGHT
+from ui.styles.theme_definition import ThemeDefinition
+from ui.styles.constants import LIGHT
 from ui.styles.style import Style
 
 class StyleEngineTK:

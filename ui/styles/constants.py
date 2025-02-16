@@ -1,7 +1,13 @@
 from typing import Dict
+# Constantes para tipo de tema
+LIGHT = "light"
+DARK = "dark"
 
-
+TTK_CLAM = 'clam'
+TTK_DEFAULT = 'default'
+DEFAULT = 'default'
 DEFAULT_THEME = 'cosmo'
+
 
 STANDARD_THEMES = {
     'cosmo': {
