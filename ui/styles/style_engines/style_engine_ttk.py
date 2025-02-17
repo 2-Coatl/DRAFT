@@ -3,7 +3,7 @@ from tkinter import ttk
 from math import ceil
 from typing import Union, List, Tuple, Callable
 from ui.styles.color import Colors
-from ui.styles.style import Style
+from ui.styles.core.style import Style
 from ui.styles.style_engines.style_engine_tk import StyleEngineTK
 from ui.styles.theme_definition import ThemeDefinition
 from ui.styles.constants import LIGHT, TTK_CLAM, DEFAULT, TTK_DEFAULT
