@@ -3,7 +3,7 @@
 import pytest
 from tkinter import TclError
 from ui.styles.theme_definition import ThemeDefinition
-from ui.styles.style import Style
+from ui.styles.core.style import Style
 from ui.styles.color import Colors
 from ui.styles.constants import STANDARD_THEMES, DEFAULT_THEME
 from ui.styles.notifications.publisher import Publisher

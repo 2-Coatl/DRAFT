@@ -1,47 +1,83 @@
 import re
-from typing import Optional
-
+from typing import List, Pattern
 
 class Keywords:
-    """Utilidad para el manejo y procesamiento de palabras clave en widgets.
+    """Clase utilitaria que define las constantes y patrones para el sistema de estilos.
 
-    Esta clase proporciona funcionalidad para:
-    1. Identificar clases de widgets
-    2. Procesar patrones de nombres
-    3. Extraer información de estilos
+    Esta clase contiene las definiciones de:
+    - Colores válidos del sistema
+    - Orientaciones posibles de widgets
+    - Tipos de estilos disponibles
+    - Clases de widgets soportadas
+    - Patrones de expresiones regulares para parsing
     """
 
-    # Patrones de expresiones regulares para identificar widgets
-    CLASS_PATTERN = r"button|label|entry|combobox|progressbar|scale|notebook"
+    # Colores base del sistema
+    COLORS: List[str] = [
+        "primary",
+        "secondary",
+        "success",
+        "info",
+        "warning",
+        "danger",
+        "light",
+        "dark",
+    ]
 
-    @staticmethod
-    def ttkstyle_widget_class(widget=None, string: str = "") -> str:
-        """Encuentra y retorna la clase de widget.
+    # Orientaciones posibles para widgets
+    ORIENTS: List[str] = ["horizontal", "vertical"]
 
-        Busca la clase de widget ya sea a partir de un string o de
-        un widget proporcionado.
+    # Tipos de estilos disponibles
+    TYPES: List[str] = [
+        "outline",
+        "link",
+        "inverse",
+        "round",
+        "square",
+        "striped",
+        "focus",
+        "input",
+        "date",
+        "metersubtxt",
+        "meter",
+        "table"
+    ]
 
-        Args:
-            widget: Objeto widget a analizar.
-            string: Cadena de texto a analizar.
+    # Clases de widgets soportadas
+    CLASSES: List[str] = [
+        "button",
+        "progressbar",
+        "checkbutton",
+        "combobox",
+        "entry",
+        "labelframe",
+        "label",
+        "frame",
+        "floodgauge",
+        "sizegrip",
+        "optionmenu",
+        "menubutton",
+        "menu",
+        "notebook",
+        "panedwindow",
+        "radiobutton",
+        "separator",
+        "scrollbar",
+        "spinbox",
+        "scale",
+        "text",
+        "toolbutton",
+        "treeview",
+        "toggle",
+        "tk",
+        "calendar",
+        "listbox",
+        "canvas",
+        "toplevel",
+    ]
 
-        Returns:
-            str: Clase de widget identificada o cadena vacía si no se encuentra.
-        """
-        # Buscar clase de widget en el patrón de string
-        match = re.search(Keywords.CLASS_PATTERN, string.lower())
-        if match is not None:
-            widget_class = match.group(0)
-            return widget_class
-
-        # Buscar clase de widget desde el método tkinter/tcl
-        if widget is None:
-            return ""
-
-        _class = widget.winfo_class()
-        match = re.search(Keywords.CLASS_PATTERN, _class.lower())
-        if match is not None:
-            widget_class = match.group(0)
-            return widget_class
-
-        return ""
+    # Patrones de expresiones regulares precompilados
+    COLOR_PATTERN: Pattern = re.compile("|".join(COLORS))
+    ORIENT_PATTERN: Pattern = re.compile("|".join(ORIENTS))
+    CLASS_PATTERN: Pattern = re.compile("|".join(CLASSES))
+    TYPE_PATTERN: Pattern = re.compile("|".join(TYPES))
