@@ -1,6 +1,6 @@
 import colorsys
 from PIL import ImageColor
-from ui.styles.utils import color_utils
+from ui.theming.utils import color_utils
 
 class Colors:
     """Clase que define el esquema de colores para un tema y proporciona

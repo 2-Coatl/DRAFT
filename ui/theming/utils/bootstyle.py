@@ -2,11 +2,11 @@ import re
 from typing import Optional, Any
 from tkinter import ttk
 
-from ui.styles.notifications.channel import Channel
-from ui.styles.notifications.publisher import Publisher
-from ui.styles.utils.keywords import Keywords
-from ui.styles.core.style import Style
-from ui.styles.style_engines.style_engine_ttk import StyleEngineTTK
+from ui.theming.notifications.channel import Channel
+from ui.theming.notifications.publisher import Publisher
+from ui.theming.utils.keywords import Keywords
+from ui.theming.style import Style
+from ui.theming.style_engines.style_engine_ttk import StyleEngineTTK
 
 class Bootstyle:
     """Clase utilitaria que proporciona métodos para manipular y gestionar estilos TTK.

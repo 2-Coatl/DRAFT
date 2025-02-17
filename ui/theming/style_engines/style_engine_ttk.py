@@ -2,11 +2,12 @@ import tkinter as tk
 from tkinter import ttk
 from math import ceil
 from typing import Union, List, Tuple, Callable
-from ui.styles.color import Colors
-from ui.styles.core.style import Style
-from ui.styles.style_engines.style_engine_tk import StyleEngineTK
-from ui.styles.theme_definition import ThemeDefinition
-from ui.styles.constants import LIGHT, TTK_CLAM, DEFAULT, TTK_DEFAULT
+from ui.theming.color import Colors
+
+from ui.theming.style_engines.style_engine_tk import StyleEngineTK
+from ui.theming.theme_definition import ThemeDefinition
+from ui.theming.constants import LIGHT, TTK_CLAM, DEFAULT, TTK_DEFAULT
+from ui.theming.style import Style
 
 
 class StyleEngineTTK:

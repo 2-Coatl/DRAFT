@@ -1,8 +1,8 @@
 import tkinter as tk
-from ui.styles.color import Colors
-from ui.styles.theme_definition import ThemeDefinition
-from ui.styles.constants import LIGHT
-from ui.styles.core.style import Style
+from ui.theming.color import Colors
+from ui.theming.theme_definition import ThemeDefinition
+from ui.theming.constants import LIGHT
+from ui.theming.style import Style
 
 class StyleEngineTK:
     """Motor de estilos para widgets Tkinter nativos.
