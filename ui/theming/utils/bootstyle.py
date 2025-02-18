@@ -5,7 +5,6 @@ from tkinter import ttk
 from ui.theming.notifications.channel import Channel
 from ui.theming.notifications.publisher import Publisher
 from ui.theming.utils.keywords import Keywords
-from ui.theming.style import Style
 from ui.theming.style_engines.style_engine_ttk import StyleEngineTTK
 
 class Bootstyle:
@@ -232,6 +231,8 @@ class Bootstyle:
         Returns:
             El nombre del estilo TTK o cadena vacía si no hay estilo.
         """
+        #Dependencia circular
+        from ui.theming.style import Style
         style: Style = Style.get_instance() or Style()
 
         # get existing widget style if not provided

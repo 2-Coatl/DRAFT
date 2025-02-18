@@ -7,7 +7,7 @@ from ui.theming.color import Colors
 from ui.theming.style_engines.style_engine_tk import StyleEngineTK
 from ui.theming.theme_definition import ThemeDefinition
 from ui.theming.constants import LIGHT, TTK_CLAM, DEFAULT, TTK_DEFAULT
-from ui.theming.style import Style
+
 
 
 class StyleEngineTTK:
@@ -21,6 +21,8 @@ class StyleEngineTTK:
 
     def __init__(self):
         """Inicializa el motor de estilos TTK."""
+        #Dependencia circular
+        from ui.theming.style import Style
         self.style: Style = Style.get_instance()
         self.theme_images = {}
         self.style_engine_tk = StyleEngineTK()

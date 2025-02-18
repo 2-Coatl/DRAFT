@@ -71,209 +71,209 @@ class Style(ttk.Style):
             Style: Instancia única del gestor de estilos.
         """
         return Style.instance
-    #
-    # def configure(self, style: str, query_opt: AnyStr = None, **kw) -> Union[Dict, str, None]:
-    #     """Configura o consulta las opciones de estilo para widgets TTK.
-    #
-    #     Args:
-    #         style: Nombre del estilo a configurar o consultar.
-    #         query_opt: Opción específica a consultar.
-    #         **kw: Opciones de configuración del estilo.
-    #
-    #     Returns:
-    #         Union[Dict, str, None]: Configuración del estilo si es consulta,
-    #                                None si es configuración.
-    #     """
-    #     if query_opt:
-    #         return super().configure(style, query_opt=query_opt, **kw)
-    #
-    #     if not self.style_exists_in_theme(style):
-    #         ttkstyle = style
-    #
-    #     if ttkstyle == style:
-    #         return super().configure(style, query_opt=query_opt, **kw)
-    #     else:
-    #         result = super().configure(style, query_opt=query_opt, **kw)
-    #         self._register_ttkstyle(style)
-    #         return result
-    #
-    # def _build_configure(self, style: str, **kw) -> None:
-    #     """Construye la configuración base de un estilo TTK.
-    #
-    #     Args:
-    #         style: Nombre del estilo a configurar.
-    #         **kw: Opciones de configuración del estilo.
-    #     """
-    #     super().configure(style, **kw)
-    #
-    # def style_exists_in_theme(self, ttkstyle: str) -> bool:
-    #     """Verifica si un estilo existe en el tema actual.
-    #
-    #     Args:
-    #         ttkstyle: Nombre del estilo TTK a verificar.
-    #
-    #     Returns:
-    #         bool: True si el estilo existe en ambos registros.
-    #     """
-    #     theme_styles = self._theme_styles.get(self.theme.name)
-    #     exists_in_theme = ttkstyle in theme_styles
-    #     exists_in_registry = ttkstyle in self._style_registry
-    #     return exists_in_theme and exists_in_registry
-    #
-    # def _register_ttkstyle(self, ttkstyle: str) -> None:
-    #     """Registra un nombre de estilo TTK.
-    #
-    #     Args:
-    #         ttkstyle: Nombre del estilo TTK a registrar.
-    #     """
-    #     self._style_registry.add(ttkstyle)
-    #     theme = self.theme.name
-    #     self._theme_styles[theme].add(ttkstyle)
-    #
-    #
-    # def theme_names(self) -> List[str]:
-    #     """Obtiene la lista de temas disponibles.
-    #
-    #     Returns:
-    #         List[str]: Lista de nombres de temas disponibles.
-    #     """
-    #     return list(self._theme_definitions.keys())
-    #
-    # def theme_use(self, themename=None) -> Union[str, None]:
-    #     """Cambia o consulta el tema actual.
-    #
-    #     Args:
-    #         themename: Nombre del tema a aplicar. Si es None, retorna el tema actual.
-    #
-    #     Returns:
-    #         Union[str, None]: Nombre del tema actual si themename es None,
-    #                          None en caso contrario.
-    #
-    #     Raises:
-    #         TclError: Si el tema especificado no es válido.
-    #     """
-    #     if not themename:
-    #         return super().theme_use()
-    #
-    #     existing_themes = super().theme_names()
-    #     if themename in existing_themes:
-    #         self.theme = self._theme_definitions.get(themename)
-    #         super().theme_use(themename)
-    #         self._create_ttk_styles_on_theme_change()
-    #         Publisher.publish_message(Channel.STD)
-    #         return None
-    #     elif themename in self._theme_names:
-    #         self.theme = self._theme_definitions.get(themename)
-    #         self._theme_objects[themename] = StyleEngineTTK()
-    #         self._create_ttk_styles_on_theme_change()
-    #         Publisher.publish_message(Channel.STD)
-    #         return None
-    #     else:
-    #         raise TclError(themename, "no es un tema válido.")
-    #
-    # def register_theme(self, definition: ThemeDefinition) -> None:
-    #     """Registra una definición de tema para uso del objeto Style.
-    #
-    #     Args:
-    #         definition: Objeto ThemeDefinition con la definición del tema.
-    #     """
-    #     theme = definition.name
-    #     self._theme_names.add(theme)
-    #     self._theme_definitions[theme] = definition
-    #     self._theme_styles[theme] = set()
-    #
-    # def _load_themes(self) -> None:
-    #     """Carga todos los temas definidos en ttkbootstrap.
-    #
-    #     Esta función inicializa los temas base del sistema, combinando
-    #     los temas estándar con cualquier tema personalizado definido
-    #     por el usuario.
-    #
-    #     Args:
-    #
-    #     Returns:
-    #         None
-    #     """
-    #     # Si existen temas de usuario, se añaden a los estándar
-    #     if USER_THEMES:
-    #         STANDARD_THEMES.update(USER_THEMES)
-    #
-    #     # Crear diccionario de configuración de temas
-    #     theme_settings = {"themes": STANDARD_THEMES}
-    #
-    #     # Registrar cada tema en el sistema
-    #     for name, definition in theme_settings["themes"].items():
-    #         self.register_theme(
-    #             ThemeDefinition(
-    #                 name=name,
-    #                 themetype=definition["type"],
-    #                 colors=definition["colors"],
-    #             )
-    #         )
-    #
-    # @property
-    # def colors(self) -> Union[Colors, List]:
-    #     """Obtiene los colores utilizados en el tema actual.
-    #
-    #     Args:
-    #
-    #
-    #     Returns:
-    #         Union[Colors, List]: Objeto que contiene los colores del tema actual.
-    #                             Si no hay tema válido o definición, retorna lista vacía.
-    #     """
-    #     theme = self.theme.name
-    #     if theme in self._theme_names:
-    #         definition = self._theme_definitions.get(theme)
-    #         if not definition:
-    #             return []
-    #         return definition.colors
-    #     return []
-    #
-    # @staticmethod
-    # def _get_builder():
-    #     """Obtiene el constructor de estilos para el tema actual.
-    #
-    #     Args:
-    #
-    #
-    #     Returns:
-    #         StyleEngineTTK: El objeto constructor de estilos para el tema actual.
-    #     """
-    #     style: Style = Style.get_instance()
-    #     theme_name = style.theme.name
-    #     return style._theme_objects[theme_name]
-    #
-    # @staticmethod
-    # def _get_builder_tk():
-    #     """Obtiene el constructor de estilos tk para el tema actual.
-    #
-    #     Args:
-    #
-    #
-    #     Returns:
-    #         StyleBuilderTK: El objeto constructor de estilos tk para el tema actual.
-    #     """
-    #     builder = Style._get_builder()
-    #     return builder.builder_tk
-    #
-    # def _create_ttk_styles_on_theme_change(self) -> None:
-    #     """Recrea los estilos existentes cuando cambia el tema.
-    #
-    #     Args:
-    #
-    #
-    #     Returns:
-    #         None
-    #     """
-    #     for ttkstyle in self._style_registry:
-    #         if not self.style_exists_in_theme(ttkstyle):
-    #             # Obtener el color del widget del estilo
-    #             color = Bootstyle.ttkstyle_widget_color(ttkstyle)
-    #             # Obtener el nombre del método para crear el estilo
-    #             method_name = Bootstyle.ttkstyle_method_name(string=ttkstyle)
-    #             # Obtener el constructor de estilos
-    #             builder: StyleEngineTTK = self._get_builder()
-    #             # Encontrar y ejecutar el método apropiado
-    #             method: Callable = builder.name_to_method(method_name)
-    #             method(builder, color)
+
+    def configure(self, style: str, query_opt: AnyStr = None, **kw) -> Union[Dict, str, None]:
+        """Configura o consulta las opciones de estilo para widgets TTK.
+
+        Args:
+            style: Nombre del estilo a configurar o consultar.
+            query_opt: Opción específica a consultar.
+            **kw: Opciones de configuración del estilo.
+
+        Returns:
+            Union[Dict, str, None]: Configuración del estilo si es consulta,
+                                   None si es configuración.
+        """
+        if query_opt:
+            return super().configure(style, query_opt=query_opt, **kw)
+
+        if not self.style_exists_in_theme(style):
+            ttkstyle = style
+
+        if ttkstyle == style:
+            return super().configure(style, query_opt=query_opt, **kw)
+        else:
+            result = super().configure(style, query_opt=query_opt, **kw)
+            self._register_ttkstyle(style)
+            return result
+
+    def _build_configure(self, style: str, **kw) -> None:
+        """Construye la configuración base de un estilo TTK.
+
+        Args:
+            style: Nombre del estilo a configurar.
+            **kw: Opciones de configuración del estilo.
+        """
+        super().configure(style, **kw)
+
+    def style_exists_in_theme(self, ttkstyle: str) -> bool:
+        """Verifica si un estilo existe en el tema actual.
+
+        Args:
+            ttkstyle: Nombre del estilo TTK a verificar.
+
+        Returns:
+            bool: True si el estilo existe en ambos registros.
+        """
+        theme_styles = self._theme_styles.get(self.theme.name)
+        exists_in_theme = ttkstyle in theme_styles
+        exists_in_registry = ttkstyle in self._style_registry
+        return exists_in_theme and exists_in_registry
+
+    def _register_ttkstyle(self, ttkstyle: str) -> None:
+        """Registra un nombre de estilo TTK.
+
+        Args:
+            ttkstyle: Nombre del estilo TTK a registrar.
+        """
+        self._style_registry.add(ttkstyle)
+        theme = self.theme.name
+        self._theme_styles[theme].add(ttkstyle)
+
+
+    def theme_names(self) -> List[str]:
+        """Obtiene la lista de temas disponibles.
+
+        Returns:
+            List[str]: Lista de nombres de temas disponibles.
+        """
+        return list(self._theme_definitions.keys())
+
+    def theme_use(self, themename=None) -> Union[str, None]:
+        """Cambia o consulta el tema actual.
+
+        Args:
+            themename: Nombre del tema a aplicar. Si es None, retorna el tema actual.
+
+        Returns:
+            Union[str, None]: Nombre del tema actual si themename es None,
+                             None en caso contrario.
+
+        Raises:
+            TclError: Si el tema especificado no es válido.
+        """
+        if not themename:
+            return super().theme_use()
+
+        existing_themes = super().theme_names()
+        if themename in existing_themes:
+            self.theme = self._theme_definitions.get(themename)
+            super().theme_use(themename)
+            self._create_ttk_styles_on_theme_change()
+            Publisher.publish_message(Channel.STD)
+            return None
+        elif themename in self._theme_names:
+            self.theme = self._theme_definitions.get(themename)
+            self._theme_objects[themename] = StyleEngineTTK()
+            self._create_ttk_styles_on_theme_change()
+            Publisher.publish_message(Channel.STD)
+            return None
+        else:
+            raise TclError(themename, "no es un tema válido.")
+
+    def register_theme(self, definition: ThemeDefinition) -> None:
+        """Registra una definición de tema para uso del objeto Style.
+
+        Args:
+            definition: Objeto ThemeDefinition con la definición del tema.
+        """
+        theme = definition.name
+        self._theme_names.add(theme)
+        self._theme_definitions[theme] = definition
+        self._theme_styles[theme] = set()
+
+    def _load_themes(self) -> None:
+        """Carga todos los temas definidos en ttkbootstrap.
+
+        Esta función inicializa los temas base del sistema, combinando
+        los temas estándar con cualquier tema personalizado definido
+        por el usuario.
+
+        Args:
+
+        Returns:
+            None
+        """
+        # Si existen temas de usuario, se añaden a los estándar
+        if USER_THEMES:
+            STANDARD_THEMES.update(USER_THEMES)
+
+        # Crear diccionario de configuración de temas
+        theme_settings = {"themes": STANDARD_THEMES}
+
+        # Registrar cada tema en el sistema
+        for name, definition in theme_settings["themes"].items():
+            self.register_theme(
+                ThemeDefinition(
+                    name=name,
+                    themetype=definition["type"],
+                    colors=definition["colors"],
+                )
+            )
+
+    @property
+    def colors(self) -> Union[Colors, List]:
+        """Obtiene los colores utilizados en el tema actual.
+
+        Args:
+
+
+        Returns:
+            Union[Colors, List]: Objeto que contiene los colores del tema actual.
+                                Si no hay tema válido o definición, retorna lista vacía.
+        """
+        theme = self.theme.name
+        if theme in self._theme_names:
+            definition = self._theme_definitions.get(theme)
+            if not definition:
+                return []
+            return definition.colors
+        return []
+
+    @staticmethod
+    def _get_builder():
+        """Obtiene el constructor de estilos para el tema actual.
+
+        Args:
+
+
+        Returns:
+            StyleEngineTTK: El objeto constructor de estilos para el tema actual.
+        """
+        style: Style = Style.get_instance()
+        theme_name = style.theme.name
+        return style._theme_objects[theme_name]
+
+    @staticmethod
+    def _get_builder_tk():
+        """Obtiene el constructor de estilos tk para el tema actual.
+
+        Args:
+
+
+        Returns:
+            StyleBuilderTK: El objeto constructor de estilos tk para el tema actual.
+        """
+        builder = Style._get_builder()
+        return builder.builder_tk
+
+    def _create_ttk_styles_on_theme_change(self) -> None:
+        """Recrea los estilos existentes cuando cambia el tema.
+
+        Args:
+
+
+        Returns:
+            None
+        """
+        for ttkstyle in self._style_registry:
+            if not self.style_exists_in_theme(ttkstyle):
+                # Obtener el color del widget del estilo
+                color = Bootstyle.ttkstyle_widget_color(ttkstyle)
+                # Obtener el nombre del método para crear el estilo
+                method_name = Bootstyle.ttkstyle_method_name(string=ttkstyle)
+                # Obtener el constructor de estilos
+                builder: StyleEngineTTK = self._get_builder()
+                # Encontrar y ejecutar el método apropiado
+                method: Callable = builder.name_to_method(method_name)
+                method(builder, color)

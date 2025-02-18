@@ -2,7 +2,7 @@ import tkinter as tk
 from ui.theming.color import Colors
 from ui.theming.theme_definition import ThemeDefinition
 from ui.theming.constants import LIGHT
-from ui.theming.style import Style
+
 
 class StyleEngineTK:
     """Motor de estilos para widgets Tkinter nativos.
@@ -22,6 +22,8 @@ class StyleEngineTK:
         Obtiene la instancia única de Style y establece las referencias necesarias
         para la gestión de estilos.
         """
+        #Dependencia circular
+        from ui.theming.style import Style
         self.style = Style.get_instance()
         self.master = self.style.master
 
