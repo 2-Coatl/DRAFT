@@ -100,20 +100,30 @@ class TestStyle:
         assert self.style.theme is not None
         assert self.style.theme.name == 'flatly'
 
-
     def test_register_theme(self):
         """Verifica el registro de un nuevo tema."""
         test_theme = ThemeDefinition(
             name="test_theme",
-            themetype=LIGHT,  # Usar la constante definida
+            themetype=LIGHT,
             colors={
+                # Colores actuales
                 'primary': '#007bff',
                 'secondary': '#6c757d',
                 'bg': '#ffffff',
                 'fg': '#212529',
                 'selectbg': '#0063ce',
                 'selectfg': '#ffffff',
-                'border': '#dee2e6'
+                'border': '#dee2e6',
+                # Colores faltantes requeridos por Colors.__init__
+                'success': '#28a745',
+                'info': '#17a2b8',
+                'warning': '#ffc107',
+                'danger': '#dc3545',
+                'light': '#f8f9fa',
+                'dark': '#343a40',
+                'inputfg': '#495057',
+                'inputbg': '#ffffff',
+                'active': '#0056b3'
             }
         )
         self.style.register_theme(test_theme)
@@ -165,7 +175,7 @@ class TestStyle:
         self.style._register_ttkstyle(test_style)
 
         # Cambiar a un nuevo tema
-        new_theme = "default"  # Asumiendo que existe este tema
+        new_theme = "flatly"
         self.style.theme_use(new_theme)
 
         # Verificar que el estilo existe en el nuevo tema

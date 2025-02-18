@@ -26,7 +26,7 @@ class StyleEngineTTK:
         self.style: Style = Style.get_instance()
         self.theme_images = {}
         self.style_engine_tk = StyleEngineTK()
-        self.initialize_theme()
+        self.create_theme()
 
     @property
     def colors(self) -> Colors:
@@ -102,7 +102,7 @@ class StyleEngineTTK:
         func = getattr(StyleEngineTTK, method_name)
         return func
 
-    def initialize_theme(self) -> None:
+    def create_theme(self) -> None:
         """Inicializa el tema TTK con la configuración base.
 
         Crea un nuevo tema TTK y lo establece como el tema activo,
@@ -110,18 +110,18 @@ class StyleEngineTTK:
         """
         self.style.theme_create(self.theme.name, TTK_CLAM)
         ttk.Style.theme_use(self.style, self.theme.name)
-        self.update_theme_settings()
+        self.update_ttk_theme_settings()
 
-    def update_theme_settings(self) -> None:
+    def update_ttk_theme_settings(self) -> None:
         """Actualiza la configuración del tema.
 
         Este método se llama internamente cada vez que el tema cambia
         para actualizar los diversos componentes del tema.
         """
-        self.configure_default_style()
+        self.create_default_style()
         # Aquí se pueden agregar más actualizaciones de tema según sea necesario
 
-    def configure_default_style(self) -> None:
+    def create_default_style(self) -> None:
         """Configura el estilo predeterminado para widgets TTK.
 
         Establece la configuración base del estilo raíz '.' que sirve como

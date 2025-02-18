@@ -231,7 +231,7 @@ class Bootstyle:
         Returns:
             El nombre del estilo TTK o cadena vacía si no hay estilo.
         """
-        #Dependencia circular
+        # Dependencia circular
         from ui.theming.style import Style
         style: Style = Style.get_instance() or Style()
 

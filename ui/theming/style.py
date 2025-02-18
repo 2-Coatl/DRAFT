@@ -41,9 +41,9 @@ class Style(ttk.Style):
             theme: Tema inicial a utilizar. Si no se especifica,
                   se usa el tema por defecto.
         """
-        if self.instance is not None:
+        if Style.instance is not None:  # Verifica si ya existe una instancia creada previamente
             if theme != DEFAULT_THEME:
-                self.instance.theme_use(theme)
+                Style.instance.theme_use(theme)  # Usa la instancia existente
             return
 
         # Inicializar ttk.Style primero
@@ -84,15 +84,29 @@ class Style(ttk.Style):
             Union[Dict, str, None]: Configuración del estilo si es consulta,
                                    None si es configuración.
         """
+        # Paso 1: Manejo rápido de consultas directas
+        # Si existe query_opt, retorna inmediatamente la configuración
         if query_opt:
             return super().configure(style, query_opt=query_opt, **kw)
 
+        # Paso 2: Verificación y actualización del estilo
+        # Comprueba si el estilo existe en el tema actual
         if not self.style_exists_in_theme(style):
+            # Si no existe, actualiza el estilo del widget TTK
+            ttkstyle = Bootstyle.update_ttk_widget_style(None, style)
+        else:
+            # Si existe, mantiene el estilo actual sin modificaciones
             ttkstyle = style
 
+        # Paso 3: Configuración final y registro
         if ttkstyle == style:
+            # Si el estilo no fue modificado, configura el tema existente
             return super().configure(style, query_opt=query_opt, **kw)
         else:
+            # Si el estilo fue modificado:
+            # 1. Aplica la configuración con el nuevo estilo
+            # 2. Registra el estilo modificado
+            # 3. Retorna el resultado
             result = super().configure(style, query_opt=query_opt, **kw)
             self._register_ttkstyle(style)
             return result
@@ -153,21 +167,24 @@ class Style(ttk.Style):
             TclError: Si el tema especificado no es válido.
         """
         if not themename:
+            # 1. Consultar el tema actual
             return super().theme_use()
 
+        # 2. Cambiar a un tema existente
         existing_themes = super().theme_names()
         if themename in existing_themes:
             self.theme = self._theme_definitions.get(themename)
             super().theme_use(themename)
             self._create_ttk_styles_on_theme_change()
             Publisher.publish_message(Channel.STD)
-            return None
+
+        # 3. Configurar un nuevo tema personalizado
         elif themename in self._theme_names:
             self.theme = self._theme_definitions.get(themename)
             self._theme_objects[themename] = StyleEngineTTK()
             self._create_ttk_styles_on_theme_change()
             Publisher.publish_message(Channel.STD)
-            return None
+
         else:
             raise TclError(themename, "no es un tema válido.")
 
@@ -222,6 +239,10 @@ class Style(ttk.Style):
             Union[Colors, List]: Objeto que contiene los colores del tema actual.
                                 Si no hay tema válido o definición, retorna lista vacía.
         """
+        # caso de tema nulo
+        if not hasattr(self, 'theme') or self.theme is None:
+            return []
+
         theme = self.theme.name
         if theme in self._theme_names:
             definition = self._theme_definitions.get(theme)
@@ -255,7 +276,7 @@ class Style(ttk.Style):
             StyleBuilderTK: El objeto constructor de estilos tk para el tema actual.
         """
         builder = Style._get_builder()
-        return builder.builder_tk
+        return builder.style_engine_tk
 
     def _create_ttk_styles_on_theme_change(self) -> None:
         """Recrea los estilos existentes cuando cambia el tema.
