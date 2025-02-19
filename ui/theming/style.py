@@ -58,6 +58,7 @@ class Style(ttk.Style):
 
         # Cargar temas ANTES de intentar usar uno
         self._load_themes()
+        print(f"Después de _load_themes: {self._theme_objects}")
 
         # Establecer instancia y tema
         Style.instance = self
@@ -166,13 +167,22 @@ class Style(ttk.Style):
         Raises:
             TclError: Si el tema especificado no es válido.
         """
+        print("\n--- Dentro de theme_use ---")
+        print(f"Tema solicitado: {themename}")
+        print(f"Temas existentes: {super().theme_names()}")
+        print(f"Temas registrados: {self._theme_names}")
+        print(f"Theme objects actuales: {self._theme_objects}")
+        print(f"Theme definitions: {self._theme_definitions}")
+
         if not themename:
             # 1. Consultar el tema actual
+            print(f"Consultando tema actual: {super().theme_use()}")
             return super().theme_use()
 
         # 2. Cambiar a un tema existente
         existing_themes = super().theme_names()
         if themename in existing_themes:
+            print(f"Cambiando a tema existente: {themename}")
             self.theme = self._theme_definitions.get(themename)
             super().theme_use(themename)
             self._create_ttk_styles_on_theme_change()
@@ -180,12 +190,14 @@ class Style(ttk.Style):
 
         # 3. Configurar un nuevo tema personalizado
         elif themename in self._theme_names:
+            print(f"Configurando nuevo tema personalizado: {themename}")
             self.theme = self._theme_definitions.get(themename)
             self._theme_objects[themename] = StyleEngineTTK()
             self._create_ttk_styles_on_theme_change()
             Publisher.publish_message(Channel.STD)
 
         else:
+            print(f"Tema inválido: {themename}")
             raise TclError(themename, "no es un tema válido.")
 
     def register_theme(self, definition: ThemeDefinition) -> None:
@@ -200,7 +212,7 @@ class Style(ttk.Style):
         self._theme_styles[theme] = set()
 
     def _load_themes(self) -> None:
-        """Carga todos los temas definidos en ttkbootstrap.
+        """Carga todos los temas definidos.
 
         Esta función inicializa los temas base del sistema, combinando
         los temas estándar con cualquier tema personalizado definido
@@ -212,9 +224,11 @@ class Style(ttk.Style):
             None
         """
         # Si existen temas de usuario, se añaden a los estándar
+        print("\n--- Cargando temas ---")
         if USER_THEMES:
             STANDARD_THEMES.update(USER_THEMES)
 
+        print(f"Temas disponibles: {STANDARD_THEMES.keys()}")
         # Crear diccionario de configuración de temas
         theme_settings = {"themes": STANDARD_THEMES}
 

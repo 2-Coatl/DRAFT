@@ -9,11 +9,22 @@ class TestStyle:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Prepara el ambiente para las pruebas."""
+        print("\n--- Inicio de setup ---")
+
+        # Limpiar el estado antes de cada prueba
         if hasattr(Style, 'instance'):
             Style.instance = None
-        # Inicializar con el tema por defecto definido en constantes
-        self.style = Style(theme=DEFAULT_THEME)  # Será 'cosmo'
+            print("Style.instance limpiado")
+
+        # Inicializar con el tema por defecto
+        self.style = Style(theme=DEFAULT_THEME)
+        print(f"Theme objects después de init: {self.style._theme_objects}")
+
         yield
+
+        print("\n--- Fin de test ---")
+        print(f"Theme objects al final: {self.style._theme_objects}")
+        # Limpiar después de cada prueba
         if hasattr(Style, 'instance'):
             Style.instance = None
 
