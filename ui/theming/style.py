@@ -51,15 +51,19 @@ class Style(ttk.Style):
 
         # Inicialización de colecciones
         self._theme_objects: Dict = {} # Constructores de temas
-        self._theme_definitions: Dict[str, ThemeDefinition] = {}   # Definiciones de temas
+        self._theme_definitions = {}   # Definiciones de temas
         self._theme_names: Set[str] = set()  # Registro de estilos
         self._theme_styles = {}   # Estilos por tema
         self._style_registry = set()   # Nombres de temas disponibles
 
         # Cargar temas ANTES de intentar usar uno
         self._load_themes()
-        print(f"Después de _load_themes: {self._theme_objects}")
-
+        print(f"Después de _load_themes")
+        print(f"_theme_objects: {self._theme_objects}")
+        print(f"_theme_definitions: {self._theme_definitions}")
+        print(f"_theme_names: {self._theme_names}")
+        print(f"_theme_styles: {self._theme_styles}")
+        print(f"_style_registry: {self._style_registry}")
         # Establecer instancia y tema
         Style.instance = self
         self.theme_use(theme)
@@ -87,6 +91,7 @@ class Style(ttk.Style):
         """
         # Paso 1: Manejo rápido de consultas directas
         # Si existe query_opt, retorna inmediatamente la configuración
+        print("\n--- Dentro de configure ---")
         if query_opt:
             return super().configure(style, query_opt=query_opt, **kw)
 
@@ -130,9 +135,14 @@ class Style(ttk.Style):
         Returns:
             bool: True si el estilo existe en ambos registros.
         """
+        print("\n--- Dentro de style_exists_in_theme ---")
+        print(f"Iniciando: {ttkstyle}")
         theme_styles = self._theme_styles.get(self.theme.name)
+        print(f"Theme_styles: {theme_styles}")
         exists_in_theme = ttkstyle in theme_styles
+        print(f"exists_in_theme: {exists_in_theme}")
         exists_in_registry = ttkstyle in self._style_registry
+        print(f"exists_in_registry: {exists_in_registry}")
         return exists_in_theme and exists_in_registry
 
     def _register_ttkstyle(self, ttkstyle: str) -> None:
@@ -192,6 +202,7 @@ class Style(ttk.Style):
         elif themename in self._theme_names:
             print(f"Configurando nuevo tema personalizado: {themename}")
             self.theme = self._theme_definitions.get(themename)
+            print(f"self.theme: {self.theme}")
             self._theme_objects[themename] = StyleEngineTTK()
             self._create_ttk_styles_on_theme_change()
             Publisher.publish_message(Channel.STD)
@@ -206,9 +217,12 @@ class Style(ttk.Style):
         Args:
             definition: Objeto ThemeDefinition con la definición del tema.
         """
+        print(f"Dentro de register_theme")
         theme = definition.name
         self._theme_names.add(theme)
+        print(f"Tema actualizado: {theme}")
         self._theme_definitions[theme] = definition
+        print(f"Teme definition : {definition}")
         self._theme_styles[theme] = set()
 
     def _load_themes(self) -> None:
@@ -301,7 +315,11 @@ class Style(ttk.Style):
         Returns:
             None
         """
+        print(f"\n--- Cargando create_ttk_styles_on_theme_change.")
+        print(f"Temas disponibles: {self._theme_names}")
+        print(f"self._style_registry: {self._style_registry}")
         for ttkstyle in self._style_registry:
+            print(f"Dentro del for : {ttkstyle}")
             if not self.style_exists_in_theme(ttkstyle):
                 # Obtener el color del widget del estilo
                 color = Bootstyle.ttkstyle_widget_color(ttkstyle)
@@ -309,6 +327,8 @@ class Style(ttk.Style):
                 method_name = Bootstyle.ttkstyle_method_name(string=ttkstyle)
                 # Obtener el constructor de estilos
                 builder: StyleEngineTTK = self._get_builder()
+                print(f"builder: {builder}")
                 # Encontrar y ejecutar el método apropiado
                 method: Callable = builder.name_to_method(method_name)
+                print(f"method: {method}")
                 method(builder, color)
