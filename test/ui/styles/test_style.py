@@ -1,4 +1,5 @@
 import pytest
+import tkinter as tk
 from tkinter import TclError
 from ui.theming.constants import DEFAULT_THEME, LIGHT
 from ui.theming.style import Style
@@ -11,22 +12,28 @@ class TestStyle:
         """Prepara el ambiente para las pruebas."""
         print("\n--- Inicio de setup ---")
 
-        # Limpiar el estado antes de cada prueba
+        # 1. Crear el contexto de Tkinter primero
+        self.root = tk.Tk()
+
+        # 2. Limpiar el estado antes de cada prueba
         if hasattr(Style, 'instance'):
             Style.instance = None
             print("Style.instance limpiado")
 
-        # Inicializar con el tema por defecto
+        # 3. Inicializar con el tema por defecto (ahora con contexto Tk válido)
         self.style = Style(theme=DEFAULT_THEME)
-        print(f"Theme objects después de init: {self.style._theme_objects}")
 
         yield
 
         print("\n--- Fin de test ---")
         print(f"Theme objects al final: {self.style._theme_objects}")
-        # Limpiar después de cada prueba
+
+        # 4. Limpieza
         if hasattr(Style, 'instance'):
             Style.instance = None
+
+        # 5. Destruir la ventana root
+        self.root.destroy()
 
     def test_singleton_pattern(self):
         """Verifica el patrón Singleton de la clase Style."""

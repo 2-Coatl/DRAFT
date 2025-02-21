@@ -1,9 +1,10 @@
 import re
-from typing import Optional, Any
+from typing import Optional, Any, Callable, Union, Dict
 from tkinter import ttk
 
 from ui.theming.notifications.channel import Channel
 from ui.theming.notifications.publisher import Publisher
+from ui.theming.style_engines.style_engine_tk import StyleEngineTK
 from ui.theming.utils.keywords import Keywords
 from ui.theming.style_engines.style_engine_ttk import StyleEngineTTK
 
@@ -226,7 +227,7 @@ class Bootstyle:
     def ttkstyle_method_name(widget: Optional[ttk.Widget] = None, string: str = "") -> str:
         """Construye y retorna el nombre del método que crea el estilo TTK.
 
-        Parsea una cadena para construir el nombre del método en `StyleBuilderTTK`
+        Parsea una cadena para construir el nombre del método en `StyleEngineTTK`
         que crea el estilo TTK para el widget objetivo.
 
         Args:
@@ -274,6 +275,7 @@ class Bootstyle:
         """
         # Paso 1: Inicialización del estilo
         # Previene dependencias circulares e inicializa el gestor de estilos
+        print("\n--- Dentro de update_ttk_widget_style ---")
         from ui.theming.style import Style
         style: Style = Style.get_instance() or Style()
 
@@ -283,7 +285,7 @@ class Bootstyle:
             if widget is None:
                 return ""
             style_string = widget.cget("style")
-
+        print(f"style_string {style_string}")
         # Paso 3: Validaciones iniciales del estilo
         # Verifica si hay un estilo válido para procesar
         if not style_string:
@@ -295,6 +297,7 @@ class Bootstyle:
         # Paso 4: Construcción y verificación del estilo
         # Genera el nombre del estilo y lo construye si no existe
         ttkstyle = Bootstyle.ttkstyle_name(widget, style_string, **kwargs)
+        print(f"4 Generando el nombre del estilo {ttkstyle}")
         if not style.style_exists_in_theme(ttkstyle):
             # 4.1: Obtención de propiedades para la construcción
             widget_color = Bootstyle.ttkstyle_widget_color(ttkstyle)
@@ -302,6 +305,7 @@ class Bootstyle:
 
             # 4.2: Construcción del estilo usando el builder
             builder: StyleEngineTTK = style._get_builder()
+            print(f"4.2 Construcción del estilo usando el builder (StyleEngineTTK) {builder}")
             builder_method = builder.name_to_method(method_name)
             builder_method(builder, widget_color)
 
@@ -317,7 +321,7 @@ class Bootstyle:
                 # 5.2: Suscripción a cambios de tema
                 Publisher.subscribe(
                     name=winfo_pathname,
-                    func=lambda w=widget: builder.update_combobox_popdown_style(w),
+                    callback=lambda w=widget: builder.update_combobox_popdown_style(w),
                     channel=Channel.STD,
                 )
                 # 5.3: Actualización inicial del estilo del popdown
@@ -327,3 +331,365 @@ class Bootstyle:
 
         # Paso 6: Retorno del estilo generado
         return ttkstyle
+
+
+    @staticmethod
+    def tkupdate_method_name(widget) -> str:
+        """Busca el método de actualización de estilo tkinter desde la clase del widget.
+
+        Parámetros:
+            widget (Widget):
+                El objeto widget del cual se obtendrá el método de actualización.
+
+        Retorna:
+            str:
+                El nombre del método utilizado para actualizar el objeto widget.
+                Ejemplos:
+                - Para un Button: "update_Button_style"
+                - Para un Label: "update_Label_style"
+                - Si no hay widget_class: "update_style"
+        """
+        # Paso 1: Obtiene la clase del widget usando el método estático ttkstyle_widget_class
+        # Esto extrae el nombre de la clase (ej: "Button", "Label", "Entry")
+        widget_class = Bootstyle.ttkstyle_widget_class(widget)
+
+        # Paso 2: Si widget_class tiene un valor, le agrega un guion bajo como prefijo
+        # Ejemplo: "Button" → "_Button" | "Label" → "_Label"
+        if widget_class:
+            widget_class = f"_{widget_class}"
+
+        # Paso 3: Construye el nombre final del método usando el patrón:
+        # "update" + widget_class (ej: "_Button") + "_style"
+        method_name = f"update{widget_class}_style"
+
+        return method_name
+
+    @staticmethod
+    def override_ttk_widget_constructor(func: Callable[..., None]) -> Callable[..., None]:
+        """Sobrescribe el constructor de widgets TTK para incorporar gestión de estilos.
+
+        Este decorador modifica el constructor original de widgets TTK para permitir:
+        1. Aplicación de estilos TTK existentes
+        2. Creación y aplicación de nuevos estilos personalizados
+        3. Manejo especial para widgets específicos (ej: ComboBox)
+        4. Aseguramiento de estilo por defecto
+
+        Args:
+            func (Callable): Constructor original del widget TTK (__init__)
+
+        Returns:
+            Callable: Constructor modificado con gestión de estilos
+
+        Notes:
+            - La configuración de estilo se realiza post-instanciación
+            - Prioriza 'style' sobre 'bootstyle'
+            - Requiere las clases Style y Bootstyle para gestión de estilos
+        """
+
+        def __init__(self: Any, *args: Any, **kwargs: Any) -> None:
+            # 1. Extracción de parámetros de estilo
+            # Extrae y elimina los parámetros de estilo para no interferir
+            # con el constructor original
+            bootstyle: str = kwargs.pop("bootstyle") if "bootstyle" in kwargs else ""
+            style: str = kwargs.pop("style") or "" if "style" in kwargs else ""
+
+            # 2. Instanciación del widget base
+            # Llama al constructor original con los argumentos limpios
+            func(self, *args, **kwargs)
+
+            # 3. Aplicación de estilos
+            # IMPORTANTE: La configuración de estilo debe ser post-instanciación para
+            # poder utilizar winfo_class en get_ttkstyle_name
+            from ui.theming.style import Style
+            if style:
+                # 3.1 Verifica si el estilo existe en el tema actual
+                if Style.get_instance().style_exists_in_theme(style):
+                    # Aplica el estilo existente directamente
+                    self.configure(style=style)
+                else:
+                    # Crea y aplica un nuevo estilo basado en el existente
+                    ttkstyle = Bootstyle.update_ttk_widget_style(
+                        self, style, **kwargs
+                    )
+                    self.configure(style=ttkstyle)
+            elif bootstyle:
+                # 3.2 Crea y aplica un nuevo estilo personalizado
+                ttkstyle = Bootstyle.update_ttk_widget_style(
+                    self, bootstyle, **kwargs
+                )
+                self.configure(style=ttkstyle)
+            else:
+                # 3.3 Aplica el estilo por defecto si no se especifica ninguno
+                ttkstyle = Bootstyle.update_ttk_widget_style(
+                    self, "default", **kwargs
+                )
+                self.configure(style=ttkstyle)
+
+        return __init__
+
+    @staticmethod
+    def override_ttk_widget_configure(func: Callable) -> Callable:
+        """Sobrescribe el método configure de un widget ttk para soportar bootstyle.
+
+        Este decorador modifica el comportamiento del método configure original de los
+        widgets ttk, permitiendo el uso de estilos personalizados 'bootstyle' mientras
+        mantiene la compatibilidad con la API original de ttk.
+
+        Args:
+            func (Callable): Método configure original del widget ttk que será modificado.
+                Debe seguir la firma: configure(self, cnf=None, **kwargs)
+
+        Returns:
+            Callable: Nueva función configure que integra el soporte para bootstyle.
+
+        Notes
+        -----
+        El decorador maneja tres casos principales:
+        1. Consulta de estilo: widget.configure("bootstyle")
+        2. Consulta general: widget.configure(cnf)
+        3. Configuración: widget.configure(bootstyle="primary", **kwargs)
+
+        La transformación de estilos se delega a Bootstyle.update_ttk_widget_style()
+
+        """
+
+        def configure(
+                self,
+                cnf: Optional[Union[str, Dict[str, Any]]] = None,
+                **kwargs: Any
+        ) -> Optional[Any]:
+            """Método configure modificado que soporta bootstyle.
+
+            Args:
+                self: Instancia del widget ttk.
+                cnf (Optional[Union[str, Dict[str, Any]]], optional):
+                    String para consultas o diccionario para configuración.
+                **kwargs: Argumentos adicionales de configuración.
+
+            Returns:
+                Optional[Any]:
+                    - String del estilo si es consulta de estilo
+                    - Resultado del configure original si es otra consulta
+                    - None si es configuración
+            """
+            # 1. Manejo de consultas de configuración
+            if cnf in ("bootstyle", "style"):
+                # Retorna el estilo TTK actual del widget
+                return self.cget("style")
+
+            if cnf is not None:
+                # Delega otras consultas al método original
+                return func(self, cnf)
+
+            # 2. Procesamiento del estilo bootstyle
+            bootstyle = kwargs.pop("bootstyle") if "bootstyle" in kwargs else ""
+
+            # 3. Actualización del estilo TTK
+            if "style" in kwargs:
+                # Si se proporciona style, actualiza usando ese valor
+                style = kwargs.get("style")
+                ttkstyle = Bootstyle.update_ttk_widget_style(
+                    self, style, **kwargs
+                )
+            elif bootstyle:
+                # Si se proporciona bootstyle, genera y aplica el estilo TTK
+                ttkstyle = Bootstyle.update_ttk_widget_style(
+                    self, bootstyle, **kwargs
+                )
+                # Actualiza kwargs con el nuevo estilo TTK
+                kwargs.update(style=ttkstyle)
+
+            # 4. Aplica la configuración final usando el método original
+            func(self, cnf, **kwargs)
+
+        return configure
+
+
+    @staticmethod
+    def update_tk_widget_style(widget) -> None:
+        """Actualiza el estilo de un widget Tkinter nativo aplicando el método de actualización correspondiente.
+
+        Este método es parte del sistema de gestión de estilos y se encarga de mantener la consistencia visual
+        entre widgets Tkinter nativos y ttk. Funciona mediante la búsqueda dinámica y ejecución del método
+        de actualización específico para cada tipo de widget en el StyleEngineTK.
+
+        Flujo de ejecución:
+        1. Obtiene la instancia singleton de Style
+        2. Determina el nombre del método de actualización basado en la clase del widget
+        3. Obtiene el motor de estilos TK (StyleEngineTK)
+        4. Localiza y ejecuta el método específico para el tipo de widget
+
+        Parameters
+        ----------
+        widget
+            El widget nativo de Tkinter a actualizar. Debe ser una instancia válida
+            que soporte el método winfo_name().
+
+        Returns
+        -------
+        None
+            El método modifica el widget in-place sin retornar valores.
+
+        Notes
+        -----
+        - El método maneja silenciosamente las excepciones para permitir la inicialización
+          diferida durante el arranque de la aplicación.
+        - Si no se encuentra un método específico para el tipo de widget, se usa un
+          método genérico de actualización.
+        - El método es seguro de usar en cualquier momento del ciclo de vida de la aplicación.
+
+        See Also
+        --------
+        StyleEngineTK : Motor de estilos para widgets Tkinter nativos
+        Bootstyle.tkupdate_method_name : Generación de nombres de métodos de actualización
+        """
+        from ui.theming.style import Style
+        try:
+            # Obtener la instancia singleton del gestor de estilos
+            # Esta instancia mantiene el estado global de los estilos
+            style = Style.get_instance()
+
+            # Generar el nombre del método de actualización específico
+            # Ejemplos: "update_Button_style", "update_Label_style"
+            method_name = Bootstyle.tkupdate_method_name(widget)
+
+            # Obtener el motor de estilos a través de la cadena:
+            # Style -> Builder -> style_engine_tk
+            builder = style._get_builder_tk()
+
+            # Buscar dinámicamente el método específico en StyleEngineTK
+            # Si no existe, lanzará AttributeError que será capturado
+            builder_method = getattr(StyleEngineTK, method_name)
+
+            # Ejecutar el método de actualización con el motor y widget
+            # La actualización ocurre in-place sobre el widget
+            builder_method(builder, widget)
+
+        except:
+            # Manejo silencioso de excepciones para permitir:
+            # 1. Inicialización diferida de Tk
+            # 2. Widgets no soportados
+            # 3. Errores durante la actualización
+            # Este comportamiento es necesario para la flexibilidad del sistema
+            pass
+
+    @staticmethod
+    def override_tk_widget_constructor(func: Callable[..., None]) -> Callable[..., None]:
+        """Decorador que modifica constructores de widgets Tkinter integrándolos en el sistema Bootstyle.
+
+        Este decorador envuelve el constructor original (__init__) de widgets Tkinter para
+        gestionar automáticamente los estilos a través del sistema Publisher/Subscriber,
+        permitiendo control mediante el parámetro 'autostyle'.
+
+        Args:
+            func (Callable[..., None]): Constructor original del widget (__init__).
+                Debe ser un método de inicialización de un widget Tkinter.
+
+        Returns:
+            Callable[..., None]: Constructor modificado que integra el widget en el
+            sistema de estilos Bootstyle.
+
+        Proceso:
+            1. Extrae parámetro autostyle de kwargs (default: True)
+            2. Ejecuta constructor original sin modificar su comportamiento
+            3. Si autostyle es True:
+               - Registra en Publisher con ID único str(self)
+               - Configura callback para Bootstyle.update_tk_widget_style
+               - Aplica estilo inicial mediante StyleEngineTK y Style
+
+        Notas:
+            - Usa str(self) como identificador único para Publisher
+            - Utiliza canal STD para notificaciones
+            - Maneja errores silenciosamente
+            - Aplica estilo inicial usando StyleEngineTK a través del builder de Style
+        """
+        def __init__wrapper(self, *args: Any, **kwargs: Any) -> None:
+            # 1. Extracción y gestión del parámetro autostyle
+            autostyle: bool = kwargs.pop("autostyle", True)
+
+            # 2. Construcción del widget base mediante constructor original
+            # Entrada: self, args, kwargs modificado
+            # Salida: widget inicializado sin estilos
+            func(self, *args, **kwargs)
+
+            # 3. Aplicación condicional del sistema de estilos
+            if autostyle:
+                # 3.1  Registro del widget en sistema Publisher/Subscriber
+                # Entrada: widget (self)
+                # Salida: widget registrado para actualizaciones
+                Publisher.subscribe(
+                    name=str(self),   # 3.1.1. ID único
+                    callback=lambda w=self: Bootstyle.update_tk_widget_style(w),   # 3.1.2. Callback
+                    channel=Channel.STD,  # 3.1.3. Canal
+                )
+
+                # 3.2. Estilo inicial
+                # Entrada: widget registrado
+                # Salida: widget con estilo aplicado
+                Bootstyle.update_tk_widget_style(self)
+
+        # 4. Retorno del constructor modificado
+        return __init__wrapper
+
+    @staticmethod
+    def setup_ttktheming_api() -> None:
+        # 1. Definición y Setup Inicial
+        # Importación de las tuplas de widgets a modificar
+        from ui.theming.widgets.constants import TTK_WIDGETS  # 19 widgets ttk
+        from ui.theming.widgets.constants import TK_WIDGETS  # 17 widgets tk
+
+        # 2. Procesamiento de widgets TTK - añade soporte completo de estilos
+        for widget in TTK_WIDGETS:
+            try:
+                # Sobrescribe el constructor para soportar parámetros de estilo
+                # Permite: button = ttk.Button(root, bootstyle='valor')
+                _init = Bootstyle.override_ttk_widget_constructor(widget.__init__)
+                widget.__init__ = _init
+
+                # 3. Configuración de Métodos
+                # Sobrescribe configure/config para manejar estilos dinámicamente
+                # Permite: button.configure(bootstyle='valor')
+                _configure = Bootstyle.override_ttk_widget_configure(widget.configure)
+                widget.configure = _configure
+                widget.config = widget.configure
+
+                # 4. Captura de Métodos Originales
+                # Almacena getters y setters originales como fallback
+                _orig_getitem = widget.__getitem__
+                _orig_setitem = widget.__setitem__
+
+                # 5. Define nuevo método para establecer estilos y otros atributos
+                # Permite: widget['bootstyle'] = 'valor'
+                def __setitem(self, key, val):
+                    #  Manejo especial para propiedades de estilo
+                    if key in ("bootstyle", "style"):
+                        return _configure(self, **{key: val})
+                    return _orig_setitem(key, val)
+
+                # Define nuevo método para obtener estilos y otros atributos
+                # Permite: valor = widget['bootstyle']
+                def __getitem(self, key):
+                    # Manejo especial para consultas de estilo
+                    if key in ("bootstyle", "style"):
+                        return _configure(self, cnf=key)
+                    return _orig_getitem(key)
+
+                # 7. Aplica nuevos métodos excepto para OptionMenu
+                # OptionMenu mantiene su implementación original
+                if widget.__name__ != "OptionMenu":
+                    widget.__setitem__ = __setitem
+                    widget.__getitem__ = __getitem
+
+            # 8. Manejo de Errores
+            # Compatibilidad con Python 3.6
+            except:
+                # Salta widgets no disponibles en la versión actual de Python
+                continue
+
+        # 9-10. Procesamiento de widgets TK - solo modifica constructor
+        # Modificación más simple, solo afecta al constructor
+        for widget in TK_WIDGETS:
+            # Añade soporte para autostyle y sistema de actualización automática
+            # Permite: button = tk.Button(root, autostyle=True)
+            _init = Bootstyle.override_tk_widget_constructor(widget.__init__)
+            widget.__init__ = _init
