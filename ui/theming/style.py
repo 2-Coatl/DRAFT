@@ -64,6 +64,7 @@ class Style(ttk.Style):
         print(f"_theme_names: {self._theme_names}")
         print(f"_theme_styles: {self._theme_styles}")
         print(f"_style_registry: {self._style_registry}")
+
         # Establecer instancia y tema
         Style.instance = self
         self.theme_use(theme)
@@ -289,8 +290,11 @@ class Style(ttk.Style):
         Returns:
             StyleEngineTTK: El objeto constructor de estilos para el tema actual.
         """
+        print("\n--- Cargando _get_builder ---")
         style: Style = Style.get_instance()
+        print(f"style: {style}")
         theme_name = style.theme.name
+        print(f"theme_name: {theme_name}")
         return style._theme_objects[theme_name]
 
     @staticmethod
