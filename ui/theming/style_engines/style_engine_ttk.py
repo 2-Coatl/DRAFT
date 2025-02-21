@@ -2,11 +2,11 @@ import tkinter as tk
 from tkinter import ttk
 from math import ceil
 from typing import Union, List, Tuple, Callable
-from ui.styles.color import Colors
-from ui.styles.style import Style
-from ui.styles.style_engines.style_engine_tk import StyleEngineTK
-from ui.styles.theme_definition import ThemeDefinition
-from ui.styles.constants import LIGHT, TTK_CLAM, DEFAULT, TTK_DEFAULT
+from ui.theming.color import Colors
+
+from ui.theming.style_engines.style_engine_tk import StyleEngineTK
+from ui.theming.theme_definition import ThemeDefinition
+from ui.theming.constants import LIGHT, TTK_CLAM, DEFAULT, TTK_DEFAULT, PRIMARY
 
 
 class StyleEngineTTK:
@@ -20,10 +20,12 @@ class StyleEngineTTK:
 
     def __init__(self):
         """Inicializa el motor de estilos TTK."""
+        #Dependencia circular
+        from ui.theming.style import Style
         self.style: Style = Style.get_instance()
         self.theme_images = {}
         self.style_engine_tk = StyleEngineTK()
-        self.initialize_theme()
+        self.create_theme()
 
     @property
     def colors(self) -> Colors:
@@ -99,7 +101,7 @@ class StyleEngineTTK:
         func = getattr(StyleEngineTTK, method_name)
         return func
 
-    def initialize_theme(self) -> None:
+    def create_theme(self) -> None:
         """Inicializa el tema TTK con la configuración base.
 
         Crea un nuevo tema TTK y lo establece como el tema activo,
@@ -107,18 +109,18 @@ class StyleEngineTTK:
         """
         self.style.theme_create(self.theme.name, TTK_CLAM)
         ttk.Style.theme_use(self.style, self.theme.name)
-        self.update_theme_settings()
+        self.update_ttk_theme_settings()
 
-    def update_theme_settings(self) -> None:
+    def update_ttk_theme_settings(self) -> None:
         """Actualiza la configuración del tema.
 
         Este método se llama internamente cada vez que el tema cambia
         para actualizar los diversos componentes del tema.
         """
-        self.configure_default_style()
+        self.create_default_style()
         # Aquí se pueden agregar más actualizaciones de tema según sea necesario
 
-    def configure_default_style(self) -> None:
+    def create_default_style(self) -> None:
         """Configura el estilo predeterminado para widgets TTK.
 
         Establece la configuración base del estilo raíz '.' que sirve como
@@ -142,6 +144,95 @@ class StyleEngineTTK:
         # Estilo general aplicado a la vista de tabla
         self.create_link_button_style()
         self.style.configure("symbol.Link.TButton", font="-size 16")
+
+    def create_button_style(self, colorname=DEFAULT) -> None:
+        """Crea un estilo sólido para el widget ttk.Button.
+
+        Crea y configura un estilo personalizado para botones ttk, incluyendo
+        estados normal, deshabilitado, presionado y hover.
+
+        Args:
+            colorname (str): La etiqueta de color usada para estilizar el widget.
+
+        Returns:
+            None: Este método no retorna nada, solo crea y registra el estilo.
+        """
+        # Paso 1: Definición del estilo base
+        # Establece el nombre base del estilo para el botón
+        STYLE = "TButton"
+
+        # Paso 2: Determinación de colores base
+        # Define el nombre del estilo y los colores principales según el color proporcionado
+        if any([colorname == DEFAULT, colorname == ""]):
+            # Si es color por defecto, usa el estilo primario
+            ttkstyle = STYLE
+            foreground = self.colors.get_foreground(PRIMARY)
+            background = self.colors.primary
+        else:
+            # Si es color personalizado, construye el nombre del estilo y obtiene los colores
+            ttkstyle = f"{colorname}.{STYLE}"
+            foreground = self.colors.get_foreground(colorname)
+            background = self.colors.get(colorname)
+
+        # Paso 3: Cálculo de colores derivados
+        # Calcula los colores para diferentes estados del botón
+        bordercolor = background
+        # Color de fondo para estado deshabilitado (10% de opacidad)
+        disabled_bg = Colors.make_transparent(0.10, self.colors.fg, self.colors.bg)
+        # Color de texto para estado deshabilitado (30% de opacidad)
+        disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
+        # Color para estado presionado (80% de opacidad)
+        pressed = Colors.make_transparent(0.80, background, self.colors.bg)
+        # Color para estado hover (90% de opacidad)
+        hover = Colors.make_transparent(0.90, background, self.colors.bg)
+
+        # Paso 4: Configuración del estilo base
+        # Establece las propiedades visuales básicas del botón
+        self.style._build_configure(
+            ttkstyle,
+            foreground=foreground,
+            background=background,
+            bordercolor=bordercolor,
+            darkcolor=background,
+            lightcolor=background,
+            relief=tk.RAISED,
+            focusthickness=0,
+            focuscolor=foreground,
+            padding=(10, 5),
+            anchor=tk.CENTER,
+        )
+
+        # Paso 5: Mapeo de estados
+        # Define cómo cambian los colores según el estado del botón
+        self.style.map(
+            ttkstyle,
+            # Configura el color del texto en estado deshabilitado
+            foreground=[("disabled", disabled_fg)],
+            # Configura los colores de fondo para diferentes estados
+            background=[
+                ("disabled", disabled_bg),
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            # Configura el color del borde para estado deshabilitado
+            bordercolor=[("disabled", disabled_bg)],
+            # Configura el color oscuro para diferentes estados
+            darkcolor=[
+                ("disabled", disabled_bg),
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            # Configura el color claro para diferentes estados
+            lightcolor=[
+                ("disabled", disabled_bg),
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+        )
+
+        # Paso 6: Registro del estilo
+        # Registra el estilo creado en el sistema de estilos
+        self.style._register_ttkstyle(ttkstyle)
 
     def create_link_button_style(self, colorname=DEFAULT) -> None:
         """Crea un estilo de botón tipo enlace para el widget ttk.Button.
@@ -349,3 +440,58 @@ class StyleEngineTTK:
 
         # Registra el estilo TTK creado
         self.style._register_ttkstyle(ttkstyle)
+
+    def update_combobox_popdown_style(self, widget) -> None:
+        """Actualiza los elementos legacy del ttk.Combobox.
+
+        Este método se llama cada vez que se cambia el tema para asegurar que
+        los componentes tkinter heredados incrustados en este widget ttk estén
+        estilizados apropiadamente según el tema actual.
+
+        El ttk.Combobox contiene varios elementos que no están estilizados usando
+        el motor de temas ttk. Esto incluye el **popdownwindow** y el **scrollbar**.
+        Ambos widgets se configuran manualmente usando llamadas a tcl/tk.
+
+        Args:
+            widget (ttk.Combobox): El elemento combobox a actualizar.
+
+        Returns:
+            None: Este método no retorna nada, solo actualiza los estilos directamente.
+        """
+
+        # Paso 1: Determinación del color del borde
+        # Selecciona el color adecuado según el tema actual (claro u oscuro)
+        if self.is_light_theme:
+            bordercolor = self.colors.border
+        else:
+            bordercolor = self.colors.selectbg
+
+        # Paso 2: Configuración de ajustes de estilo Tk
+        # Crea una lista con todas las propiedades de estilo necesarias
+        tk_settings = []
+        # Configura el ancho del borde
+        tk_settings.extend(["-borderwidth", 2])
+        # Configura el grosor del resaltado
+        tk_settings.extend(["-highlightthickness", 1])
+        # Establece el color del resaltado
+        tk_settings.extend(["-highlightcolor", bordercolor])
+        # Configura el color de fondo
+        tk_settings.extend(["-background", self.colors.inputbg])
+        # Configura el color del texto
+        tk_settings.extend(["-foreground", self.colors.inputfg])
+        # Configura el color de fondo para la selección
+        tk_settings.extend(["-selectbackground", self.colors.selectbg])
+        # Configura el color del texto para la selección
+        tk_settings.extend(["-selectforeground", self.colors.selectfg])
+
+        # Paso 3: Configuración del estilo de la ventana popdown
+        # Obtiene la referencia a la ventana popdown del combobox
+        popdown = widget.tk.eval(f"ttk::combobox::PopdownWindow {widget}")
+        # Aplica las configuraciones de estilo al listbox del popdown
+        widget.tk.call(f"{popdown}.f.l", "configure", *tk_settings)
+
+        # Paso 4: Configuración del estilo de la barra de desplazamiento
+        # Define el estilo vertical para la barra de desplazamiento
+        sb_style = "TCombobox.Vertical.TScrollbar"
+        # Aplica el estilo a la barra de desplazamiento del popdown
+        widget.tk.call(f"{popdown}.f.sb", "configure", "-style", sb_style)

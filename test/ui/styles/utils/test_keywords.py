@@ -1,6 +1,4 @@
 import pytest
-import tkinter as tk
-from tkinter import ttk
 from ui.styles.utils.keywords import Keywords
 
 
@@ -8,40 +6,61 @@ class TestKeywords:
     """Pruebas para la clase de utilidad Keywords."""
 
     @pytest.fixture
-    def root(self):
-        """Fixture que proporciona una ventana raíz."""
-        root = tk.Tk()
-        yield root
-        root.destroy()
+    def keywords(self):
+        """Fixture que proporciona una instancia de Keywords para las pruebas."""
+        return Keywords()
 
-    def test_ttkstyle_widget_class_from_string(self):
-        """Verifica la identificación de clase de widget desde string."""
-        # Casos de prueba con strings válidos
-        assert Keywords.ttkstyle_widget_class(string="primary.TButton") == "button"
-        assert Keywords.ttkstyle_widget_class(string="Danger.TLabel") == "label"
-        assert Keywords.ttkstyle_widget_class(string="Success.TProgressbar") == "progressbar"
+    def test_colors_list_not_empty(self):
+        """Verifica que la lista de colores no esté vacía y contenga valores válidos."""
+        assert len(Keywords.COLORS) > 0
+        assert "primary" in Keywords.COLORS
+        assert "secondary" in Keywords.COLORS
+        assert "success" in Keywords.COLORS
 
-        # Casos con strings inválidos
-        assert Keywords.ttkstyle_widget_class(string="InvalidWidget") == ""
-        assert Keywords.ttkstyle_widget_class(string="") == ""
+    def test_orients_list_contains_valid_values(self):
+        """Verifica que la lista de orientaciones contenga los valores correctos."""
+        assert set(Keywords.ORIENTS) == {"horizontal", "vertical"}
 
-    def test_ttkstyle_widget_class_from_widget(self, root):
-        """Verifica la identificación de clase de widget desde objeto widget."""
-        # Crear widgets de prueba
-        button = ttk.Button(root)
-        label = ttk.Label(root)
-        entry = ttk.Entry(root)
+    def test_color_pattern_matches(self):
+        """Verifica que el patrón de color coincida con colores válidos."""
+        # Casos válidos
+        for color in Keywords.COLORS:
+            assert Keywords.COLOR_PATTERN.match(color)
 
-        # Verificar identificación correcta
-        assert Keywords.ttkstyle_widget_class(widget=button) == "button"
-        assert Keywords.ttkstyle_widget_class(widget=label) == "label"
-        assert Keywords.ttkstyle_widget_class(widget=entry) == "entry"
+        # Casos inválidos
+        assert not Keywords.COLOR_PATTERN.match("invalid_color")
+        assert not Keywords.COLOR_PATTERN.match("")
+        assert not Keywords.COLOR_PATTERN.match("not_a_color")
 
-    def test_ttkstyle_widget_class_no_input(self):
-        """Verifica el comportamiento cuando no se proporcionan argumentos."""
-        assert Keywords.ttkstyle_widget_class() == ""
+    def test_class_pattern_matches(self):
+        """Verifica que el patrón de clase coincida con clases válidas."""
+        # Casos válidos
+        for widget_class in Keywords.CLASSES:
+            assert Keywords.CLASS_PATTERN.match(widget_class)
 
-    def test_ttkstyle_widget_class_case_insensitive(self):
-        """Verifica que la identificación es insensible a mayúsculas/minúsculas."""
-        assert Keywords.ttkstyle_widget_class(string="PRIMARY.TBUTTON") == "button"
-        assert Keywords.ttkstyle_widget_class(string="danger.tlabel") == "label"
+        # Casos inválidos
+        assert not Keywords.CLASS_PATTERN.match("invalid_widget")
+        assert not Keywords.CLASS_PATTERN.match("")
+        assert not Keywords.CLASS_PATTERN.match("not_a_widget")
+
+    def test_type_pattern_matches(self):
+        """Verifica que el patrón de tipo coincida con tipos válidos."""
+        # Casos válidos
+        for style_type in Keywords.TYPES:
+            assert Keywords.TYPE_PATTERN.match(style_type)
+
+        # Casos inválidos
+        assert not Keywords.TYPE_PATTERN.match("invalid_type")
+        assert not Keywords.TYPE_PATTERN.match("")
+        assert not Keywords.TYPE_PATTERN.match("not_a_type")
+
+    def test_orient_pattern_matches(self):
+        """Verifica que el patrón de orientación coincida con orientaciones válidas."""
+        # Casos válidos
+        for orient in Keywords.ORIENTS:
+            assert Keywords.ORIENT_PATTERN.match(orient)
+
+        # Casos inválidos
+        assert not Keywords.ORIENT_PATTERN.match("diagonal")
+        assert not Keywords.ORIENT_PATTERN.match("")
+        assert not Keywords.ORIENT_PATTERN.match("not_an_orientation")
