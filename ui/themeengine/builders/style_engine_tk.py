@@ -1,7 +1,7 @@
 import tkinter as tk
-from ui.theming.color import Colors
-from ui.theming.theme_definition import ThemeDefinition
-from ui.theming.constants import LIGHT
+from ui.themeengine.core.color import Colors
+from ui.themeengine.core.theme import ThemeDefinition
+from ui.themeengine.utils.constants import LIGHT
 
 
 class StyleEngineTK:
@@ -23,7 +23,7 @@ class StyleEngineTK:
         para la gestión de estilos.
         """
         #Dependencia circular
-        from ui.theming.style import Style
+        from ui.themeengine.core.style import Style
         self.style = Style.get_instance()
         self.master = self.style.master
 

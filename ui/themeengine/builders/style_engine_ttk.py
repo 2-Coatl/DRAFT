@@ -2,11 +2,11 @@ import tkinter as tk
 from tkinter import ttk
 from math import ceil
 from typing import Union, List, Tuple, Callable
-from ui.theming.color import Colors
+from ui.themeengine.core.color import Colors
 
-from ui.theming.style_engines.style_engine_tk import StyleEngineTK
-from ui.theming.theme_definition import ThemeDefinition
-from ui.theming.constants import LIGHT, TTK_CLAM, DEFAULT, TTK_DEFAULT, PRIMARY
+from ui.themeengine.builders.style_engine_tk import StyleEngineTK
+from ui.themeengine.core.theme import ThemeDefinition
+from ui.themeengine.utils.constants import LIGHT, TTK_CLAM, DEFAULT, TTK_DEFAULT, PRIMARY
 
 
 class StyleEngineTTK:
@@ -21,7 +21,7 @@ class StyleEngineTTK:
     def __init__(self):
         """Inicializa el motor de estilos TTK."""
         #Dependencia circular
-        from ui.theming.style import Style
+        from ui.themeengine.core.style import Style
         self.style: Style = Style.get_instance()
         self.theme_images = {}
         self.style_engine_tk = StyleEngineTK()

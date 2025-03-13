@@ -1,6 +1,6 @@
 from typing import Dict
-from .color import Colors
-from .constants import LIGHT
+from ui.themeengine.core.color import Colors
+from ui.themeengine.utils.constants import LIGHT
 
 class ThemeDefinition:
     """Define un tema incluyendo sus colores y tipo."""

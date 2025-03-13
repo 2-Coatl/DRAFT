@@ -2,13 +2,13 @@ from typing import Dict, Optional, Set, Union, AnyStr, List, Callable
 from tkinter import ttk
 from tkinter import TclError
 
-from ui.theming.color import Colors
-from ui.theming.constants import DEFAULT_THEME, USER_THEMES, STANDARD_THEMES
-from ui.theming.notifications.channel import Channel
-from ui.theming.notifications.publisher import Publisher
-from ui.theming.style_engines.style_engine_ttk import StyleEngineTTK
-from ui.theming.theme_definition import ThemeDefinition
-from ui.theming.utils.bootstyle import Bootstyle
+from ui.themeengine.core.color import Colors
+from ui.themeengine.utils.constants import DEFAULT_THEME, USER_THEMES, STANDARD_THEMES
+from ui.themeengine.communication.channel import Channel
+from ui.themeengine.communication.publisher import Publisher
+from ui.themeengine.builders.style_engine_ttk import StyleEngineTTK
+from ui.themeengine.core.theme import ThemeDefinition
+from ui.themeengine.utils.bootstyle import Bootstyle
 
 
 class Style(ttk.Style):

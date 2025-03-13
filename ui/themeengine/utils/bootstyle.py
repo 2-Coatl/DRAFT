@@ -2,11 +2,11 @@ import re
 from typing import Optional, Any, Callable, Union, Dict
 from tkinter import ttk
 
-from ui.theming.notifications.channel import Channel
-from ui.theming.notifications.publisher import Publisher
-from ui.theming.style_engines.style_engine_tk import StyleEngineTK
-from ui.theming.utils.keywords import Keywords
-from ui.theming.style_engines.style_engine_ttk import StyleEngineTTK
+from ui.themeengine.communication.channel import Channel
+from ui.themeengine.communication.publisher import Publisher
+from ui.themeengine.builders.style_engine_tk import StyleEngineTK
+from ui.themeengine.utils.keywords import Keywords
+from ui.themeengine.builders.style_engine_ttk import StyleEngineTTK
 
 class Bootstyle:
     """Clase utilitaria que proporciona métodos para manipular y gestionar estilos TTK.
@@ -276,7 +276,7 @@ class Bootstyle:
         # Paso 1: Inicialización del estilo
         # Previene dependencias circulares e inicializa el gestor de estilos
         print("\n--- Dentro de update_ttk_widget_style ---")
-        from ui.theming.style import Style
+        from ui.themeengine.core.style import Style
         style: Style = Style.get_instance() or Style()
 
         # Paso 2: Obtención del estilo actual
@@ -400,7 +400,7 @@ class Bootstyle:
             # 3. Aplicación de estilos
             # IMPORTANTE: La configuración de estilo debe ser post-instanciación para
             # poder utilizar winfo_class en get_ttkstyle_name
-            from ui.theming.style import Style
+            from ui.themeengine.core.style import Style
             if style:
                 # 3.1 Verifica si el estilo existe en el tema actual
                 if Style.get_instance().style_exists_in_theme(style):
@@ -543,7 +543,7 @@ class Bootstyle:
         StyleEngineTK : Motor de estilos para widgets Tkinter nativos
         Bootstyle.tkupdate_method_name : Generación de nombres de métodos de actualización
         """
-        from ui.theming.style import Style
+        from ui.themeengine.core.style import Style
         try:
             # Obtener la instancia singleton del gestor de estilos
             # Esta instancia mantiene el estado global de los estilos
@@ -635,8 +635,8 @@ class Bootstyle:
     def setup_ttktheming_api() -> None:
         # 1. Definición y Setup Inicial
         # Importación de las tuplas de widgets a modificar
-        from ui.theming.widgets.constants import TTK_WIDGETS  # 19 widgets ttk
-        from ui.theming.widgets.constants import TK_WIDGETS  # 17 widgets tk
+        from ui.themeengine.utils.constants import TTK_WIDGETS  # 19 widgets ttk
+        from ui.themeengine.utils.constants import TK_WIDGETS  # 17 widgets tk
 
         # 2. Procesamiento de widgets TTK - añade soporte completo de estilos
         for widget in TTK_WIDGETS:

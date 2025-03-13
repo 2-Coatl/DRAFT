@@ -1,9 +1,9 @@
 import pytest
 import tkinter as tk
 from tkinter import TclError
-from ui.theming.constants import DEFAULT_THEME, LIGHT
-from ui.theming.style import Style
-from ui.theming.theme_definition import ThemeDefinition
+from ui.themeengine.utils.constants import DEFAULT_THEME, LIGHT
+from ui.themeengine.core.style import Style
+from ui.themeengine.core.theme import ThemeDefinition
 
 
 class TestStyle:
