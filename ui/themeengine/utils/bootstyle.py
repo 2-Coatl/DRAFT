@@ -273,9 +273,9 @@ class Bootstyle:
         Returns:
             El nombre del estilo TTK o cadena vacía si no hay estilo.
         """
+        # print("\n--- Dentro de update_ttk_widget_style ---")
         # Paso 1: Inicialización del estilo
         # Previene dependencias circulares e inicializa el gestor de estilos
-        print("\n--- Dentro de update_ttk_widget_style ---")
         from ui.themeengine.core.style import Style
         style: Style = Style.get_instance() or Style()
 
@@ -285,7 +285,7 @@ class Bootstyle:
             if widget is None:
                 return ""
             style_string = widget.cget("style")
-        print(f"style_string {style_string}")
+        # print(f"style_string {style_string}")
         # Paso 3: Validaciones iniciales del estilo
         # Verifica si hay un estilo válido para procesar
         if not style_string:
@@ -297,7 +297,7 @@ class Bootstyle:
         # Paso 4: Construcción y verificación del estilo
         # Genera el nombre del estilo y lo construye si no existe
         ttkstyle = Bootstyle.ttkstyle_name(widget, style_string, **kwargs)
-        print(f"4 Generando el nombre del estilo {ttkstyle}")
+        # print(f"4 Generando el nombre del estilo {ttkstyle}")
         if not style.style_exists_in_theme(ttkstyle):
             # 4.1: Obtención de propiedades para la construcción
             widget_color = Bootstyle.ttkstyle_widget_color(ttkstyle)
@@ -305,7 +305,7 @@ class Bootstyle:
 
             # 4.2: Construcción del estilo usando el builder
             builder: StyleEngineTTK = style._get_builder()
-            print(f"4.2 Construcción del estilo usando el builder (StyleEngineTTK) {builder}")
+            # print(f"4.2 Construcción del estilo usando el builder (StyleEngineTTK) {builder}")
             builder_method = builder.name_to_method(method_name)
             builder_method(builder, widget_color)
 
@@ -399,7 +399,7 @@ class Bootstyle:
 
             # 3. Aplicación de estilos
             # IMPORTANTE: La configuración de estilo debe ser post-instanciación para
-            # poder utilizar winfo_class en get_ttkstyle_name
+            # poder utilizar winfo_class en `get_ttkstyle_name`
             from ui.themeengine.core.style import Style
             if style:
                 # 3.1 Verifica si el estilo existe en el tema actual
@@ -633,63 +633,80 @@ class Bootstyle:
 
     @staticmethod
     def setup_ttktheming_api() -> None:
-        # 1. Definición y Setup Inicial
-        # Importación de las tuplas de widgets a modificar
-        from ui.themeengine.utils.constants import TTK_WIDGETS  # 19 widgets ttk
-        from ui.themeengine.utils.constants import TK_WIDGETS  # 17 widgets tk
+        """Configura el sistema de temas para su uso con tkinter y ttk.
 
-        # 2. Procesamiento de widgets TTK - añade soporte completo de estilos
+        Este método modifica las clases de widgets originales para implementar
+        la API del sistema de temas.
+
+        Returns:
+            None: Este método no devuelve ningún valor, pero tiene efectos globales.
+
+        Modifies:
+            TTK_WIDGETS: Modifica las clases para soportar tematización completa.
+            TK_WIDGETS: Modifica las clases para soportar tematización básica.
+        """
+
+        # Importar las listas de widgets a modificar
+        from ui.themeengine.utils.constants import TTK_WIDGETS  # Widgets de ttk (Button, Entry, etc.) 19
+        from ui.themeengine.utils.constants import TK_WIDGETS  # Widgets de tk estándar (Label, Frame, etc.) 17
+
+        # === MODIFICACIÓN DE WIDGETS TTK ===
         for widget in TTK_WIDGETS:
             try:
-                # Sobrescribe el constructor para soportar parámetros de estilo
-                # Permite: button = ttk.Button(root, bootstyle='valor')
-                _init = Bootstyle.override_ttk_widget_constructor(widget.__init__)
+                # Paso 1: Sobreescribir el constructor del widget
+                # Esto permite que new_args como 'bootstyle' se procesen al crear el widget
+                # Ejemplo: ttk.Button(root, text="Botón", bootstyle="primary")
+                _init = Bootstyle.override_ttk_widget_constructor(
+                    widget.__init__
+                )
                 widget.__init__ = _init
 
-                # 3. Configuración de Métodos
-                # Sobrescribe configure/config para manejar estilos dinámicamente
-                # Permite: button.configure(bootstyle='valor')
-                _configure = Bootstyle.override_ttk_widget_configure(widget.configure)
+                # Paso 2: Sobreescribir el método configure/config
+                # Esto permite modificar el estilo después de la creación
+                # Ejemplo: button.configure(bootstyle="secondary")
+                _configure = Bootstyle.override_ttk_widget_configure(
+                    widget.configure
+                )
                 widget.configure = _configure
-                widget.config = widget.configure
+                widget.config = widget.configure  # Mantener el alias común
 
-                # 4. Captura de Métodos Originales
-                # Almacena getters y setters originales como fallback
+                # Paso 3: Guardar los métodos originales de acceso por índice
                 _orig_getitem = widget.__getitem__
                 _orig_setitem = widget.__setitem__
 
-                # 5. Define nuevo método para establecer estilos y otros atributos
-                # Permite: widget['bootstyle'] = 'valor'
+                # Paso 4: Definir nuevas implementaciones para acceso por índice
                 def __setitem(self, key, val):
-                    #  Manejo especial para propiedades de estilo
+                    # Caso especial: si la clave es 'bootstyle' o 'style', usar configure
                     if key in ("bootstyle", "style"):
+                        # Ejemplo: button["bootstyle"] = "primary"
                         return _configure(self, **{key: val})
+                    # Para otras claves, comportamiento normal
                     return _orig_setitem(key, val)
 
-                # Define nuevo método para obtener estilos y otros atributos
-                # Permite: valor = widget['bootstyle']
                 def __getitem(self, key):
-                    # Manejo especial para consultas de estilo
+                    # Caso especial: si la clave es 'bootstyle' o 'style', obtener del configure
                     if key in ("bootstyle", "style"):
+                        # Ejemplo: style_value = button["bootstyle"]
                         return _configure(self, cnf=key)
+                    # Para otras claves, comportamiento normal
                     return _orig_getitem(key)
 
-                # 7. Aplica nuevos métodos excepto para OptionMenu
-                # OptionMenu mantiene su implementación original
+                # Paso 5: Aplicar las nuevas implementaciones, excepto para OptionMenu
+                # OptionMenu tiene su propia implementación específica en otra parte
                 if widget.__name__ != "OptionMenu":
                     widget.__setitem__ = __setitem
                     widget.__getitem__ = __getitem
 
-            # 8. Manejo de Errores
-            # Compatibilidad con Python 3.6
-            except:
-                # Salta widgets no disponibles en la versión actual de Python
+            except Exception as e:
+                # Manejo de errores: algunos widgets pueden no existir en versiones
+                # antiguas de Python o tener implementaciones incompatibles
+                # En caso de error, simplemente continuar con el siguiente widget
                 continue
 
-        # 9-10. Procesamiento de widgets TK - solo modifica constructor
-        # Modificación más simple, solo afecta al constructor
+        # === MODIFICACIÓN DE WIDGETS TK ESTÁNDAR ===
         for widget in TK_WIDGETS:
-            # Añade soporte para autostyle y sistema de actualización automática
-            # Permite: button = tk.Button(root, autostyle=True)
+            # Para widgets tk estándar, solo se modifica el constructor
+            # Los widgets tk tienen una estructura diferente a los ttk
+            # Ejemplo: tk.Label(root, text="Etiqueta", bootstyle="primary")
             _init = Bootstyle.override_tk_widget_constructor(widget.__init__)
             widget.__init__ = _init
