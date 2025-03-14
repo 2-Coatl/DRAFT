@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter.constants import *
 from typing import Dict
 
 
@@ -14,6 +15,9 @@ PRIMARY = 'primary'
 INFO = 'info'
 LIGHT = 'light'
 DARK = 'dark'
+
+# state constants
+READONLY = 'readonly'
 
 STANDARD_THEMES = {
     'cosmo': {
