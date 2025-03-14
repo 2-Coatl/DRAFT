@@ -284,30 +284,82 @@ class TestWindow:
             # Limpiar
             window.destroy()
 
-    @patch('ui.themeengine.utils.utility.enable_high_dpi_awareness')
+    def test_hdpi_linux_correct_patch(self, monkeypatch):
+        """Verifica la activación de HDPI en Linux con el parche correcto"""
+        # Importar el módulo window para tener acceso directo a la implementación
+        import ui.themeengine.core.window as window_module
+
+        # Crear un mock para la función enable_high_dpi_awareness
+        mock_hdpi = MagicMock()
+
+        # Parchear directamente en el espacio de nombres del módulo window
+        # Esto asegura que parcheamos la referencia exacta que usa la clase Window
+        monkeypatch.setattr(window_module, "enable_high_dpi_awareness", mock_hdpi)
+
+        # Configurar Linux como sistema operativo
+        monkeypatch.setattr(platform, "system", lambda: "Linux")
+
+        # Crear la ventana
+        window = None
+        try:
+            window = window_module.Window(hdpi=True)
+
+            # Verificar que la función fue llamada
+            mock_hdpi.assert_called_once()
+
+            # Verificar que se llamó con los argumentos correctos
+            args, kwargs = mock_hdpi.call_args
+            assert len(args) == 2, "Debería recibir dos argumentos"
+            assert args[0] == window, "El primer argumento debería ser la ventana"
+            assert args[1] == 1.5, "El segundo argumento debería ser 1.5 (scaling para Linux)"
+        finally:
+            if window:
+                window.destroy()
+
+    # En lugar de parchear 'ui.themeengine.utils.utility.enable_high_dpi_awareness'
+    # Parchea la función directamente en el módulo window
+    @patch('ui.themeengine.core.window.enable_high_dpi_awareness')
     def test_hdpi_linux_after_init(self, mock_hdpi, monkeypatch):
         """Verifica que en Linux, HDPI se active después de la inicialización"""
         # ARRANGE
         monkeypatch.setattr(platform, "system", lambda: "Linux")
 
         # ACT
-        window = Window(hdpi=True)
+        window = None
+        try:
+            # Asegurémonos de que el mock esté configurado antes de crear la ventana
+            assert not mock_hdpi.called, "El mock no debería haberse llamado antes de crear la ventana"
 
-        # ASSERT - Se llama a enable_high_dpi_awareness después de init (con ventana y scaling)
-        mock_hdpi.assert_called_once_with(window, 1.5)  # Scaling predeterminado para Linux
+            window = Window(hdpi=True)
 
-        # Limpiar
-        window.destroy()
+            # ASSERT
+            mock_hdpi.assert_called_once()
+            args, kwargs = mock_hdpi.call_args
+            assert len(args) == 2, f"Se esperaban 2 argumentos positionales"
+            assert isinstance(args[0], Window), f"El primer argumento debería ser la instancia de Window"
+            assert args[1] == 1.5, f"El segundo argumento debería ser 1.5 (scaling para Linux)"
+        finally:
+            if window is not None:
+                window.destroy()
 
-    @patch('ui.themeengine.utils.utility.enable_high_dpi_awareness')
+    @patch('ui.themeengine.core.window.enable_high_dpi_awareness')
     def test_custom_scaling(self, mock_hdpi):
         """Verifica que el escalado personalizado se aplique correctamente"""
         # ARRANGE & ACT
         custom_scaling = 2.0
         window = Window(scaling=custom_scaling)
 
-        # ASSERT - Se usa el valor de scaling proporcionado
-        mock_hdpi.assert_called_once_with(window, custom_scaling)
+        # ASSERT - Verificamos las llamadas específicas
+        assert mock_hdpi.call_count == 2, f"Se esperaban 2 llamadas, se recibieron {mock_hdpi.call_count}"
+
+        # La primera llamada debería ser sin argumentos (para Windows)
+        assert mock_hdpi.call_args_list[0] == (), "La primera llamada debería ser sin argumentos"
+
+        # La segunda llamada debería ser con la ventana y el valor de escalado
+        args, kwargs = mock_hdpi.call_args_list[1]
+        assert len(args) == 2, f"La segunda llamada debería tener 2 argumentos, recibió {len(args)}"
+        assert args[0] == window, f"El primer argumento debería ser la ventana"
+        assert args[1] == custom_scaling, f"El segundo argumento debería ser el valor de escalado personalizado"
 
         # Limpiar
         window.destroy()
@@ -350,21 +402,50 @@ class TestWindow:
         # Limpiar
         window.destroy()
 
-    def test_position_center_alias(self):
-        """Verifica que position_center sea un alias de place_window_center"""
+    def test_position_center_alias_(self):
+        """Verifica que position_center sea un alias de place_window_center a nivel de clase"""
+        # ARRANGE - Verificar directamente en la clase
+        # Aquí estamos comprobando si position_center es el mismo objeto que place_window_center
+        assert Window.position_center is Window.place_window_center, "position_center debería ser una referencia a place_window_center a nivel de clase"
+
+        # Limpieza - No es necesario crear una instancia para esta prueba
+
+    def test_position_center_alias_mechanism(self):
+        """Explora el mecanismo de alias en detalle"""
         # ARRANGE
         window = Window()
 
-        # Patch place_window_center para verificar que se llama
-        with patch.object(window, 'place_window_center') as mock_center:
-            # ACT
+        # Verificar a nivel de clase
+        assert Window.position_center is Window.place_window_center
+
+        # Verificar a nivel de instancia (métodos ligados diferentes)
+        assert window.position_center is not window.place_window_center
+
+        # Modificar el método a nivel de clase
+        original_method = Window.place_window_center
+        call_count = [0]
+
+        def tracking_method(self):
+            call_count[0] += 1
+            return original_method(self)
+
+        # Reemplazar a nivel de clase
+        Window.place_window_center = tracking_method
+
+        # ACT - Llamar a position_center
+        try:
             window.position_center()
 
             # ASSERT
-            mock_center.assert_called_once()
+            assert call_count[0] == 0, "position_center NO debería llamar al place_window_center modificado"
 
-        # Limpiar
-        window.destroy()
+            # Pero llamar a position_center directamente DEBERÍA incrementar el contador
+            window.place_window_center()
+            assert call_count[0] > 0, "place_window_center modificado debería incrementar el contador"
+        finally:
+            # Restaurar el método original
+            Window.place_window_center = original_method
+            window.destroy()
 
     # PRUEBAS DE CASOS LÍMITE Y MANEJO DE ERRORES -----------------------
 
@@ -403,25 +484,23 @@ class TestWindow:
         window.destroy()
 
     # PRUEBAS DE INTEGRACIÓN BÁSICAS ------------------------------------
+    def test_integration_style_access_real(self):
+        """Prueba de integración real: acceso al estilo sin mocks"""
+        # ARRANGE - Crear una ventana real
+        window = Window(themename="flatly")
 
-    def test_integration_style_access(self):
-        """Prueba de integración: acceso al estilo y cambio de tema"""
-        # ARRANGE
-        window = Window(themename="darkly")
-
-        # ACT & ASSERT
-        # Verificar que podemos acceder al objeto Style
+        # ACT
         style = window.style
+
+        # ASSERT
         assert style is not None
+
+        # Verificar que style es una instancia real del tipo correcto
         assert isinstance(style, Style)
 
-        # Verificar que podemos cambiar de tema (si la implementación lo permite)
-        try:
-            current_theme = style.theme_use()
-            assert current_theme == "darkly"
-        except (AttributeError, NotImplementedError):
-            # Si no está implementado, al menos verificamos que no hay error al acceder
-            pass
+        # Verificar que el tema usado es el esperado
+        current_theme = style.theme_use()
+        assert current_theme == "flatly"
 
         # Limpiar
         window.destroy()

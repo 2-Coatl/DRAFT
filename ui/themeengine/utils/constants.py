@@ -1,6 +1,6 @@
+from tkinter.constants import *
 import tkinter as tk
 from tkinter import ttk
-from tkinter.constants import *
 from typing import Dict
 
 
