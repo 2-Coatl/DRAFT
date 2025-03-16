@@ -40,6 +40,10 @@ class TestToplevel(unittest.TestCase):
         # Simular sistema de ventanas - valor predeterminado para pruebas
         self.default_winsys = 'win32' if sys.platform == 'win32' else 'x11'
 
+        # Inicialmente no hay sistema de ventanas simulado
+        if hasattr(self, '_simulated_winsys'):
+            delattr(self, '_simulated_winsys')
+
         # Bandera para seguimiento de recursos
         self._toplevel_created = False
 
@@ -80,6 +84,7 @@ class TestToplevel(unittest.TestCase):
         1. Contexto Tkinter correcto
         2. Limpieza adecuada de recursos
         3. Seguimiento de instancias creadas
+        4. Simulación de sistemas de ventanas para pruebas
 
         Args:
             **kwargs: Argumentos para el constructor de Toplevel
@@ -91,6 +96,11 @@ class TestToplevel(unittest.TestCase):
         self.toplevel = Toplevel(**kwargs)
         self._toplevel_created = True
 
+        # Si hay un sistema de ventanas simulado configurado, aplicarlo
+        if hasattr(self, '_simulated_winsys'):
+            # Sobrescribir directamente winsys para las pruebas
+            self.toplevel.winsys = self._simulated_winsys
+
         # Actualizar para procesar cambios pendientes
         self.root.update_idletasks()
 
@@ -100,26 +110,20 @@ class TestToplevel(unittest.TestCase):
         """
         Simula un sistema de ventanas específico para pruebas.
 
-        Esta función permite probar comportamientos específicos de plataforma
-        independientemente del sistema real en que se ejecuten las pruebas.
+        Esta función establece directamente el valor de winsys en la instancia
+        de Toplevel después de su creación, evitando la necesidad de parchear
+        métodos internos de tkinter.
 
         Args:
             winsys_value (str): Valor a simular ('win32', 'x11', 'aqua')
 
         Returns:
-            function: Decorador que aplica el parche durante la ejecución
+            function: Decorador que modifica winsys durante la ejecución
         """
-
-        def decorator(func):
-            def wrapper(*args, **kwargs):
-                # Parchar tk.call para simular el sistema de ventanas
-                with patch.object(tk.Misc, 'call', return_value=winsys_value):
-                    return func(*args, **kwargs)
-
-            return wrapper
-
-        return decorator
-
+        # En esta nueva implementación, en lugar de parchear tk.call,
+        # almacenamos el valor que queremos simular para usarlo en create_toplevel
+        self._simulated_winsys = winsys_value
+        return lambda func: func  # Devuelve un decorador de identidad
 
 # =============================================================================
 # SECCIÓN 2: PRUEBAS DE INICIALIZACIÓN BÁSICA
@@ -292,13 +296,6 @@ class TestInicializacionBasica(TestToplevel):
 # =============================================================================
 # SECCIÓN 3: PRUEBAS DE CONFIGURACIÓN DE GEOMETRÍA
 # =============================================================================
-
-# Fixture que se puede usar en la clase
-@pytest.fixture
-def create_toplevel():
-    def _create_toplevel(**kwargs):
-        return Toplevel(**kwargs)
-    return _create_toplevel
 
 # Clase de prueba en estilo pytest
 class TestConfiguracionGeometria:
@@ -569,18 +566,36 @@ class TestTransparencia(TestToplevel):
     3. Valores límite y especiales
     """
 
-    @pytest.mark.parametrize("nivel_alpha", [
-        0.0,  # Completamente transparente
-        0.5,  # Semi-transparente
-        1.0  # Completamente opaco
-    ])
-    def test_niveles_transparencia(self, nivel_alpha):
-        """
-        Verifica diferentes niveles de transparencia.
+    def test_nivel_transparencia_total(self):
+        """Verifica transparencia completa (alpha=0.0)."""
+        # ARRANGE
+        nivel_alpha = 0.0
 
-        Prueba parametrizada para diferentes valores comunes y límites.
-        """
-        # ARRANGE - No se requiere configuración adicional
+        # ACT - Crear con nivel específico de transparencia
+        with patch.object(tk.Toplevel, 'attributes') as mock_attributes:
+            with patch.object(tk.Toplevel, 'wait_visibility'):  # Para evitar bloqueos
+                toplevel = self.create_toplevel(alpha=nivel_alpha)
+
+                # ASSERT - Verificar que se configuró el nivel correcto
+                mock_attributes.assert_any_call("-alpha", nivel_alpha)
+
+    def test_nivel_transparencia_media(self):
+        """Verifica transparencia media (alpha=0.5)."""
+        # ARRANGE
+        nivel_alpha = 0.5
+
+        # ACT - Crear con nivel específico de transparencia
+        with patch.object(tk.Toplevel, 'attributes') as mock_attributes:
+            with patch.object(tk.Toplevel, 'wait_visibility'):  # Para evitar bloqueos
+                toplevel = self.create_toplevel(alpha=nivel_alpha)
+
+                # ASSERT - Verificar que se configuró el nivel correcto
+                mock_attributes.assert_any_call("-alpha", nivel_alpha)
+
+    def test_nivel_transparencia_ninguna(self):
+        """Verifica transparencia nula (alpha=1.0)."""
+        # ARRANGE
+        nivel_alpha = 1.0
 
         # ACT - Crear con nivel específico de transparencia
         with patch.object(tk.Toplevel, 'attributes') as mock_attributes:
@@ -599,15 +614,15 @@ class TestTransparencia(TestToplevel):
         """
         # ARRANGE - Simular sistema X11
         nivel_alpha = 0.7
+        self.simulate_winsys('x11')  # Configurar la simulación de X11
 
         # ACT - Crear con transparencia en X11
-        with self.simulate_winsys('x11'):
-            with patch.object(tk.Toplevel, 'wait_visibility') as mock_wait:
-                with patch.object(tk.Toplevel, 'attributes'):  # Para evitar bloqueos
-                    toplevel = self.create_toplevel(alpha=nivel_alpha)
+        with patch.object(tk.Toplevel, 'wait_visibility') as mock_wait:
+            with patch.object(tk.Toplevel, 'attributes'):  # Para evitar bloqueos
+                toplevel = self.create_toplevel(alpha=nivel_alpha)
 
-                    # ASSERT - Verificar que se esperó la visibilidad
-                    mock_wait.assert_called_once_with(toplevel)
+                # ASSERT - Verificar que se esperó la visibilidad
+                mock_wait.assert_called_once_with(toplevel)
 
     def test_no_espera_visibilidad_win32(self):
         """
@@ -617,15 +632,15 @@ class TestTransparencia(TestToplevel):
         """
         # ARRANGE - Simular sistema Windows
         nivel_alpha = 0.7
+        self.simulate_winsys('win32')  # Configurar la simulación de Windows
 
         # ACT - Crear con transparencia en Windows
-        with self.simulate_winsys('win32'):
-            with patch.object(tk.Toplevel, 'wait_visibility') as mock_wait:
-                with patch.object(tk.Toplevel, 'attributes'):  # Para evitar bloqueos
-                    toplevel = self.create_toplevel(alpha=nivel_alpha)
+        with patch.object(tk.Toplevel, 'wait_visibility') as mock_wait:
+            with patch.object(tk.Toplevel, 'attributes'):  # Para evitar bloqueos
+                toplevel = self.create_toplevel(alpha=nivel_alpha)
 
-                    # ASSERT - Verificar que NO se esperó la visibilidad
-                    mock_wait.assert_not_called()
+                # ASSERT - Verificar que NO se esperó la visibilidad
+                mock_wait.assert_not_called()
 
 
 # =============================================================================
