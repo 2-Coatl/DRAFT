@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 import sys
 import io
 from contextlib import redirect_stdout
-import pytest
 
 # Importación de la clase a probar
 # Ajusta estas importaciones según la estructura real de tu proyecto
@@ -292,8 +291,7 @@ class TestInicializacionBasica(TestToplevel):
 # SECCIÓN 3: PRUEBAS DE CONFIGURACIÓN DE GEOMETRÍA
 # =============================================================================
 
-# Clase de prueba en estilo pytest
-class TestConfiguracionGeometria:
+class TestConfiguracionGeometria(TestToplevel):
     """
     Pruebas para la configuración de geometría de la ventana.
 
@@ -304,60 +302,85 @@ class TestConfiguracionGeometria:
     4. Opciones de redimensionamiento
     """
 
-    @pytest.mark.parametrize("tamano,esperado", [
-        ((400, 300), "400x300"),
-        ((100, 100), "100x100"),
-        ((800, 600), "800x600")
-    ])
-    def test_tamano_ventana(self, create_toplevel, tamano, esperado):
-        """Verifica que el tamaño se establezca correctamente."""
-        with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
-            toplevel = create_toplevel(size=tamano)
-            mock_geometry.assert_any_call(esperado)
+    def test_tamano_ventana(self):
+        """
+        Verifica que el tamaño se establezca correctamente.
 
-    @pytest.mark.parametrize("posicion,esperado", [
-        ((0, 0), "+0+0"),
-        ((100, 200), "+100+200"),
-        ((50, 50), "+50+50")
-    ])
-    def test_posicion_ventana(self, create_toplevel, posicion, esperado):
-        """Verifica que la posición se establezca correctamente."""
-        with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
-            toplevel = create_toplevel(position=posicion)
-            mock_geometry.assert_any_call(esperado)
+        Prueba para diferentes tamaños comunes.
+        """
+        casos = [
+            ((400, 300), "400x300"),
+            ((100, 100), "100x100"),
+            ((800, 600), "800x600")
+        ]
 
-    def test_tamano_minimo(self, create_toplevel):
+        for tamano, esperado in casos:
+            with self.subTest(tamano=tamano, esperado=esperado):
+                with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
+                    toplevel = self.create_toplevel(size=tamano)
+                    mock_geometry.assert_any_call(esperado)
+
+    def test_posicion_ventana(self):
+        """
+        Verifica que la posición se establezca correctamente.
+
+        Prueba para diferentes posiciones comunes.
+        """
+        casos = [
+            ((0, 0), "+0+0"),
+            ((100, 200), "+100+200"),
+            ((50, 50), "+50+50")
+        ]
+
+        for posicion, esperado in casos:
+            with self.subTest(posicion=posicion, esperado=esperado):
+                with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
+                    toplevel = self.create_toplevel(position=posicion)
+                    mock_geometry.assert_any_call(esperado)
+
+    def test_tamano_minimo(self):
         """Verifica que se establezca correctamente el tamaño mínimo."""
         tamano_min = (200, 150)
         with patch.object(tk.Toplevel, 'minsize') as mock_minsize:
-            toplevel = create_toplevel(minsize=tamano_min)
+            toplevel = self.create_toplevel(minsize=tamano_min)
             mock_minsize.assert_called_once_with(tamano_min[0], tamano_min[1])
 
-    def test_tamano_maximo(self, create_toplevel):
+    def test_tamano_maximo(self):
         """Verifica que se establezca correctamente el tamaño máximo."""
         tamano_max = (800, 600)
         with patch.object(tk.Toplevel, 'maxsize') as mock_maxsize:
-            toplevel = create_toplevel(maxsize=tamano_max)
+            toplevel = self.create_toplevel(maxsize=tamano_max)
             mock_maxsize.assert_called_once_with(tamano_max[0], tamano_max[1])
 
-    @pytest.mark.parametrize("resizable_value,expected", [
-        ((True, True), (True, True)),
-        ((False, False), (False, False)),
-        ((True, False), (True, False)),
-        ((False, True), (False, True))
-    ])
-    def test_redimensionable(self, create_toplevel, resizable_value, expected):
-        """Verifica las diferentes configuraciones de redimensionamiento."""
-        with patch.object(tk.Toplevel, 'resizable') as mock_resizable:
-            toplevel = create_toplevel(resizable=resizable_value)
-            mock_resizable.assert_called_once_with(expected[0], expected[1])
+    def test_redimensionable(self):
+        """
+        Verifica las diferentes configuraciones de redimensionamiento.
 
-    def test_combinacion_tamano_posicion(self, create_toplevel):
+        Prueba todas las combinaciones posibles de redimensionamiento:
+        - Ambos ejes permitidos (True, True)
+        - Ambos ejes bloqueados (False, False)
+        - Solo ancho permitido (True, False)
+        - Solo alto permitido (False, True)
+        """
+        casos = [
+            ((True, True), (True, True)),
+            ((False, False), (False, False)),
+            ((True, False), (True, False)),
+            ((False, True), (False, True))
+        ]
+
+        for resizable_value, expected in casos:
+            with self.subTest(resizable=resizable_value):
+                with patch.object(tk.Toplevel, 'resizable') as mock_resizable:
+                    toplevel = self.create_toplevel(resizable=resizable_value)
+                    mock_resizable.assert_called_once_with(expected[0], expected[1])
+
+    def test_combinacion_tamano_posicion(self):
         """Verifica la combinación de tamaño y posición simultáneos."""
         tamano = (400, 300)
         posicion = (100, 200)
         with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
-            toplevel = create_toplevel(size=tamano, position=posicion)
+            toplevel = self.create_toplevel(size=tamano, position=posicion)
             mock_geometry.assert_any_call(f"{tamano[0]}x{tamano[1]}")
             mock_geometry.assert_any_call(f"+{posicion[0]}+{posicion[1]}")
 
