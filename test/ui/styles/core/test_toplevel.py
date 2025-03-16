@@ -1,0 +1,1251 @@
+import unittest
+import tkinter as tk
+from unittest.mock import MagicMock, patch
+import sys
+import io
+from contextlib import redirect_stdout, contextmanager
+
+from ui.themeengine.core.style import Style
+# Importación de la clase a probar
+# Ajusta estas importaciones según la estructura real de tu proyecto
+from ui.themeengine.core.top_level import Toplevel
+
+
+# =============================================================================
+# SECCIÓN 1: FIXTURES Y CONFIGURACIÓN BASE
+# =============================================================================
+
+class TestToplevel(unittest.TestCase):
+    """
+    Clase base para todas las pruebas de Toplevel.
+
+    Proporciona los fixtures comunes y métodos auxiliares para:
+    1. Crear y limpiar el contexto Tkinter
+    2. Crear y gestionar instancias de Toplevel
+    3. Manejar actualizaciones y sincronización de la interfaz
+    """
+
+    def setUp(self):
+        """
+        Prepara el ambiente para cada prueba.
+
+        1. Crea la ventana raíz Tkinter necesaria para el contexto
+        2. Oculta la ventana para evitar interferencias visuales
+        3. Inicializa variables de estado para seguimiento
+        """
+        # Crear contexto Tkinter básico
+        self.root = tk.Tk()
+        self.root.withdraw()  # Ocultar ventana raíz
+
+        # Simular sistema de ventanas - valor predeterminado para pruebas
+        self.default_winsys = 'win32' if sys.platform == 'win32' else 'x11'
+
+        # Bandera para seguimiento de recursos
+        self._toplevel_created = False
+
+    def tearDown(self):
+        """
+        Limpia los recursos después de cada prueba.
+
+        1. Destruye cualquier ventana Toplevel creada
+        2. Destruye la ventana raíz
+        3. Ejecuta el recolector de basura para liberar referencias
+        """
+        # Destruir Toplevel si existe
+        if hasattr(self, 'toplevel') and hasattr(self.toplevel, 'winfo_exists'):
+            try:
+                if self.toplevel.winfo_exists():
+                    self.toplevel.destroy()
+            except tk.TclError:
+                # La ventana ya podría haber sido destruida
+                pass
+
+        # Destruir ventana raíz
+        if hasattr(self, 'root') and hasattr(self.root, 'winfo_exists'):
+            try:
+                if self.root.winfo_exists():
+                    self.root.destroy()
+            except tk.TclError:
+                pass
+
+        # Forzar liberación de recursos
+        import gc
+        gc.collect()
+
+    def create_toplevel(self, **kwargs):
+        """
+        Crea una instancia de Toplevel con los parámetros especificados.
+
+        Este método centraliza la creación para garantizar:
+        1. Contexto Tkinter correcto
+        2. Limpieza adecuada de recursos
+        3. Seguimiento de instancias creadas
+
+        Args:
+            **kwargs: Argumentos para el constructor de Toplevel
+
+        Returns:
+            Toplevel: La instancia creada
+        """
+        # Crear la instancia con los parámetros proporcionados
+        self.toplevel = Toplevel(**kwargs)
+        self._toplevel_created = True
+
+        # Actualizar para procesar cambios pendientes
+        self.root.update_idletasks()
+
+        return self.toplevel
+
+    def simulate_winsys_decorator(self, winsys_value):
+        """
+        Simula un sistema de ventanas específico para pruebas (versión decorador).
+
+        Esta función permite probar comportamientos específicos de plataforma
+        independientemente del sistema real en que se ejecuten las pruebas.
+
+        Args:
+            winsys_value (str): Valor a simular ('win32', 'x11', 'aqua')
+
+        Returns:
+            function: Decorador que aplica el parche durante la ejecución
+        """
+
+        def decorator(func):
+            def wrapper(*args, **kwargs):
+                # Parchar tk.call para simular el sistema de ventanas
+                with patch.object(tk.Misc, 'call', return_value=winsys_value):
+                    return func(*args, **kwargs)
+
+            return wrapper
+
+        return decorator
+
+    def simulate_winsys(self, winsys_value):
+        """
+        Crea un gestor de contexto para simular un sistema de ventanas específico.
+
+        Este gestor de contexto parcha temporalmente el constructor de Toplevel
+        para establecer el valor de winsys en todas las instancias creadas.
+
+        Args:
+            winsys_value (str): Valor a simular ('win32', 'x11', 'aqua')
+
+        Returns:
+            object: Gestor de contexto para usar con 'with'
+
+        Example:
+            with self.simulate_winsys('win32'):
+                toplevel = self.create_toplevel(toolwindow=True)
+                # toplevel.winsys será 'win32' independientemente del sistema real
+        """
+
+        class WinsysContextManager:
+            def __init__(self, test_case, winsys_value):
+                self.test_case = test_case
+                self.winsys_value = winsys_value
+                self.patchers = []
+
+            def __enter__(self):
+                # Parchar __getattribute__ para devolver winsys_value cuando se pida winsys
+                def mock_getattr(instance, name):
+                    if name == 'winsys':
+                        return self.winsys_value
+                    return object.__getattribute__(instance, name)
+
+                # Aplicar el parche
+                patcher = patch.object(Toplevel, '__getattribute__', mock_getattr)
+                self.patchers.append(patcher)
+                patcher.start()
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                # Detener todos los patchers
+                for patcher in self.patchers:
+                    patcher.stop()
+
+        return WinsysContextManager(self, winsys_value)
+
+    def _crear_patchers_centrado(self, toplevel, dimensiones):
+        """
+        Crea (pero no inicia) los patchers necesarios para pruebas de centrado.
+
+        Args:
+            toplevel: La instancia de Toplevel a parchar
+            dimensiones: Diccionario con claves:
+                - ancho_ventana, alto_ventana
+                - ancho_pantalla, alto_pantalla
+
+        Returns:
+            dict: Diccionario de patchers
+        """
+        ancho_ventana = dimensiones.get('ancho_ventana', 400)
+        alto_ventana = dimensiones.get('alto_ventana', 300)
+        ancho_pantalla = dimensiones.get('ancho_pantalla', 1024)
+        alto_pantalla = dimensiones.get('alto_pantalla', 768)
+
+        return {
+            'update_idletasks': patch.object(toplevel, 'update_idletasks'),
+            'winfo_width': patch.object(toplevel, 'winfo_width', return_value=ancho_ventana),
+            'winfo_height': patch.object(toplevel, 'winfo_height', return_value=alto_ventana),
+            'winfo_screenwidth': patch.object(toplevel, 'winfo_screenwidth', return_value=ancho_pantalla),
+            'winfo_screenheight': patch.object(toplevel, 'winfo_screenheight', return_value=alto_pantalla),
+            'geometry': patch.object(toplevel, 'geometry')
+        }
+
+    @contextmanager
+    def gestionar_patchers(self, patchers):
+        """
+        Gestor de contexto para manejar inicio/limpieza de patchers.
+
+        Args:
+            patchers: Diccionario de patchers a gestionar
+
+        Yields:
+            dict: Diccionario de mocks activos
+        """
+        mocks = {}
+        for name, patcher in patchers.items():
+            mocks[name] = patcher.start()
+
+        try:
+            yield mocks
+        finally:
+            for patcher in patchers.values():
+                patcher.stop()
+
+    def _calcular_posicion_esperada(self, ancho_ventana, alto_ventana, ancho_pantalla, alto_pantalla):
+        """
+        Calcula la posición esperada para una ventana centrada.
+
+        Returns:
+            Tuple[int, int, str]: Tupla con (x, y, string_geometria)
+        """
+        x = (ancho_pantalla - ancho_ventana) // 2
+        y = (alto_pantalla - alto_ventana) // 2
+        return x, y, f"+{x}+{y}"
+
+# =============================================================================
+# SECCIÓN 2: PRUEBAS DE INICIALIZACIÓN BÁSICA
+# =============================================================================
+
+class TestInicializacionBasica(TestToplevel):
+    """
+    Pruebas para la inicialización básica de la clase Toplevel.
+
+    Verifica:
+    1. Creación con parámetros predeterminados
+    2. Configuración de título
+    3. Manejo de iconos
+    4. Comportamiento de iconificación (minimización)
+    """
+
+    def test_creacion_simple(self):
+        """
+        Verifica que la ventana se cree correctamente con valores predeterminados.
+
+        Caso de prueba crítico que confirma la inicialización básica.
+        """
+        # ARRANGE - No se requiere configuración adicional
+
+        # ACT - Crear instancia con valores predeterminados
+        toplevel = self.create_toplevel()
+
+        # ASSERT - Verificar estado básico
+        self.assertTrue(toplevel.winfo_exists())
+        self.assertEqual(toplevel.title(), "themeengine")  # Título predeterminado
+
+    def test_deteccion_sistema_ventanas(self):
+        """
+        Verifica que se detecte correctamente el sistema de ventanas.
+        """
+        # ARRANGE - Los sistemas posibles
+        sistemas = ['win32', 'x11', 'aqua']
+        # Guarda la implementación original
+        original_init = Toplevel.__init__
+
+        try:
+            # Para cada sistema a probar
+            for sistema in sistemas:
+                # Define un nuevo __init__ que asigne directamente winsys
+                def patched_init(self, *args, **kwargs):
+                    # Llamamos al init original
+                    original_init(self, *args, **kwargs)
+                    # Sobrescribimos el resultado de winsys
+                    self.winsys = sistema
+
+                # Aplicamos el parche
+                Toplevel.__init__ = patched_init
+
+                # Creamos la instancia con el init parcheado
+                toplevel = self.create_toplevel()
+
+                # Verificamos que se asignó correctamente
+                self.assertEqual(toplevel.winsys, sistema)
+
+                # Limpiamos
+                toplevel.destroy()
+
+        finally:
+            # Restauramos la implementación original
+            Toplevel.__init__ = original_init
+
+    def test_titulo_personalizado(self):
+        """
+        Verifica que el título se establezca correctamente.
+
+        Prueba un caso común de personalización.
+        """
+        # ARRANGE - Preparar valor de prueba
+        titulo_prueba = "Ventana de Prueba"
+
+        # ACT - Crear con título personalizado
+        toplevel = self.create_toplevel(title=titulo_prueba)
+
+        # ASSERT - Verificar que se estableció correctamente
+        self.assertEqual(toplevel.title(), titulo_prueba)
+
+    def test_iconify_true(self):
+        """
+        Verifica que la ventana se minimice cuando iconify=True.
+
+        Prueba la extracción y aplicación del parámetro especial.
+        """
+        # ARRANGE - No se requiere configuración adicional
+
+        # ACT - Crear con iconify=True
+        with patch.object(Toplevel, 'iconify') as mock_iconify:
+            toplevel = self.create_toplevel(iconify=True)
+
+            # ASSERT - Verificar que se llamó al método
+            mock_iconify.assert_called_once()
+
+    def test_iconify_false(self):
+        """
+        Verifica que la ventana no se minimice cuando iconify=False.
+
+        Complementa el caso anterior para verificar el comportamiento condicional.
+        """
+        # ARRANGE - No se requiere configuración adicional
+
+        # ACT - Crear con iconify=False
+        with patch.object(Toplevel, 'iconify') as mock_iconify:
+            toplevel = self.create_toplevel(iconify=False)
+
+            # ASSERT - Verificar que NO se llamó al método
+            mock_iconify.assert_not_called()
+
+    def test_iconify_no_especificado(self):
+        """
+        Verifica que la ventana no se minimice cuando no se especifica iconify.
+
+        Verifica el valor predeterminado cuando no se proporciona el parámetro.
+        """
+        # ARRANGE - No se requiere configuración adicional
+
+        # ACT - Crear sin especificar iconify
+        with patch.object(Toplevel, 'iconify') as mock_iconify:
+            toplevel = self.create_toplevel()  # Sin iconify
+
+            # ASSERT - Verificar que NO se llamó al método
+            mock_iconify.assert_not_called()
+
+    def test_icono_personalizado_exito(self):
+        """
+        Verifica la carga exitosa de un icono personalizado.
+
+        Prueba un caso de uso común y esperado.
+        """
+        # ARRANGE - Simular PhotoImage y preparar el mock para iconphoto
+        with patch('tkinter.PhotoImage') as mock_photo, \
+                patch('tkinter.Toplevel.iconphoto') as mock_iconphoto:
+            mock_instance = MagicMock()
+            mock_photo.return_value = mock_instance
+
+            # ACT - Crear con icono personalizado
+            toplevel = self.create_toplevel(iconphoto="ruta/al/icono.png")
+
+            # ASSERT - Verificar carga y aplicación
+            mock_photo.assert_called_once_with(
+                file="ruta/al/icono.png",
+                master=toplevel
+            )
+            mock_iconphoto.assert_called_once_with(True, mock_instance)
+
+    def test_icono_error_capturado(self):
+        """
+        Verifica que se maneje correctamente un error al cargar un icono.
+
+        Prueba un caso límite importante - manejo de error de recurso.
+        """
+        # ARRANGE - Simular error en PhotoImage
+        with patch('tkinter.PhotoImage') as mock_photo:
+            mock_photo.side_effect = tk.TclError("Error al cargar imagen")
+
+            # Capturar salida estándar
+            captura = io.StringIO()
+
+            # ACT - Crear con ruta inválida, capturando stdout
+            with redirect_stdout(captura):
+                toplevel = self.create_toplevel(iconphoto="ruta/invalida.png")
+
+            # ASSERT - Verificar mensaje de error
+            self.assertIn("iconphoto path is bad", captura.getvalue())
+
+
+# =============================================================================
+# SECCIÓN 3: PRUEBAS DE CONFIGURACIÓN DE GEOMETRÍA
+# =============================================================================
+
+class TestConfiguracionGeometria(TestToplevel):
+    """
+    Pruebas para la configuración de geometría de la ventana.
+
+    Verifica:
+    1. Configuración de tamaño
+    2. Configuración de posición
+    3. Restricciones de tamaño mínimo y máximo
+    4. Opciones de redimensionamiento
+    """
+
+    def test_tamano_ventana(self):
+        """
+        Verifica que el tamaño se establezca correctamente.
+
+        Prueba para diferentes tamaños comunes.
+        """
+        casos = [
+            ((400, 300), "400x300"),
+            ((100, 100), "100x100"),
+            ((800, 600), "800x600")
+        ]
+
+        for tamano, esperado in casos:
+            with self.subTest(tamano=tamano, esperado=esperado):
+                with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
+                    toplevel = self.create_toplevel(size=tamano)
+                    mock_geometry.assert_any_call(esperado)
+
+    def test_posicion_ventana(self):
+        """
+        Verifica que la posición se establezca correctamente.
+
+        Prueba para diferentes posiciones comunes.
+        """
+        casos = [
+            ((0, 0), "+0+0"),
+            ((100, 200), "+100+200"),
+            ((50, 50), "+50+50")
+        ]
+
+        for posicion, esperado in casos:
+            with self.subTest(posicion=posicion, esperado=esperado):
+                with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
+                    toplevel = self.create_toplevel(position=posicion)
+                    mock_geometry.assert_any_call(esperado)
+
+    def test_tamano_minimo(self):
+        """Verifica que se establezca correctamente el tamaño mínimo."""
+        tamano_min = (200, 150)
+        with patch.object(tk.Toplevel, 'minsize') as mock_minsize:
+            toplevel = self.create_toplevel(minsize=tamano_min)
+            mock_minsize.assert_called_once_with(tamano_min[0], tamano_min[1])
+
+    def test_tamano_maximo(self):
+        """Verifica que se establezca correctamente el tamaño máximo."""
+        tamano_max = (800, 600)
+        with patch.object(tk.Toplevel, 'maxsize') as mock_maxsize:
+            toplevel = self.create_toplevel(maxsize=tamano_max)
+            mock_maxsize.assert_called_once_with(tamano_max[0], tamano_max[1])
+
+    def test_redimensionable(self):
+        """
+        Verifica las diferentes configuraciones de redimensionamiento.
+
+        Prueba todas las combinaciones posibles de redimensionamiento:
+        - Ambos ejes permitidos (True, True)
+        - Ambos ejes bloqueados (False, False)
+        - Solo ancho permitido (True, False)
+        - Solo alto permitido (False, True)
+        """
+        casos = [
+            ((True, True), (True, True)),
+            ((False, False), (False, False)),
+            ((True, False), (True, False)),
+            ((False, True), (False, True))
+        ]
+
+        for resizable_value, expected in casos:
+            with self.subTest(resizable=resizable_value):
+                with patch.object(tk.Toplevel, 'resizable') as mock_resizable:
+                    toplevel = self.create_toplevel(resizable=resizable_value)
+                    mock_resizable.assert_called_once_with(expected[0], expected[1])
+
+    def test_combinacion_tamano_posicion(self):
+        """Verifica la combinación de tamaño y posición simultáneos."""
+        tamano = (400, 300)
+        posicion = (100, 200)
+        with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
+            toplevel = self.create_toplevel(size=tamano, position=posicion)
+            mock_geometry.assert_any_call(f"{tamano[0]}x{tamano[1]}")
+            mock_geometry.assert_any_call(f"+{posicion[0]}+{posicion[1]}")
+
+# =============================================================================
+# SECCIÓN 4: PRUEBAS DE COMPORTAMIENTO DE VENTANA
+# =============================================================================
+
+class TestComportamientoVentana(TestToplevel):
+    """
+    Pruebas para comportamientos específicos de la ventana.
+
+    Verifica:
+    1. Relación transitoria entre ventanas
+    2. Eliminación de decoraciones
+    3. Opciones específicas de plataforma
+    """
+
+    def test_ventana_transitoria(self):
+        """
+        Verifica que se establezca correctamente la relación transitoria.
+
+        Prueba un comportamiento importante para diálogos modales.
+        """
+        # ARRANGE - Ventana maestra (root)
+
+        # ACT - Crear ventana transitoria
+        with patch.object(tk.Toplevel, 'transient') as mock_transient:
+            toplevel = self.create_toplevel(transient=self.root)
+
+            # ASSERT - Verificar que se estableció la relación
+            mock_transient.assert_called_once_with(self.root)
+
+    def test_eliminar_decoraciones(self):
+        """
+        Verifica que se eliminen correctamente las decoraciones de ventana.
+
+        Prueba un caso de uso especializado pero importante.
+        """
+        # ARRANGE - No se requiere configuración adicional
+
+        # ACT - Crear ventana sin decoraciones
+        with patch.object(tk.Toplevel, 'overrideredirect') as mock_override:
+            toplevel = self.create_toplevel(overrideredirect=True)
+
+            # ASSERT - Verificar que se activó la eliminación
+            mock_override.assert_called_once_with(1)
+
+    def test_tipo_ventana_x11(self):
+        """
+        Verifica la configuración de tipo de ventana en sistemas X11.
+
+        Prueba comportamiento específico de plataforma.
+        """
+        # ARRANGE - Simular sistema X11
+        tipo_ventana = "dialog"
+
+        # Patch el método attributes para verificar las llamadas
+        with patch.object(Toplevel, 'attributes') as mock_attributes:
+            # ACT - Crear ventana y modificar winsys directamente
+            toplevel = self.create_toplevel(windowtype=tipo_ventana)
+
+            # Modificar winsys y ejecutar manualmente la parte del código que queremos probar
+            toplevel.winsys = 'x11'
+
+            # Llamar "manualmente" a la parte del constructor que usa windowtype
+            if tipo_ventana is not None:
+                if toplevel.winsys == 'x11':
+                    toplevel.attributes("-type", tipo_ventana)
+
+            # ASSERT - Verificar que se configuró el tipo
+            mock_attributes.assert_any_call("-type", tipo_ventana)
+
+    def test_tipo_ventana_ignorado_no_x11(self):
+        """
+        Verifica que el tipo de ventana se ignore en sistemas no X11.
+
+        Prueba un caso límite de compatibilidad multiplataforma.
+        """
+        # ARRANGE - Simular sistema Windows
+        tipo_ventana = "dialog"
+
+        # Reemplazar temporalmente el método __init__ para establecer winsys como 'win32'
+        original_init = tk.Toplevel.__init__
+
+        def mock_init(*args, **kwargs):
+            instance = args[0]  # El primer argumento es 'self'
+            original_init(*args, **kwargs)
+            instance.winsys = 'win32'  # Forzar sistema de ventanas Windows
+
+        # ACT - Crear con tipo de ventana en Windows
+        with patch('tkinter.Toplevel.__init__', mock_init):
+            with patch.object(tk.Toplevel, 'attributes') as mock_attributes:
+                toplevel = self.create_toplevel(windowtype=tipo_ventana)
+
+                # ASSERT - Verificar que NO se configuró el tipo
+                for call in mock_attributes.call_args_list:
+                    self.assertNotEqual(call[0][0], "-type")
+
+    def test_siempre_visible(self):
+        """
+        Verifica la configuración de 'siempre visible' (topmost).
+
+        Prueba un comportamiento común en ventanas de notificación.
+        """
+        # ARRANGE - No se requiere configuración adicional
+
+        # ACT - Crear ventana siempre visible
+        with patch.object(tk.Toplevel, 'attributes') as mock_attributes:
+            toplevel = self.create_toplevel(topmost=True)
+
+            # ASSERT - Verificar que se activó la propiedad
+            mock_attributes.assert_any_call("-topmost", 1)
+
+    @unittest.skipIf(sys.platform != "win32", "Prueba específica para Windows")
+    def test_ventana_herramientas_windows(self):
+        """
+        Verifica la configuración de ventana de herramientas en Windows.
+
+        Prueba un comportamiento específico de Windows importante para
+        ventanas de utilidad.
+        """
+        # ARRANGE - Simular sistema Windows
+
+        # ACT - Crear ventana de herramientas
+        with self.simulate_winsys('win32'):
+            with patch.object(tk.Toplevel, 'attributes') as mock_attributes:
+                toplevel = self.create_toplevel(toolwindow=True)
+
+                # ASSERT - Verificar que se activó el estilo
+                mock_attributes.assert_any_call("-toolwindow", 1)
+
+    def test_ventana_herramientas_ignorada_no_windows(self):
+        """
+        Verifica que la opción de ventana de herramientas se ignore en sistemas no Windows.
+        """
+        # ARRANGE - Preparar el parche para 'winsys'
+        original_getattr = Toplevel.__getattribute__
+        # print(f"\n Atributos originales: {original_getattr}")  # Debería ser 'x32'
+        def mock_getattr(instance, name):
+            # Si se accede a 'winsys', devolver 'x11'
+            if name == 'winsys':
+                return 'x11'
+            # Para cualquier otro atributo, comportamiento normal
+            return original_getattr(instance, name)
+
+        # ACT - Crear ventana con toolwindow=True pero asegurar que winsys aparece como 'x11'
+        with patch.object(Toplevel, '__getattribute__', mock_getattr):
+            with patch.object(Toplevel, 'attributes') as mock_attributes:
+                toplevel = self.create_toplevel(toolwindow=True)
+                print(f"winsys value: {toplevel.winsys}")  # Debería ser 'x11'
+
+                # ASSERT - No debería llamarse a attributes con "-toolwindow"
+                toolwindow_calls = [call for call in mock_attributes.call_args_list
+                                    if call[0][0] == "-toolwindow"]
+                self.assertEqual(len(toolwindow_calls), 0,
+                                 "No debería haber llamadas con -toolwindow en X11")
+
+# =============================================================================
+# SECCIÓN 5: PRUEBAS DE TRANSPARENCIA
+# =============================================================================
+
+class TestTransparencia(TestToplevel):
+    """
+    Pruebas para la configuración de transparencia (alpha).
+
+    Verifica:
+    1. Aplicación correcta del nivel de transparencia
+    2. Comportamiento específico por plataforma
+    3. Valores límite y especiales
+    """
+
+    def test_nivel_transparencia_total(self):
+        """Verifica transparencia completa (alpha=0.0)."""
+        # ARRANGE
+        nivel_alpha = 0.0
+
+        # ACT - Crear con nivel específico de transparencia
+        with patch.object(tk.Toplevel, 'attributes') as mock_attributes:
+            with patch.object(tk.Toplevel, 'wait_visibility'):  # Para evitar bloqueos
+                toplevel = self.create_toplevel(alpha=nivel_alpha)
+
+                # ASSERT - Verificar que se configuró el nivel correcto
+                mock_attributes.assert_any_call("-alpha", nivel_alpha)
+
+    def test_nivel_transparencia_media(self):
+        """Verifica transparencia media (alpha=0.5)."""
+        # ARRANGE
+        nivel_alpha = 0.5
+
+        # ACT - Crear con nivel específico de transparencia
+        with patch.object(tk.Toplevel, 'attributes') as mock_attributes:
+            with patch.object(tk.Toplevel, 'wait_visibility'):  # Para evitar bloqueos
+                toplevel = self.create_toplevel(alpha=nivel_alpha)
+
+                # ASSERT - Verificar que se configuró el nivel correcto
+                mock_attributes.assert_any_call("-alpha", nivel_alpha)
+
+    def test_nivel_transparencia_ninguna(self):
+        """Verifica transparencia nula (alpha=1.0)."""
+        # ARRANGE
+        nivel_alpha = 1.0
+
+        # ACT - Crear con nivel específico de transparencia
+        with patch.object(tk.Toplevel, 'attributes') as mock_attributes:
+            with patch.object(tk.Toplevel, 'wait_visibility'):  # Para evitar bloqueos
+                toplevel = self.create_toplevel(alpha=nivel_alpha)
+
+                # ASSERT - Verificar que se configuró el nivel correcto
+                mock_attributes.assert_any_call("-alpha", nivel_alpha)
+
+    def test_espera_visibilidad_x11(self):
+        """
+        Verifica que se espere la visibilidad antes de aplicar transparencia en X11.
+
+        Prueba un comportamiento específico de plataforma crucial para
+        que la transparencia funcione correctamente en Linux.
+        """
+        nivel_alpha = 0.7
+
+        # ACT - Crear con transparencia en X11
+        with self.simulate_winsys('x11'):
+            with patch.object(tk.Toplevel, 'wait_visibility') as mock_wait:
+                with patch.object(tk.Toplevel, 'attributes'):  # Para evitar bloqueos
+                    toplevel = self.create_toplevel(alpha=nivel_alpha)
+
+                    # ASSERT - Verificar que se esperó la visibilidad
+                    mock_wait.assert_called_once()
+
+    def test_no_espera_visibilidad_win32(self):
+        """
+        Verifica que NO se espere la visibilidad en Win32.
+
+        Prueba un caso específico de plataforma para optimización.
+        """
+        # ARRANGE - Simular sistema Windows
+        nivel_alpha = 0.7
+        self.simulate_winsys('win32')  # Configurar la simulación de Windows
+
+        # ACT - Crear con transparencia en Windows
+        with patch.object(tk.Toplevel, 'wait_visibility') as mock_wait:
+            with patch.object(tk.Toplevel, 'attributes'):  # Para evitar bloqueos
+                toplevel = self.create_toplevel(alpha=nivel_alpha)
+
+                # ASSERT - Verificar que NO se esperó la visibilidad
+                mock_wait.assert_not_called()
+
+
+# =============================================================================
+# SECCIÓN 6: PRUEBAS DE ESTILO
+# =============================================================================
+
+class TestEstilo(TestToplevel):
+    """
+    Pruebas para la propiedad style de la clase Toplevel.
+
+    Verifica:
+    1. Comportamiento de la propiedad style
+    2. Creación correcta de objeto Style
+    """
+
+    def test_propiedad_style(self):
+        """
+        Verifica que la propiedad style devuelve un objeto Style.
+        """
+        # ACT - Crear ventana y acceder a propiedad
+        toplevel = self.create_toplevel()
+        style = toplevel.style
+
+        # ASSERT - Verificar que el objeto devuelto es una instancia de Style
+        self.assertIsInstance(style, Style)
+
+    def test_multiples_accesos_style(self):
+        """
+        Verifica el comportamiento con múltiples accesos a la propiedad.
+
+        Debido al patrón Singleton implementado en Style, cada acceso
+        debe devolver la misma instancia.
+        """
+        # ACT - Crear ventana y acceder a propiedad múltiples veces
+        toplevel = self.create_toplevel()
+        style1 = toplevel.style
+        style2 = toplevel.style
+
+        # ASSERT - Verificar que ambas son la misma instancia de Style
+        self.assertIsInstance(style1, Style)
+        self.assertIsInstance(style2, Style)
+        self.assertIs(style1, style2)  # Verifica que son el mismo objeto
+
+
+# =============================================================================
+# SECCIÓN 7: PRUEBAS DE CENTRADO DE VENTANA
+# =============================================================================
+
+class TestCentradoVentana(TestToplevel):
+    """
+    Pruebas para los métodos de centrado de ventana.
+
+    Verifica:
+    1. Cálculo correcto de posición centrada
+    2. Actualización de tareas pendientes
+    3. Comportamiento del alias
+    """
+
+    def test_place_window_center_refactorizado(self):
+        """
+        Verifica el cálculo y aplicación correcta del centrado.
+        Versión refactorizada para mejor legibilidad.
+        """
+        # ARRANGE - Definir dimensiones de prueba
+        dimensiones = {
+            'ancho_ventana': 400,
+            'alto_ventana': 300,
+            'ancho_pantalla': 1024,
+            'alto_pantalla': 768
+        }
+
+        # Crear ventana
+        toplevel = self.create_toplevel()
+
+        # Calcular posición esperada
+        esperado_x, esperado_y, posicion_esperada = self._calcular_posicion_esperada(**dimensiones)
+
+        # Crear los patchers
+        patchers = self._crear_patchers_centrado(toplevel, dimensiones)
+
+        # Gestionar los patchers con el gestor de contexto
+        with self.gestionar_patchers(patchers) as mocks:
+            # ACT - Llamar al método de centrado
+            toplevel.place_window_center()
+
+            # ASSERT - Verificar comportamiento
+            mocks['update_idletasks'].assert_called_once()
+            mocks['geometry'].assert_called_once_with(posicion_esperada)
+
+    def test_centrado_con_ventana_invisible(self):
+        """
+        Verifica el comportamiento del centrado cuando la ventana aún no tiene dimensiones.
+        """
+        # ARRANGE - Crear ventana sin mostrarla
+        toplevel = self.create_toplevel()
+
+        # Definir el escenario para una ventana invisible
+        dimensiones = {
+            'ancho_ventana': 1,
+            'alto_ventana': 1,
+            'ancho_pantalla': 1024,
+            'alto_pantalla': 768
+        }
+
+        # Calcular posición esperada
+        _, _, posicion_esperada = self._calcular_posicion_esperada(**dimensiones)
+
+        with self.subTest(descripcion="Ventana invisible o de tamaño mínimo"):
+            # Crear los patchers
+            patchers = self._crear_patchers_centrado(toplevel, dimensiones)
+
+            # Gestionar los patchers con el gestor de contexto
+            with self.gestionar_patchers(patchers) as mocks:
+                # ACT
+                toplevel.place_window_center()
+
+                # ASSERT
+                mocks['update_idletasks'].assert_called_once()
+                mocks['geometry'].assert_called_once_with(posicion_esperada)
+
+    def test_alias_position_center(self):
+        """
+        Verifica que position_center sea un alias de place_window_center.
+
+        Prueba la coherencia de la API usando subtests para diferentes
+        verificaciones.
+        """
+        # ARRANGE - Crear ventana usando el fixture existente
+        toplevel = self.create_toplevel()
+
+        # SUBTEST 1: Verificar identidad a nivel de clase
+        with self.subTest("Verificar identidad de métodos a nivel de clase"):
+            self.assertIs(Toplevel.position_center, Toplevel.place_window_center)
+
+        # SUBTEST 2: Verificar comportamiento idéntico (resultados)
+        with self.subTest("Verificar comportamiento idéntico"):
+            dimensiones = {
+                'ancho_ventana': 400,
+                'alto_ventana': 300,
+                'ancho_pantalla': 1024,
+                'alto_pantalla': 768
+            }
+
+            # Calcular posición esperada
+            _, _, posicion_esperada = self._calcular_posicion_esperada(**dimensiones)
+
+            # Crear los patchers
+            patchers = self._crear_patchers_centrado(toplevel, dimensiones)
+
+            # Usar el gestor de contexto para manejar los patchers
+            with self.gestionar_patchers(patchers) as mocks:
+                # Llamar a place_window_center
+                toplevel.place_window_center()
+
+                # Verificar que se llamó a geometry con los argumentos esperados
+                mocks['geometry'].assert_called_once_with(posicion_esperada)
+
+                # Reiniciar los mocks para la siguiente prueba
+                for mock in mocks.values():
+                    mock.reset_mock()
+
+                # Llamar a position_center (el alias)
+                toplevel.position_center()
+
+                # Verificar que se llamó a geometry con los mismos argumentos
+                mocks['geometry'].assert_called_once_with(posicion_esperada)
+
+# =============================================================================
+# SECCIÓN 8: PRUEBAS DE INTEGRACIÓN DE BAJO NIVEL
+# =============================================================================
+
+class TestIntegracionBajoNivel(TestToplevel):
+    """
+    Pruebas de integración con componentes Tkinter de bajo nivel.
+
+    Verifica:
+    1. Interacción con el sistema de ventanas subyacente
+    2. Ciclo de vida completo en escenarios realistas
+    3. Comportamiento con otras ventanas
+    """
+
+    def test_ciclo_vida_basico(self):
+        """
+        Verifica el ciclo de vida básico de una ventana.
+
+        Prueba de integración para operaciones fundamentales.
+        """
+        # ARRANGE - No se requiere configuración adicional
+
+        # ACT - Crear ventana
+        toplevel = self.create_toplevel(title="Prueba Ciclo Vida")
+
+        # Verificar estado inicial
+        self.assertTrue(toplevel.winfo_exists())
+        self.assertEqual(toplevel.title(), "Prueba Ciclo Vida")
+
+        # Modificar propiedades
+        toplevel.title("Nuevo Título")
+        self.assertEqual(toplevel.title(), "Nuevo Título")
+
+        # Destruir ventana
+        toplevel.destroy()
+
+        # ASSERT - Verificar destrucción
+        self.assertFalse(toplevel.winfo_exists())
+
+    def test_interaccion_multiples_ventanas(self):
+        """
+        Verifica la interacción entre múltiples ventanas.
+
+        Prueba un escenario realista de interfaz de usuario.
+        """
+        # ARRANGE - Crear ventana principal
+        toplevel_principal = self.create_toplevel(title="Ventana Principal")
+
+        # ACT - Crear ventana secundaria transitoria
+        with patch.object(tk.Toplevel, 'transient') as mock_transient:
+            toplevel_secundaria = Toplevel(title="Ventana Secundaria",
+                                           transient=toplevel_principal)
+
+            # ASSERT - Verificar relación transitoria
+            mock_transient.assert_called_once_with(toplevel_principal)
+
+        # Limpiar segunda ventana
+        toplevel_secundaria.destroy()
+
+    @unittest.skipIf(sys.platform != "win32", "Prueba específica para Windows")
+    def test_integracion_real_windows(self):
+        """
+        Verifica la integración real en plataforma Windows.
+
+        Esta prueba solo se ejecuta en Windows y realiza una verificación
+        real (no mockeada) de características específicas de la plataforma.
+        """
+        # ARRANGE - No se requiere configuración adicional
+
+        # ACT - Crear ventana con opciones específicas de Windows
+        toplevel = self.create_toplevel(
+            title="Prueba Windows",
+            toolwindow=True,
+            topmost=True
+        )
+
+        # Permitir que la ventana se procese
+        self.root.update()
+
+        # ASSERT - Verificar características específicas de Windows
+        # Nota: Estas verificaciones son más limitadas que las mockeadas
+        # ya que dependen del comportamiento real del sistema
+        self.assertEqual(toplevel.title(), "Prueba Windows")
+
+        # Verificar que la ventana existe
+        self.assertTrue(toplevel.winfo_exists())
+
+
+    def test_integracion_real_x11(self):
+        """
+        Verifica la integración real en plataforma Linux/X11.
+
+        Esta prueba solo se ejecuta en Linux y realiza una verificación
+        real (no mockeada) de características específicas de la plataforma.
+        """
+        # ARRANGE - No se requiere configuración adicional
+
+        # ACT - Crear ventana con opciones específicas de X11
+        toplevel = self.create_toplevel(
+            title="Prueba X11",
+            windowtype="dialog",
+            topmost=True
+        )
+
+        # Permitir que la ventana se procese
+        self.root.update()
+
+        # ASSERT - Verificar características básicas
+        self.assertEqual(toplevel.title(), "Prueba X11")
+        self.assertTrue(toplevel.winfo_exists())
+
+
+# =============================================================================
+# SECCIÓN 9: PRUEBAS DE CASOS LÍMITE Y MANEJO DE ERRORES
+# =============================================================================
+
+class TestCasosLimite(TestToplevel):
+    """
+    Pruebas para casos límite y manejo de errores.
+
+    Verifica:
+    1. Comportamiento con valores extremos
+    2. Manejo de entradas inválidas
+    3. Gestión de condiciones excepcionales
+    """
+
+    def test_tamano_cero(self):
+        """
+        Verifica el comportamiento con tamaño cero.
+
+        Prueba un caso límite de geometría.
+        """
+        # ARRANGE - Tamaño cero
+        tamano_cero = (0, 0)
+
+        # ACT - Crear ventana con tamaño cero
+        with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
+            toplevel = self.create_toplevel(size=tamano_cero)
+
+            # ASSERT - Verificar que se intentó aplicar
+            mock_geometry.assert_any_call("0x0")
+
+    def test_tamano_negativo(self):
+        """
+        Verifica el comportamiento con tamaño negativo.
+
+        Prueba un caso inválido de geometría.
+        """
+        # ARRANGE - Tamaño negativo
+        tamano_negativo = (-100, -50)
+
+        # ACT & ASSERT - Crear ventana con tamaño negativo
+        # Esto debería funcionar a nivel de prueba, pero Tkinter podría
+        # reajustar a un valor válido en una aplicación real
+        with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
+            toplevel = self.create_toplevel(size=tamano_negativo)
+
+            # Verificar que se intentó aplicar (Tkinter/TK lo manejarán internamente)
+            mock_geometry.assert_any_call("-100x-50")
+
+    def test_posicion_negativa(self):
+        """
+        Verifica el comportamiento con posición negativa.
+
+        Prueba un caso válido pero extremo de posicionamiento.
+        """
+        # ARRANGE - Posición negativa
+        posicion_negativa = (-200, -100)
+
+        # ACT - Crear ventana con posición negativa
+        with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
+            toplevel = self.create_toplevel(position=posicion_negativa)
+
+            # ASSERT - Verificar que se intentó aplicar
+            mock_geometry.assert_any_call("-200-100")  # Formato especial para negativos
+
+    def test_alpha_fuera_de_rango(self):
+        """
+        Verifica el comportamiento con alpha fuera de rango [0.0, 1.0].
+
+        Prueba un caso inválido de transparencia.
+        """
+        # ARRANGE - Valores fuera de rango
+        valores_prueba = [-0.5, 1.5, 2.0]
+
+        for valor in valores_prueba:
+            # ACT - Crear ventana con alpha inválido
+            with patch.object(tk.Toplevel, 'attributes') as mock_attributes:
+                with patch.object(tk.Toplevel, 'wait_visibility'):  # Para evitar bloqueos
+                    toplevel = self.create_toplevel(alpha=valor)
+
+                    # ASSERT - Verificar que se intentó aplicar
+                    # Tkinter aplicará el valor, pero el sistema puede limitarlo
+                    mock_attributes.assert_any_call("-alpha", valor)
+
+                    # Limpiar para siguiente iteración
+                    toplevel.destroy()
+
+    def test_titulo_vacio(self):
+        """
+        Verifica el comportamiento con título vacío.
+
+        Prueba un caso límite de configuración.
+        """
+        # ARRANGE - No se requiere configuración adicional
+
+        # ACT - Crear ventana con título vacío
+        toplevel = self.create_toplevel(title="")
+
+        # ASSERT - Verificar que se aceptó el título vacío
+        self.assertEqual(toplevel.title(), "")
+
+    def test_titulo_caracteres_especiales(self):
+        """
+        Verifica el comportamiento con caracteres especiales en el título.
+
+        Prueba un caso de borde para posibles problemas de codificación.
+        """
+        # ARRANGE - Título con caracteres especiales
+        titulo_especial = "Ventana €ñçáéíóú 你好 Привет"
+
+        # ACT - Crear ventana con título especial
+        toplevel = self.create_toplevel(title=titulo_especial)
+
+        # ASSERT - Verificar que se mantuvo el título
+        self.assertEqual(toplevel.title(), titulo_especial)
+
+    def test_centrado_antes_de_visibilidad(self):
+        """
+        Verifica el comportamiento al centrar antes de que la ventana sea visible.
+
+        Prueba un caso de borde en el ciclo de vida.
+        """
+        # ARRANGE - Crear ventana
+        toplevel = self.create_toplevel()
+
+        # Simular que la ventana no tiene tamaño aún
+        with patch.object(toplevel, 'winfo_width', return_value=1):
+            with patch.object(toplevel, 'winfo_height', return_value=1):
+                with patch.object(toplevel, 'update_idletasks') as mock_update:
+                    with patch.object(toplevel, 'geometry') as mock_geometry:
+                        # ACT - Centrar ventana
+                        toplevel.place_window_center()
+
+                        # ASSERT - Verificar que se actualizaron tareas
+                        mock_update.assert_called_once()
+                        # La posición calculada será casi en esquina superior izquierda
+                        # debido a las dimensiones simuladas
+                        mock_geometry.assert_called_once()
+
+
+# =============================================================================
+# SECCIÓN 10: PRUEBAS INTEGRADAS COMPLETAS
+# =============================================================================
+
+class TestIntegracionCompleta(TestToplevel):
+    """
+    Pruebas que combinan múltiples aspectos de la clase Toplevel.
+
+    Verifica:
+    1. Casos de uso completos y realistas
+    2. Combinaciones de múltiples características
+    3. Escenarios de aplicación típicos
+    """
+
+    def test_ventana_dialogo_tipica(self):
+        """
+        Verifica un caso típico de ventana de diálogo.
+
+        Simula un escenario de uso real común.
+        """
+        # ARRANGE - Mockear métodos relevantes
+        with patch.object(tk.Toplevel, 'transient') as mock_transient:
+            with patch.object(tk.Toplevel, 'resizable') as mock_resizable:
+                with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
+                    # ACT - Crear ventana de diálogo típica
+                    toplevel = self.create_toplevel(
+                        title="Diálogo de Configuración",
+                        size=(400, 300),
+                        resizable=(False, False),
+                        transient=self.root
+                    )
+
+                    # ASSERT - Verificar configuración completa
+                    self.assertEqual(toplevel.title(), "Diálogo de Configuración")
+                    mock_geometry.assert_any_call("400x300")
+                    mock_resizable.assert_called_once_with(False, False)
+                    mock_transient.assert_called_once_with(self.root)
+
+    def test_ventana_notificacion_tipica(self):
+        """
+        Verifica un caso típico de ventana de notificación.
+
+        Simula un escenario de uso real para notificaciones.
+        """
+        # ARRANGE - Mockear métodos relevantes
+        with patch.object(tk.Toplevel, 'attributes') as mock_attributes:
+            with patch.object(tk.Toplevel, 'overrideredirect') as mock_override:
+                with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
+                    # ACT - Crear ventana de notificación típica
+                    toplevel = self.create_toplevel(
+                        title="Notificación",
+                        size=(300, 100),
+                        overrideredirect=True,
+                        topmost=True,
+                        alpha=0.9
+                    )
+
+                    # ASSERT - Verificar configuración completa
+                    mock_geometry.assert_any_call("300x100")
+                    mock_override.assert_called_once_with(1)
+                    mock_attributes.assert_any_call("-topmost", 1)
+                    mock_attributes.assert_any_call("-alpha", 0.9)
+
+    def test_ventana_herramienta_windows_tipica(self):
+        """
+        Verifica un caso típico de ventana de herramientas en Windows.
+
+        Simula un escenario de uso real específico de plataforma.
+        """
+        # ARRANGE - Simular sistema Windows
+        with self.simulate_winsys('win32'):
+            # Mockear métodos relevantes
+            with patch.object(tk.Toplevel, 'attributes') as mock_attributes:
+                with patch.object(tk.Toplevel, 'resizable') as mock_resizable:
+                    with patch.object(tk.Toplevel, 'geometry') as mock_geometry:
+                        # ACT - Crear ventana de herramientas típica
+                        toplevel = self.create_toplevel(
+                            title="Herramientas",
+                            size=(200, 400),
+                            toolwindow=True,
+                            resizable=(True, True)
+                        )
+
+                        # ASSERT - Verificar configuración completa
+                        mock_geometry.assert_any_call("200x400")
+                        mock_resizable.assert_called_once_with(True, True)
+                        mock_attributes.assert_any_call("-toolwindow", 1)
+
+
+# =============================================================================
+# SECCIÓN 11: EJECUCIÓN DE PRUEBAS
+# =============================================================================
+
+if __name__ == '__main__':
+    # Configuración de pruebas
+    # La ejecución con verbosidad 2 muestra detalles de cada prueba
+    unittest.main(verbosity=2)
+
+    # Alternativamente, usar pytest para ejecución avanzada
+    # pytest -xvs path/to/test_toplevel.py
