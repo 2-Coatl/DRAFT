@@ -6,7 +6,7 @@ from ui.themeengine.communication.channel import Channel
 from ui.themeengine.communication.publisher import Publisher
 from ui.themeengine.builders.style_builder_tk import StyleBuilderTK
 from ui.themeengine.utils.keywords import Keywords
-from ui.themeengine.builders.style_engine_ttk import StyleBuilderTTK
+from ui.themeengine.builders.style_builder_ttk import StyleBuilderTTK
 
 class Bootstyle:
     """Clase utilitaria que proporciona métodos para manipular y gestionar estilos TTK.

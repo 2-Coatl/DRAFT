@@ -6,7 +6,7 @@ from ui.themeengine.core.color import Colors
 from ui.themeengine.utils.constants import DEFAULT_THEME, USER_THEMES, STANDARD_THEMES
 from ui.themeengine.communication.channel import Channel
 from ui.themeengine.communication.publisher import Publisher
-from ui.themeengine.builders.style_engine_ttk import StyleBuilderTTK
+from ui.themeengine.builders.style_builder_ttk import StyleBuilderTTK
 from ui.themeengine.core.theme import ThemeDefinition
 from ui.themeengine.utils.bootstyle import Bootstyle
 
