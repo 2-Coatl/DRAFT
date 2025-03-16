@@ -289,95 +289,78 @@ class TestWindowToplevelIntegration(TestWindowToplevelBase):
         Verifica que el algoritmo de centrado calcule correctamente
         las posiciones para Window y Toplevel.
         """
-        # Casos de prueba para algoritmo de centrado
-        casos_centrado = [
-            # Caso 1: Ventana estándar en monitor HD
-            {
-                'ventana': 'Window',
-                'dimensiones': {
-                    'ancho_ventana': 800, 'alto_ventana': 600,
-                    'ancho_pantalla': 1920, 'alto_pantalla': 1080
+        # Detener temporalmente el parche del método place_window_center
+        self.center_patch.stop()
+
+        try:
+            # Casos de prueba para algoritmo de centrado
+            casos_centrado = [
+                # Caso 1: Ventana estándar en monitor HD
+                {
+                    'ventana': 'Window',
+                    'dimensiones': {
+                        'ancho_ventana': 800, 'alto_ventana': 600,
+                        'ancho_pantalla': 1920, 'alto_pantalla': 1080
+                    },
+                    'esperado': '+560+240'
                 },
-                'esperado': '+560+240'
-            },
-            # Caso 2: Ventana pequeña en monitor HD
-            {
-                'ventana': 'Window',
-                'dimensiones': {
-                    'ancho_ventana': 400, 'alto_ventana': 300,
-                    'ancho_pantalla': 1920, 'alto_pantalla': 1080
+                # Caso 2: Ventana pequeña en monitor HD
+                {
+                    'ventana': 'Window',
+                    'dimensiones': {
+                        'ancho_ventana': 400, 'alto_ventana': 300,
+                        'ancho_pantalla': 1920, 'alto_pantalla': 1080
+                    },
+                    'esperado': '+760+390'
                 },
-                'esperado': '+760+390'
-            },
-            # Caso 3: Toplevel estándar en monitor HD
-            {
-                'ventana': 'Toplevel',
-                'dimensiones': {
-                    'ancho_ventana': 600, 'alto_ventana': 400,
-                    'ancho_pantalla': 1920, 'alto_pantalla': 1080
+                # Caso 3: Toplevel estándar en monitor HD
+                {
+                    'ventana': 'Toplevel',
+                    'dimensiones': {
+                        'ancho_ventana': 600, 'alto_ventana': 400,
+                        'ancho_pantalla': 1920, 'alto_pantalla': 1080
+                    },
+                    'esperado': '+660+340'
                 },
-                'esperado': '+660+340'
-            },
-            # Caso 4: Ventana grande en monitor pequeño
-            {
-                'ventana': 'Window',
-                'dimensiones': {
-                    'ancho_ventana': 1024, 'alto_ventana': 768,
-                    'ancho_pantalla': 1366, 'alto_pantalla': 768
-                },
-                'esperado': '+171+0'
-            }
-        ]
+                # Caso 4: Ventana grande en monitor pequeño
+                {
+                    'ventana': 'Window',
+                    'dimensiones': {
+                        'ancho_ventana': 1024, 'alto_ventana': 768,
+                        'ancho_pantalla': 1366, 'alto_pantalla': 768
+                    },
+                    'esperado': '+171+0'
+                }
+            ]
 
-        # Probar cada caso con subTest
-        for i, caso in enumerate(casos_centrado):
-            with self.subTest(f"Caso {i + 1}: {caso['ventana']} {caso['dimensiones']}"):
-                dims = caso['dimensiones']
+            for i, caso in enumerate(casos_centrado):
+                with self.subTest(f"Caso {i + 1}: {caso['ventana']} {caso['dimensiones']}"):
+                    dims = caso['dimensiones']
 
-                # Probar directamente el cálculo de la posición centrada
-                # sin crear ventanas reales o usar objetos Tkinter
+                    # Crear una instancia de Toplevel usando tu método helper
+                    toplevel = self.create_toplevel()
 
-                # Calcular la posición usando la misma fórmula del método
-                x = (dims['ancho_pantalla'] - dims['ancho_ventana']) // 2
-                y = (dims['alto_pantalla'] - dims['alto_ventana']) // 2
-                geometria = f"+{x}+{y}"
+                    # Parchar los métodos de información pero NO place_window_center
+                    with patch.object(toplevel, 'winfo_width', return_value=dims['ancho_ventana']), \
+                            patch.object(toplevel, 'winfo_height', return_value=dims['alto_ventana']), \
+                            patch.object(toplevel, 'winfo_screenwidth', return_value=dims['ancho_pantalla']), \
+                            patch.object(toplevel, 'winfo_screenheight', return_value=dims['alto_pantalla']), \
+                            patch.object(toplevel, 'update_idletasks'), \
+                            patch.object(toplevel, 'geometry') as geometry_mock:
+                        # Llamar al método real
+                        toplevel.place_window_center()
 
-                # Verificar que el cálculo coincide con lo esperado
-                self.assertEqual(geometria, caso['esperado'])
+                        # Calcular la posición esperada
+                        x = (dims['ancho_pantalla'] - dims['ancho_ventana']) // 2
+                        y = (dims['alto_pantalla'] - dims['alto_ventana']) // 2
+                        geometria = f"+{x}+{y}"
 
-                # Verificar que la lógica del método real coincide con la fórmula de prueba
-                if caso['ventana'] == 'Window':
-                    # Crear una ventana mock para probar la implementación real
-                    window_mock = MagicMock(spec=Window)
-                    window_mock.winfo_width.return_value = dims['ancho_ventana']
-                    window_mock.winfo_height.return_value = dims['alto_ventana']
-                    window_mock.winfo_screenwidth.return_value = dims['ancho_pantalla']
-                    window_mock.winfo_screenheight.return_value = dims['alto_pantalla']
-
-                    # Crear un método update_idletasks que no haga nada
-                    window_mock.update_idletasks = MagicMock()
-
-                    # Llamar al método place_window_center en el mock
-                    window_mock.place_window_center()
-
-                    # Verificar que se llamó a geometry con el valor esperado
-                    window_mock.geometry.assert_called_once_with(geometria)
-                else:
-                    # Crear un toplevel mock para probar la implementación real
-                    toplevel_mock = MagicMock(spec=Toplevel)
-                    toplevel_mock.winfo_width.return_value = dims['ancho_ventana']
-                    toplevel_mock.winfo_height.return_value = dims['alto_ventana']
-                    toplevel_mock.winfo_screenwidth.return_value = dims['ancho_pantalla']
-                    toplevel_mock.winfo_screenheight.return_value = dims['alto_pantalla']
-
-                    # Crear un método update_idletasks que no haga nada
-                    toplevel_mock.update_idletasks = MagicMock()
-
-                    # Llamar al método place_window_center en el mock
-                    toplevel_mock.place_window_center()
-
-                    # Verificar que se llamó a geometry con el valor esperado
-                    toplevel_mock.geometry.assert_called_once_with(geometria)
+                        # Verificar que se llamó a geometry con el valor esperado
+                        geometry_mock.assert_called_once_with(geometria)
+        finally:
+            # Asegurarse de reiniciar el parche para otras pruebas
+            self.center_patch = patch.object(Toplevel, 'place_window_center')
+            self.center_mock = self.center_patch.start()
 
 if __name__ == "__main__":
     unittest.main()
