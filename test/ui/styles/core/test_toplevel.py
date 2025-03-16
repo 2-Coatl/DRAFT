@@ -142,24 +142,25 @@ class TestToplevel(unittest.TestCase):
             def __init__(self, test_case, winsys_value):
                 self.test_case = test_case
                 self.winsys_value = winsys_value
+                self.patchers = []
 
             def __enter__(self):
-                # Guardar original_init para restaurarlo después
-                self.original_init = Toplevel.__init__
+                # Parchar __getattribute__ para devolver winsys_value cuando se pida winsys
+                def mock_getattr(instance, name):
+                    if name == 'winsys':
+                        return self.winsys_value
+                    return object.__getattribute__(instance, name)
 
-                # Crear una función que modifique winsys
-                def mock_init(instance, *args, **kwargs):
-                    self.original_init(instance, *args, **kwargs)
-                    instance.winsys = self.winsys_value
-
-                # Aplicar el patch
-                self.patcher = patch.object(Toplevel, '__init__', new=mock_init)
-                self.patcher.start()
+                # Aplicar el parche
+                patcher = patch.object(Toplevel, '__getattribute__', mock_getattr)
+                self.patchers.append(patcher)
+                patcher.start()
                 return self
 
             def __exit__(self, exc_type, exc_val, exc_tb):
-                # Restaurar el comportamiento original
-                self.patcher.stop()
+                # Detener todos los patchers
+                for patcher in self.patchers:
+                    patcher.stop()
 
         return WinsysContextManager(self, winsys_value)
 
@@ -642,7 +643,6 @@ class TestTransparencia(TestToplevel):
         Prueba un comportamiento específico de plataforma crucial para
         que la transparencia funcione correctamente en Linux.
         """
-        # ARRANGE - Simular sistema X11
         nivel_alpha = 0.7
 
         # ACT - Crear con transparencia en X11
@@ -652,7 +652,7 @@ class TestTransparencia(TestToplevel):
                     toplevel = self.create_toplevel(alpha=nivel_alpha)
 
                     # ASSERT - Verificar que se esperó la visibilidad
-                    mock_wait.assert_called_once()  # Sin parámetros para ser más flexible
+                    mock_wait.assert_called_once()
 
     def test_no_espera_visibilidad_win32(self):
         """
