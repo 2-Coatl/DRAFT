@@ -5,6 +5,7 @@ import sys
 import io
 from contextlib import redirect_stdout
 
+from ui.themeengine.core.style import Style
 # Importación de la clase a probar
 # Ajusta estas importaciones según la estructura real de tu proyecto
 from ui.themeengine.core.top_level import Toplevel
@@ -688,45 +689,31 @@ class TestEstilo(TestToplevel):
 
     def test_propiedad_style(self):
         """
-        Verifica que la propiedad style devuelva un objeto Style.
-
-        Prueba la integración con el sistema de temas.
+        Verifica que la propiedad style devuelve un objeto Style.
         """
-        # ARRANGE - Simular objeto Style
-        with patch('ui.themeengine.core.style.Style') as MockStyle:
-            mock_style = MagicMock()
-            MockStyle.return_value = mock_style
+        # ACT - Crear ventana y acceder a propiedad
+        toplevel = self.create_toplevel()
+        style = toplevel.style
 
-            # ACT - Crear ventana y acceder a propiedad
-            toplevel = self.create_toplevel()
-            style = toplevel.style
-
-            # ASSERT - Verificar que devuelve el objeto correcto
-            MockStyle.assert_called_once()
-            self.assertEqual(style, mock_style)
+        # ASSERT - Verificar que el objeto devuelto es una instancia de Style
+        self.assertIsInstance(style, Style)
 
     def test_multiples_accesos_style(self):
         """
         Verifica el comportamiento con múltiples accesos a la propiedad.
 
-        Prueba un caso de uso común para detectar potenciales problemas
-        de rendimiento o efectos secundarios.
+        Debido al patrón Singleton implementado en Style, cada acceso
+        debe devolver la misma instancia.
         """
-        # ARRANGE - Simular objeto Style
-        with patch('ui.themeengine.core.style.Style') as MockStyle:
-            mock_style_1 = MagicMock()
-            mock_style_2 = MagicMock()
-            MockStyle.side_effect = [mock_style_1, mock_style_2]
+        # ACT - Crear ventana y acceder a propiedad múltiples veces
+        toplevel = self.create_toplevel()
+        style1 = toplevel.style
+        style2 = toplevel.style
 
-            # ACT - Crear ventana y acceder a propiedad múltiples veces
-            toplevel = self.create_toplevel()
-            style1 = toplevel.style
-            style2 = toplevel.style
-
-            # ASSERT - Verificar que se crea una nueva instancia cada vez
-            self.assertEqual(MockStyle.call_count, 2)
-            self.assertEqual(style1, mock_style_1)
-            self.assertEqual(style2, mock_style_2)
+        # ASSERT - Verificar que ambas son la misma instancia de Style
+        self.assertIsInstance(style1, Style)
+        self.assertIsInstance(style2, Style)
+        self.assertIs(style1, style2)  # Verifica que son el mismo objeto
 
 
 # =============================================================================

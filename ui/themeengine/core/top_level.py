@@ -227,10 +227,15 @@ class Toplevel(tkinter.Toplevel):
         """
         Proporciona acceso al objeto de estilo del framework themeengine.
 
+        Esta propiedad devuelve la instancia singleton de Style que permite configurar
+        y personalizar la apariencia visual de los widgets y ventanas.
+
+        Nota: Debido al patrón singleton, cada acceso a esta propiedad devuelve
+        la misma instancia del objeto Style.
+
         Returns:
-            Style: Una instancia del objeto Style para configurar temas y apariencia
+            Style: La instancia singleton de Style
         """
-        # Crear una nueva instancia del objeto Style
         return Style()
 
     def place_window_center(self) -> None:
