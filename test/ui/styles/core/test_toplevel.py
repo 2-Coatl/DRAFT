@@ -95,9 +95,9 @@ class TestToplevel(unittest.TestCase):
 
         return self.toplevel
 
-    def simulate_winsys(self, winsys_value):
+    def simulate_winsys_decorator(self, winsys_value):
         """
-        Simula un sistema de ventanas específico para pruebas.
+        Simula un sistema de ventanas específico para pruebas (versión decorador).
 
         Esta función permite probar comportamientos específicos de plataforma
         independientemente del sistema real en que se ejecuten las pruebas.
@@ -118,6 +118,50 @@ class TestToplevel(unittest.TestCase):
             return wrapper
 
         return decorator
+
+    def simulate_winsys(self, winsys_value):
+        """
+        Crea un gestor de contexto para simular un sistema de ventanas específico.
+
+        Este gestor de contexto parcha temporalmente el constructor de Toplevel
+        para establecer el valor de winsys en todas las instancias creadas.
+
+        Args:
+            winsys_value (str): Valor a simular ('win32', 'x11', 'aqua')
+
+        Returns:
+            object: Gestor de contexto para usar con 'with'
+
+        Example:
+            with self.simulate_winsys('win32'):
+                toplevel = self.create_toplevel(toolwindow=True)
+                # toplevel.winsys será 'win32' independientemente del sistema real
+        """
+
+        class WinsysContextManager:
+            def __init__(self, test_case, winsys_value):
+                self.test_case = test_case
+                self.winsys_value = winsys_value
+
+            def __enter__(self):
+                # Guardar original_init para restaurarlo después
+                self.original_init = Toplevel.__init__
+
+                # Crear una función que modifique winsys
+                def mock_init(instance, *args, **kwargs):
+                    self.original_init(instance, *args, **kwargs)
+                    instance.winsys = self.winsys_value
+
+                # Aplicar el patch
+                self.patcher = patch.object(Toplevel, '__init__', new=mock_init)
+                self.patcher.start()
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                # Restaurar el comportamiento original
+                self.patcher.stop()
+
+        return WinsysContextManager(self, winsys_value)
 
 # =============================================================================
 # SECCIÓN 2: PRUEBAS DE INICIALIZACIÓN BÁSICA
@@ -493,38 +537,6 @@ class TestComportamientoVentana(TestToplevel):
 
             # ASSERT - Verificar que se activó la propiedad
             mock_attributes.assert_any_call("-topmost", 1)
-
-    # Convertir simulate_winsys en un gestor de contexto adecuado
-    def simulate_winsys(self, winsys_value):
-        """
-        Crea un gestor de contexto para simular un sistema de ventanas específico.
-        """
-
-        class WinsysContextManager:
-            def __init__(self, test_case, winsys_value):
-                self.test_case = test_case
-                self.winsys_value = winsys_value
-
-            def __enter__(self):
-                # Guardar original_init para restaurarlo después
-                self.original_init = Toplevel.__init__
-
-                # Crear una función que modifique winsys
-                def mock_init(instance, *args, **kwargs):
-                    self.original_init(instance, *args, **kwargs)
-                    instance.winsys = self.winsys_value
-
-                # Aplicar el patch
-                self.patcher = patch.object(Toplevel, '__init__', new=mock_init)
-                self.patcher.start()
-                return self
-
-            def __exit__(self, exc_type, exc_val, exc_tb):
-                # Restaurar el comportamiento original
-                self.patcher.stop()
-
-        return WinsysContextManager(self, winsys_value)
-
 
     @unittest.skipIf(sys.platform != "win32", "Prueba específica para Windows")
     def test_ventana_herramientas_windows(self):
