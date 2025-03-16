@@ -911,6 +911,7 @@ class TestIntegracionBajoNivel(TestToplevel):
     2. Ciclo de vida completo en escenarios realistas
     3. Comportamiento con otras ventanas
     """
+
     def test_ciclo_vida_basico(self):
         """
         Verifica el ciclo de vida básico de una ventana.
@@ -934,8 +935,7 @@ class TestIntegracionBajoNivel(TestToplevel):
         toplevel.destroy()
 
         # ASSERT - Verificar destrucción
-        with self.assertRaises(tk.TclError):
-            toplevel.winfo_exists()  # Debe lanzar error al acceder a ventana destruida
+        self.assertFalse(toplevel.winfo_exists())
 
     def test_interaccion_multiples_ventanas(self):
         """
@@ -985,7 +985,7 @@ class TestIntegracionBajoNivel(TestToplevel):
         # Verificar que la ventana existe
         self.assertTrue(toplevel.winfo_exists())
 
-    @unittest.skipIf(sys.platform != "linux", "Prueba específica para Linux")
+
     def test_integracion_real_x11(self):
         """
         Verifica la integración real en plataforma Linux/X11.

@@ -157,7 +157,11 @@ class Toplevel(tkinter.Toplevel):
         # Configurar la posición de la ventana (coordenadas x, y en pantalla)
         if position is not None:  # position: Optional[Tuple[int, int]]
             xpos, ypos = position  # xpos, ypos: int
-            self.geometry(f"+{xpos}+{ypos}")  # Formato: '+x+y' (ej: '+100+200')
+            # Formato correcto para coordenadas positivas/negativas
+            # Si xpos es negativo, no se añade el signo + adicional
+            x_prefix = "+" if xpos >= 0 else ""
+            y_prefix = "+" if ypos >= 0 else ""
+            self.geometry(f"{x_prefix}{xpos}{y_prefix}{ypos}")
 
         # Configurar el tamaño mínimo de la ventana si se especificó
         if minsize is not None:
