@@ -3,7 +3,7 @@ import tkinter as tk
 from unittest.mock import MagicMock, patch
 import sys
 import io
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, contextmanager
 
 from ui.themeengine.core.style import Style
 # Importación de la clase a probar
@@ -164,6 +164,65 @@ class TestToplevel(unittest.TestCase):
                     patcher.stop()
 
         return WinsysContextManager(self, winsys_value)
+
+    def _crear_patchers_centrado(self, toplevel, dimensiones):
+        """
+        Crea (pero no inicia) los patchers necesarios para pruebas de centrado.
+
+        Args:
+            toplevel: La instancia de Toplevel a parchar
+            dimensiones: Diccionario con claves:
+                - ancho_ventana, alto_ventana
+                - ancho_pantalla, alto_pantalla
+
+        Returns:
+            dict: Diccionario de patchers
+        """
+        ancho_ventana = dimensiones.get('ancho_ventana', 400)
+        alto_ventana = dimensiones.get('alto_ventana', 300)
+        ancho_pantalla = dimensiones.get('ancho_pantalla', 1024)
+        alto_pantalla = dimensiones.get('alto_pantalla', 768)
+
+        return {
+            'update_idletasks': patch.object(toplevel, 'update_idletasks'),
+            'winfo_width': patch.object(toplevel, 'winfo_width', return_value=ancho_ventana),
+            'winfo_height': patch.object(toplevel, 'winfo_height', return_value=alto_ventana),
+            'winfo_screenwidth': patch.object(toplevel, 'winfo_screenwidth', return_value=ancho_pantalla),
+            'winfo_screenheight': patch.object(toplevel, 'winfo_screenheight', return_value=alto_pantalla),
+            'geometry': patch.object(toplevel, 'geometry')
+        }
+
+    @contextmanager
+    def gestionar_patchers(self, patchers):
+        """
+        Gestor de contexto para manejar inicio/limpieza de patchers.
+
+        Args:
+            patchers: Diccionario de patchers a gestionar
+
+        Yields:
+            dict: Diccionario de mocks activos
+        """
+        mocks = {}
+        for name, patcher in patchers.items():
+            mocks[name] = patcher.start()
+
+        try:
+            yield mocks
+        finally:
+            for patcher in patchers.values():
+                patcher.stop()
+
+    def _calcular_posicion_esperada(self, ancho_ventana, alto_ventana, ancho_pantalla, alto_pantalla):
+        """
+        Calcula la posición esperada para una ventana centrada.
+
+        Returns:
+            Tuple[int, int, str]: Tupla con (x, y, string_geometria)
+        """
+        x = (ancho_pantalla - ancho_ventana) // 2
+        y = (alto_pantalla - alto_ventana) // 2
+        return x, y, f"+{x}+{y}"
 
 # =============================================================================
 # SECCIÓN 2: PRUEBAS DE INICIALIZACIÓN BÁSICA
@@ -730,56 +789,114 @@ class TestCentradoVentana(TestToplevel):
     3. Comportamiento del alias
     """
 
-    def test_place_window_center(self):
+    def test_place_window_center_refactorizado(self):
         """
         Verifica el cálculo y aplicación correcta del centrado.
-
-        Prueba una funcionalidad de conveniencia común.
+        Versión refactorizada para mejor legibilidad.
         """
         # ARRANGE - Definir dimensiones de prueba
-        ventana_ancho, ventana_alto = 400, 300
-        pantalla_ancho, pantalla_alto = 1024, 768
+        dimensiones = {
+            'ancho_ventana': 400,
+            'alto_ventana': 300,
+            'ancho_pantalla': 1024,
+            'alto_pantalla': 768
+        }
 
-        # Calcular posición esperada
-        esperado_x = (pantalla_ancho - ventana_ancho) // 2
-        esperado_y = (pantalla_alto - ventana_alto) // 2
-
-        # ACT - Crear ventana y centrar
+        # Crear ventana
         toplevel = self.create_toplevel()
 
-        # Parchar métodos relevantes para simular medidas
-        with patch.object(toplevel, 'update_idletasks') as mock_update:
-            with patch.object(toplevel, 'winfo_width', return_value=ventana_ancho):
-                with patch.object(toplevel, 'winfo_height', return_value=ventana_alto):
-                    with patch.object(toplevel, 'winfo_screenwidth', return_value=pantalla_ancho):
-                        with patch.object(toplevel, 'winfo_screenheight', return_value=pantalla_alto):
-                            with patch.object(toplevel, 'geometry') as mock_geometry:
-                                # Llamar al método de centrado
-                                toplevel.place_window_center()
+        # Calcular posición esperada
+        esperado_x, esperado_y, posicion_esperada = self._calcular_posicion_esperada(**dimensiones)
 
-                                # ASSERT - Verificar comportamiento
-                                # Verificar que se actualizaron tareas pendientes
-                                mock_update.assert_called_once()
-                                # Verificar que se aplicó la geometría correcta
-                                mock_geometry.assert_called_once_with(f"+{esperado_x}+{esperado_y}")
+        # Crear los patchers
+        patchers = self._crear_patchers_centrado(toplevel, dimensiones)
+
+        # Gestionar los patchers con el gestor de contexto
+        with self.gestionar_patchers(patchers) as mocks:
+            # ACT - Llamar al método de centrado
+            toplevel.place_window_center()
+
+            # ASSERT - Verificar comportamiento
+            mocks['update_idletasks'].assert_called_once()
+            mocks['geometry'].assert_called_once_with(posicion_esperada)
+
+    def test_centrado_con_ventana_invisible(self):
+        """
+        Verifica el comportamiento del centrado cuando la ventana aún no tiene dimensiones.
+        """
+        # ARRANGE - Crear ventana sin mostrarla
+        toplevel = self.create_toplevel()
+
+        # Definir el escenario para una ventana invisible
+        dimensiones = {
+            'ancho_ventana': 1,
+            'alto_ventana': 1,
+            'ancho_pantalla': 1024,
+            'alto_pantalla': 768
+        }
+
+        # Calcular posición esperada
+        _, _, posicion_esperada = self._calcular_posicion_esperada(**dimensiones)
+
+        with self.subTest(descripcion="Ventana invisible o de tamaño mínimo"):
+            # Crear los patchers
+            patchers = self._crear_patchers_centrado(toplevel, dimensiones)
+
+            # Gestionar los patchers con el gestor de contexto
+            with self.gestionar_patchers(patchers) as mocks:
+                # ACT
+                toplevel.place_window_center()
+
+                # ASSERT
+                mocks['update_idletasks'].assert_called_once()
+                mocks['geometry'].assert_called_once_with(posicion_esperada)
 
     def test_alias_position_center(self):
         """
         Verifica que position_center sea un alias de place_window_center.
 
-        Prueba la coherencia de la API.
+        Prueba la coherencia de la API usando subtests para diferentes
+        verificaciones.
         """
-        # ARRANGE - Crear ventana
+        # ARRANGE - Crear ventana usando el fixture existente
         toplevel = self.create_toplevel()
 
-        # ACT & ASSERT - Verificar que ambos métodos son el mismo
-        self.assertEqual(toplevel.place_window_center, toplevel.position_center)
+        # SUBTEST 1: Verificar identidad a nivel de clase
+        with self.subTest("Verificar identidad de métodos a nivel de clase"):
+            self.assertIs(Toplevel.position_center, Toplevel.place_window_center)
 
-        # Verificar que al llamar al alias, se ejecuta el método original
-        with patch.object(toplevel, 'place_window_center') as mock_place:
-            toplevel.position_center()
-            mock_place.assert_called_once()
+        # SUBTEST 2: Verificar comportamiento idéntico (resultados)
+        with self.subTest("Verificar comportamiento idéntico"):
+            dimensiones = {
+                'ancho_ventana': 400,
+                'alto_ventana': 300,
+                'ancho_pantalla': 1024,
+                'alto_pantalla': 768
+            }
 
+            # Calcular posición esperada
+            _, _, posicion_esperada = self._calcular_posicion_esperada(**dimensiones)
+
+            # Crear los patchers
+            patchers = self._crear_patchers_centrado(toplevel, dimensiones)
+
+            # Usar el gestor de contexto para manejar los patchers
+            with self.gestionar_patchers(patchers) as mocks:
+                # Llamar a place_window_center
+                toplevel.place_window_center()
+
+                # Verificar que se llamó a geometry con los argumentos esperados
+                mocks['geometry'].assert_called_once_with(posicion_esperada)
+
+                # Reiniciar los mocks para la siguiente prueba
+                for mock in mocks.values():
+                    mock.reset_mock()
+
+                # Llamar a position_center (el alias)
+                toplevel.position_center()
+
+                # Verificar que se llamó a geometry con los mismos argumentos
+                mocks['geometry'].assert_called_once_with(posicion_esperada)
 
 # =============================================================================
 # SECCIÓN 8: PRUEBAS DE INTEGRACIÓN DE BAJO NIVEL
