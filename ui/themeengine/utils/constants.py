@@ -11,7 +11,6 @@ DEFAULT_THEME = 'cosmo'
 
 # bootstyle colors
 PRIMARY = 'primary'
-
 INFO = 'info'
 LIGHT = 'light'
 DARK = 'dark'

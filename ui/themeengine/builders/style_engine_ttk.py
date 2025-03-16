@@ -4,12 +4,12 @@ from math import ceil
 from typing import Union, List, Tuple, Callable
 from ui.themeengine.core.color import Colors
 
-from ui.themeengine.builders.style_engine_tk import StyleEngineTK
+from ui.themeengine.builders.style_builder_tk import StyleBuilderTK
 from ui.themeengine.core.theme import ThemeDefinition
 from ui.themeengine.utils.constants import LIGHT, TTK_CLAM, DEFAULT, TTK_DEFAULT, PRIMARY
 
 
-class StyleEngineTTK:
+class StyleBuilderTTK:
     """Motor de estilos para widgets TTK.
 
     Responsable de:
@@ -24,7 +24,7 @@ class StyleEngineTTK:
         from ui.themeengine.core.style import Style
         self.style: Style = Style.get_instance()
         self.theme_images = {}
-        self.style_engine_tk = StyleEngineTK()
+        self.style_builder_tk = StyleBuilderTK()
         self.create_theme()
 
     @property
@@ -95,10 +95,10 @@ class StyleEngineTTK:
             Callable: El método referenciado por method_name.
 
         Example:
-            >>> method = StyleEngineTTK.name_to_method("create_button_style")
+            >>> method = StyleBuilderTTK.name_to_method("create_button_style")
             >>> method(self, "primary")
         """
-        func = getattr(StyleEngineTTK, method_name)
+        func = getattr(StyleBuilderTTK, method_name)
         return func
 
     def create_theme(self) -> None:

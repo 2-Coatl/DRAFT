@@ -4,9 +4,9 @@ from tkinter import ttk
 
 from ui.themeengine.communication.channel import Channel
 from ui.themeengine.communication.publisher import Publisher
-from ui.themeengine.builders.style_engine_tk import StyleEngineTK
+from ui.themeengine.builders.style_builder_tk import StyleBuilderTK
 from ui.themeengine.utils.keywords import Keywords
-from ui.themeengine.builders.style_engine_ttk import StyleEngineTTK
+from ui.themeengine.builders.style_engine_ttk import StyleBuilderTTK
 
 class Bootstyle:
     """Clase utilitaria que proporciona métodos para manipular y gestionar estilos TTK.
@@ -227,7 +227,7 @@ class Bootstyle:
     def ttkstyle_method_name(widget: Optional[ttk.Widget] = None, string: str = "") -> str:
         """Construye y retorna el nombre del método que crea el estilo TTK.
 
-        Parsea una cadena para construir el nombre del método en `StyleEngineTTK`
+        Parsea una cadena para construir el nombre del método en `StyleBuilderTTK`
         que crea el estilo TTK para el widget objetivo.
 
         Args:
@@ -304,8 +304,8 @@ class Bootstyle:
             method_name = Bootstyle.ttkstyle_method_name(widget, ttkstyle)
 
             # 4.2: Construcción del estilo usando el builder
-            builder: StyleEngineTTK = style._get_builder()
-            # print(f"4.2 Construcción del estilo usando el builder (StyleEngineTTK) {builder}")
+            builder: StyleBuilderTTK = style._get_builder()
+            # print(f"4.2 Construcción del estilo usando el builder (StyleBuilderTTK) {builder}")
             builder_method = builder.name_to_method(method_name)
             builder_method(builder, widget_color)
 
@@ -313,7 +313,7 @@ class Bootstyle:
         # Configura suscripciones y actualizaciones específicas para combobox
         try:
             if widget and widget.winfo_class() == "TCombobox":
-                builder: StyleEngineTTK = style._get_builder()
+                builder: StyleBuilderTTK = style._get_builder()
                 # 5.1: Obtención de identificadores únicos
                 winfo_id = hex(widget.winfo_id())
                 winfo_pathname = widget.winfo_pathname(winfo_id)
@@ -511,12 +511,12 @@ class Bootstyle:
 
         Este método es parte del sistema de gestión de estilos y se encarga de mantener la consistencia visual
         entre widgets Tkinter nativos y ttk. Funciona mediante la búsqueda dinámica y ejecución del método
-        de actualización específico para cada tipo de widget en el StyleEngineTK.
+        de actualización específico para cada tipo de widget en el StyleBuilderTK.
 
         Flujo de ejecución:
         1. Obtiene la instancia singleton de Style
         2. Determina el nombre del método de actualización basado en la clase del widget
-        3. Obtiene el motor de estilos TK (StyleEngineTK)
+        3. Obtiene el motor de estilos TK (StyleBuilderTK)
         4. Localiza y ejecuta el método específico para el tipo de widget
 
         Parameters
@@ -540,7 +540,7 @@ class Bootstyle:
 
         See Also
         --------
-        StyleEngineTK : Motor de estilos para widgets Tkinter nativos
+        StyleBuilderTK : Motor de estilos para widgets Tkinter nativos
         Bootstyle.tkupdate_method_name : Generación de nombres de métodos de actualización
         """
         from ui.themeengine.core.style import Style
@@ -557,9 +557,9 @@ class Bootstyle:
             # Style -> Builder -> style_engine_tk
             builder = style._get_builder_tk()
 
-            # Buscar dinámicamente el método específico en StyleEngineTK
+            # Buscar dinámicamente el método específico en StyleBuilderTK
             # Si no existe, lanzará AttributeError que será capturado
-            builder_method = getattr(StyleEngineTK, method_name)
+            builder_method = getattr(StyleBuilderTK, method_name)
 
             # Ejecutar el método de actualización con el motor y widget
             # La actualización ocurre in-place sobre el widget
@@ -595,13 +595,13 @@ class Bootstyle:
             3. Si autostyle es True:
                - Registra en Publisher con ID único str(self)
                - Configura callback para Bootstyle.update_tk_widget_style
-               - Aplica estilo inicial mediante StyleEngineTK y Style
+               - Aplica estilo inicial mediante StyleBuilderTK y Style
 
         Notas:
             - Usa str(self) como identificador único para Publisher
             - Utiliza canal STD para notificaciones
             - Maneja errores silenciosamente
-            - Aplica estilo inicial usando StyleEngineTK a través del builder de Style
+            - Aplica estilo inicial usando StyleBuilderTK a través del builder de Style
         """
         def __init__wrapper(self, *args: Any, **kwargs: Any) -> None:
             # 1. Extracción y gestión del parámetro autostyle

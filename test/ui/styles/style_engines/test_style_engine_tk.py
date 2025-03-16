@@ -13,7 +13,7 @@ class TestStyleEngineTK:
         """Fixture que proporciona una instancia del motor de estilos.
 
         Returns:
-            StyleEngineTK: Instancia del motor de estilos para pruebas.
+            StyleBuilderTK: Instancia del motor de estilos para pruebas.
         """
         return StyleEngineTK()
 

@@ -6,7 +6,7 @@ from ui.themeengine.core.color import Colors
 from ui.themeengine.utils.constants import DEFAULT_THEME, USER_THEMES, STANDARD_THEMES
 from ui.themeengine.communication.channel import Channel
 from ui.themeengine.communication.publisher import Publisher
-from ui.themeengine.builders.style_engine_ttk import StyleEngineTTK
+from ui.themeengine.builders.style_engine_ttk import StyleBuilderTTK
 from ui.themeengine.core.theme import ThemeDefinition
 from ui.themeengine.utils.bootstyle import Bootstyle
 
@@ -46,9 +46,6 @@ class Style(ttk.Style):
                 Style.instance.theme_use(theme)  # Usa la instancia existente
             return
 
-        # Inicializar ttk.Style primero
-        super().__init__()
-
         # Inicialización de colecciones
         self._theme_objects: Dict = {} # Constructores de temas
         self._theme_definitions = {}   # Definiciones de temas
@@ -56,7 +53,7 @@ class Style(ttk.Style):
         self._theme_styles = {}   # Estilos por tema
         self._style_registry = set()   # Nombres de temas disponibles
 
-        # Cargar temas ANTES de intentar usar uno
+        # # Cargar temas ANTES de intentar usar uno
         self._load_themes()
         print(f"Después de _load_themes")
         print(f"_theme_objects: {self._theme_objects}")
@@ -65,6 +62,8 @@ class Style(ttk.Style):
         print(f"_theme_styles: {self._theme_styles}")
         print(f"_style_registry: {self._style_registry}")
 
+        #Inicializar ttk.Style
+        super().__init__()
         # Establecer instancia y tema
         Style.instance = self
         self.theme_use(theme)
@@ -136,7 +135,7 @@ class Style(ttk.Style):
         Returns:
             bool: True si el estilo existe en ambos registros.
         """
-        print("\n--- Dentro de style_exists_in_theme ---")
+        # print("\n--- Dentro de style_exists_in_theme ---")
         # print(f"Iniciando: {ttkstyle}")
         theme_styles = self._theme_styles.get(self.theme.name)
         # print(f"Theme_styles: {theme_styles}")
@@ -249,7 +248,7 @@ class Style(ttk.Style):
 
             # 2. Crear un nuevo constructor de estilos para este tema
             # Esto inicializa la infraestructura necesaria para el tema
-            self._theme_objects[themename] = StyleEngineTTK()
+            self._theme_objects[themename] = StyleBuilderTTK()
 
             # 3. Crear los estilos ttk para el nuevo tema
             # Esto configura todos los widgets ttk con los estilos del tema
@@ -369,7 +368,7 @@ class Style(ttk.Style):
 
 
         Returns:
-            StyleEngineTTK: El objeto constructor de estilos para el tema actual.
+            StyleBuilderTTK: El objeto constructor de estilos para el tema actual.
         """
         print("\n--- Cargando _get_builder ---")
         style: Style = Style.get_instance()
@@ -386,10 +385,10 @@ class Style(ttk.Style):
 
 
         Returns:
-            StyleBuilderTK: El objeto constructor de estilos tk para el tema actual.
+           StyleBuilderTK: El objeto constructor de estilos tk para el tema actual.
         """
         builder = Style._get_builder()
-        return builder.style_engine_tk
+        return builder.style_builder_tk
 
     def _create_ttk_styles_on_theme_change(self) -> None:
         """Crea los estilos ttk registrados cuando cambia el tema.
@@ -420,7 +419,7 @@ class Style(ttk.Style):
 
                 # Obtener el constructor de estilos adecuado para el tema actual
                 # Esto devuelve un objeto que sabe cómo crear los estilos
-                builder: StyleEngineTTK = self._get_builder()
+                builder: StyleBuilderTTK = self._get_builder()
 
                 # Resolver dinámicamente el método que creará el estilo
                 # Convierte el nombre del método en una referencia al método real

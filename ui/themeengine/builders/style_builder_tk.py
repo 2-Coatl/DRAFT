@@ -4,7 +4,7 @@ from ui.themeengine.core.theme import ThemeDefinition
 from ui.themeengine.utils.constants import LIGHT
 
 
-class StyleEngineTK:
+class StyleBuilderTK:
     """Motor de estilos para widgets Tkinter nativos.
 
     Esta clase se encarga de aplicar y actualizar los estilos de los widgets
