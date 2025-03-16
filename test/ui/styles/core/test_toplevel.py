@@ -6,8 +6,6 @@ import io
 from contextlib import redirect_stdout, contextmanager
 
 from ui.themeengine.core.style import Style
-# Importación de la clase a probar
-# Ajusta estas importaciones según la estructura real de tu proyecto
 from ui.themeengine.core.top_level import Toplevel
 
 
