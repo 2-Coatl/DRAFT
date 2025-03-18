@@ -1,6 +1,10 @@
 # =============================================================================
 # SECCIÓN 0: IMPORTACIONES Y CONFIGURACIÓN INICIAL
 # =============================================================================
+# Este archivo contiene pruebas unitarias y de integración para StyleBuilderTK
+# organizadas en una estructura jerárquica de clases para maximizar la
+# reutilización de código y mantener las pruebas bien estructuradas.
+# =============================================================================
 
 import unittest
 import tkinter as tk
@@ -48,8 +52,6 @@ class StyleBuilderTKTestBase(unittest.TestCase):
         - Patching de Style.get_instance()
         - Instancia fresca de StyleBuilderTK para cada prueba
         """
-        # Importar aquí para evitar problemas de importación circular en el test
-
 
         # Crear mocks para Style, ThemeDefinition y Colors
         self.mock_colors = MagicMock()
@@ -390,8 +392,6 @@ class TestStyleBuilderTKIntegration(StyleBuilderTKTestBase):
         - La selección dinámica de métodos a través de getattr
         - La invocación del método correcto según el tipo de widget
         """
-        # ARRANGE: Importar Bootstyle y preparar mocks
-
 
         # Crear widgets de diferentes tipos
         button = self.create_widget(tk.Button)
