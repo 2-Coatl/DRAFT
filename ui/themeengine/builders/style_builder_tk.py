@@ -8,12 +8,23 @@ class StyleBuilderTK:
     """Motor de estilos para widgets Tkinter nativos.
 
     Esta clase se encarga de aplicar y actualizar los estilos de los widgets
-    Tkinter tradicionales. Sus métodos son de uso interno y no están diseñados
-    para ser llamados directamente por el usuario final.
+    Tkinter tradicionales que no utilizan el sistema de estilos ttk. Implementa
+    el patrón Strategy para encapsular algoritmos específicos de estilización
+    para cada tipo de widget.
 
-    Los widgets de Tkinter nativos necesitan una gestión especial de estilos
-    ya que no utilizan el sistema de estilos de ttk. Este motor asegura que
-    mantengan una apariencia consistente con los widgets ttk.
+    Roles principales:
+    - Proporciona métodos update_*_style() para cada tipo de widget nativo
+    - Es instanciada y mantenida por StyleBuilderTTK
+    - Se utiliza dinámicamente a través de Bootstyle.update_tk_widget_style()
+    - Aplica estilos directamente mediante configure() en los widgets
+
+    Los widgets con autostyle=True (por defecto) son procesados automáticamente
+    por el decorador Bootstyle.override_tk_widget_constructor, que invoca los
+    métodos apropiados de esta clase. Cuando cambia el tema de la aplicación,
+    los estilos se actualizan siguiendo el mismo proceso.
+
+    Nota: A pesar de su nombre, esta clase no implementa el patrón Builder tradicional,
+    sino que modifica widgets existentes en lugar de construir nuevos objetos.
     """
 
     def __init__(self) -> None:
