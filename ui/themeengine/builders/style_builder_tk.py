@@ -446,3 +446,204 @@ class StyleBuilderTK:
             buttonuprelief=tk.FLAT,  # Debería hacer el botón incrementar plano
             buttondownrelief=tk.SUNKEN,  # Debería hacer el botón decrementar hundido
         )
+
+    def update_listbox_style(self, widget: tk.Listbox) -> None:
+        """Actualiza el estilo de un control Listbox.
+
+        Este método configura múltiples propiedades visuales para un widget Listbox
+        para que coincida con el tema actual. Establece un estilo plano con un borde
+        fino, configura colores específicos para el texto y fondo normales, así como
+        para los elementos seleccionados. El color del borde varía según si el tema
+        es claro u oscuro para mantener un contraste adecuado.
+
+        Args:
+            widget (tk.Listbox): Objeto Listbox que se va a estilizar.
+
+        Returns:
+            None: Este método no retorna ningún valor, modifica el widget in-place.
+
+        Nota:
+            El método establece activestyle="none" para eliminar el subrayado u otros
+            indicadores visuales del elemento activo, proporcionando una apariencia
+            más limpia y moderna.
+        """
+        # Determinar el color del borde según el tipo de tema
+        # Esto proporciona mejor contraste visual en cada caso
+        if self.is_light_theme:
+            # En temas claros, usar el color de borde estándar
+            bordercolor = self.colors.border
+        else:
+            # En temas oscuros, usar el color de fondo de selección
+            # para un contraste más adecuado
+            bordercolor = self.colors.selectbg
+
+        # Configurar múltiples propiedades visuales del Listbox
+        widget.configure(
+            foreground=self.colors.inputfg,  # Color del texto de los elementos
+            background=self.colors.inputbg,  # Color de fondo del control
+            selectbackground=self.colors.selectbg, # Color de fondo de los elementos seleccionados
+            selectforeground=self.colors.selectfg, # Color de texto de los elementos seleccionados
+            highlightcolor=self.colors.primary, # Color del borde cuando tiene foco (usa color primario para destacar)
+            highlightbackground=bordercolor, # Color del borde cuando no tiene foco (varía según el tema)
+            highlightthickness=1, # Establecer un borde fino de 1 píxel
+            activestyle="none", # Desactiva el estilo visual para el elemento activo (subrayado) - Proporciona una apariencia más limpia y moderna
+            relief=tk.FLAT, # Eliminar el efecto 3D tradicional para un aspecto más moderno
+        )
+
+    def update_menubutton_style(self, widget: tk.Menubutton) -> None:
+        """Actualiza el estilo de un botón de menú.
+
+        Este método configura múltiples propiedades visuales para un widget Menubutton
+        para que coincida con el tema actual. Establece un estilo plano sin bordes
+        y usa el color primario del tema como fondo. Para el estado activo (cuando
+        el cursor está sobre el botón), se utiliza una versión ligeramente más oscura
+        del color primario para proporcionar feedback visual.
+
+        Args:
+            widget (tk.Menubutton): Objeto Menubutton que se va a estilizar.
+
+        Returns:
+            None: Este método no retorna ningún valor, modifica el widget in-place.
+        """
+        # Crear un color más oscuro para el estado activo del botón de menú
+        # Reduce el valor (brightness) del color primario en un 20%
+        # para proporcionar feedback visual cuando el usuario interactúa con el botón
+        activebackground = Colors.update_hsv(self.colors.primary, vd=-0.2)
+
+        # Configurar propiedades visuales del Menubutton
+        widget.configure(
+
+            background=self.colors.primary, # Color de fondo principal usando el color primario del tema
+            foreground=self.colors.selectfg, # Color del texto usando el color de texto para elementos seleccionados que normalmente contrasta bien con el color primario
+            activebackground=activebackground, # Color de fondo cuando el cursor está sobre el botón o cuando se presiona -  Usa una versión más oscura del color primario para feedback visual
+            activeforeground=self.colors.selectfg, # Color del texto en estado activo, Mantiene el mismo color que el texto normal para consistencia
+            borderwidth=0, # Elimina el borde del botón para un aspecto más plano y moderno
+        )
+
+
+    def update_menu_style(self, widget: tk.Menu) -> None:
+        """Actualiza el estilo de un menú.
+
+        Este método configura múltiples propiedades visuales para un widget Menu
+        para que coincida con el tema actual. Establece un estilo plano sin bordes
+        y desactiva la función de separación (tearoff). Configura colores para los
+        estados normal y activo, así como el color para elementos de menú como
+        checkbuttons o radiobuttons.
+
+        Args:
+            widget (tk.Menu): Objeto Menu que se va a estilizar.
+
+        Returns:
+            None: Este método no retorna ningún valor, modifica el widget in-place.
+        """
+        # Configurar múltiples propiedades visuales del menú
+        widget.configure(
+            # Desactiva la función de separación (tearoff) que permite al usuario
+            # desprender el menú - generalmente no se usa en interfaces modernas
+            tearoff=False,
+            activebackground=self.colors.selectbg, # Color de fondo cuando un elemento del menú está activo (cursor encima) # Usa el color de fondo de selección del tema
+            activeforeground=self.colors.selectfg, # Color del texto cuando un elemento del menú está activo, usa el color de texto de selección del tema
+            foreground=self.colors.fg, # Color del texto normal de los elementos del menú, Usa el color de texto estándar del tema
+            selectcolor=self.colors.primary, # Color para elementos de menú tipo checkbutton o radiobutton, usa el color primario del tema para destacar elementos seleccionados
+            background=self.colors.bg, # Color de fondo general del menú, Usa el color de fondo estándar del tema
+            relief=tk.FLAT, # Elimina el efecto 3D tradicional para un aspecto más moderno
+            borderwidth=0, # Elimina el borde del menú para un aspecto más plano y moderno
+        )
+
+
+    def update_labelframe_style(self, widget: tk.LabelFrame) -> None:
+        """Actualiza el estilo de un marco con etiqueta.
+
+        Este método configura múltiples propiedades visuales para un widget LabelFrame
+        para que coincida con el tema actual. Establece un borde fino y configura
+        los colores del texto y fondo. El color del borde varía según si el tema
+        es claro u oscuro para mantener un contraste adecuado.
+
+        Args:
+            widget (tk.LabelFrame): Objeto LabelFrame que se va a estilizar.
+
+        Returns:
+            None: Este método no retorna ningún valor, modifica el widget in-place.
+
+        """
+        # Determinar el color del borde según el tipo de tema
+        # Esto proporciona mejor contraste visual en cada caso
+        if self.is_light_theme:
+            # En temas claros, usar el color de borde estándar
+            bordercolor = self.colors.border
+        else:
+            # En temas oscuros, usar el color de fondo de selección
+            # para un contraste más adecuado
+            bordercolor = self.colors.selectbg
+
+        # Configurar propiedades visuales del LabelFrame
+        widget.configure(
+            highlightcolor=bordercolor, # Color del borde de resaltado cuando el widget tiene foco, Usa el color determinado según el tipo de tema
+            foreground=self.colors.fg, # Color del texto de la etiqueta del LabelFrame, Usa el color de texto estándar del tema
+            borderwidth=1, # Establece un borde fino de 1 píxel alrededor del marco
+            highlightthickness=0, # Desactiva el borde adicional que aparecería cuando el widget tiene foco
+            background=self.colors.bg, # Color de fondo del LabelFrame, Usa el color de fondo estándar del tema
+        )
+
+    def update_text_style(self, widget: tk.Text) -> None:
+        """Actualiza el estilo de un área de texto.
+
+        Este método configura múltiples propiedades visuales para un widget Text
+        para que coincida con el tema actual. Establece un estilo plano con un borde
+        fino, configura colores para el texto, fondo, selección y cursor, y añade
+        padding interno para mejor legibilidad. El color del borde varía según si el
+        tema es claro u oscuro para mantener un contraste adecuado.
+
+        Args:
+            widget (tk.Text): Objeto Text que se va a estilizar.
+
+        Returns:
+            None: Este método no retorna ningún valor, modifica el widget in-place.
+
+        Nota:
+            El método verifica y ajusta el color de foco si es necesario para evitar
+            valores de sistema como "SystemButtonFace" que podrían no ser coherentes
+            con el tema. La configuración de fuente está comentada para permitir que
+            el widget mantenga su configuración original.
+
+        """
+        # Determinar el color del borde según el tipo de tema
+        # Esto proporciona mejor contraste visual en cada caso
+        if self.is_light_theme:
+            # En temas claros, usar el color de borde estándar
+            bordercolor = self.colors.border
+        else:
+            # En temas oscuros, usar el color de fondo de selección
+            # para un contraste más adecuado
+            bordercolor = self.colors.selectbg
+
+        # Obtener el color actual de resaltado para personalizarlo
+        # Esto es necesario para mantener consistencia con el estado actual del widget
+        focuscolor = widget.cget("highlightbackground")
+
+        # Si el color es el valor por defecto del sistema o igual al color de borde,
+        # usar el color de borde determinado por el tema
+        # Esto evita valores de sistema como "SystemButtonFace" que podrían no
+        # ser coherentes con el tema actual
+        if focuscolor in ["SystemButtonFace", bordercolor]:
+            focuscolor = bordercolor
+
+        # Configurar propiedades visuales del widget Text
+        widget.configure(
+            background=self.colors.inputbg,# Color de fondo del área de texto, usa el color específico para fondos de entrada
+            foreground=self.colors.inputfg, # Color del texto, usa el color específico para texto de entrada
+            highlightcolor=focuscolor, # Color del borde cuando el widget tiene foco, usa el valor determinado anteriormente
+            highlightbackground=bordercolor, # Color del borde cuando el widget no tiene foco, usa el color determinado según el tipo de tema
+            insertbackground=self.colors.inputfg, # Color del cursor de texto (caret), usa el mismo color que el texto para coherencia#
+            selectbackground=self.colors.selectbg, # Color de fondo del texto seleccionado
+            selectforeground=self.colors.selectfg, # Color del texto seleccionado
+            insertwidth=1, # Ancho del cursor en píxeles, valor fino y moderno
+            highlightthickness=1, # Grosor del borde de resaltado, borde fino pero visible
+            relief=tk.FLAT, # Estilo de relieve, elimina el efecto 3D tradicional
+            padx=5, # Padding interno horizontal, evita que el texto toque los bordes
+            pady=5, # Padding interno vertical, evita que el texto toque los bordes
+
+            # Configuración de fuente (comentada)
+            # Posiblemente para permitir que el widget mantenga su fuente original
+            # font="TkDefaultFont",
+        )
