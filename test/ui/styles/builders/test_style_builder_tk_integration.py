@@ -154,17 +154,29 @@ class TestStyleBuilderTKBase(unittest.TestCase):
         # Obtener instancia real de Style
         real_style = Style.get_instance()
 
-        # Esta función solo funciona si Style tiene los métodos necesarios
-        if not hasattr(real_style, 'get_themes') or not hasattr(real_style, 'set_theme'):
+        # Verificar que la instancia existe
+        if real_style is None:
             return None, None
 
-        # Obtener temas disponibles
-        themes = real_style.get_themes()
+        # Obtener temas disponibles usando theme_names()
+        themes = real_style.theme_names()
+
+        # Necesitamos al menos dos temas para poder cambiar entre ellos
         if len(themes) < 2:
             return None, None
 
-        # Identificar temas alternativos para la prueba
-        current_theme = real_style.theme_name
+        # Obtener el tema actual
+        # Si tiene un atributo theme con name, usamos eso
+        if hasattr(real_style, 'theme') and hasattr(real_style.theme, 'name'):
+            current_theme = real_style.theme.name
+        else:
+            # De lo contrario, intentamos con theme_use() sin argumentos
+            try:
+                current_theme = real_style.theme_use()
+            except:
+                return None, None
+
+        # Identificar un tema alternativo diferente al actual
         alt_theme = next((t for t in themes if t != current_theme), None)
 
         return current_theme, alt_theme
@@ -282,7 +294,7 @@ class TestStyleBuilderTKRealIntegration(TestStyleBuilderTKBase):
         real_style = Style.get_instance()
 
         # Crear widget para prueba
-        button = tk.Button(self.root, text="Theme Change Test")
+        button = tk.Button(self.root, text="Theme Change Test", autostyle=False)
         self.test_widgets.append(button)
 
         # Aplicar estilo al botón
@@ -292,7 +304,11 @@ class TestStyleBuilderTKRealIntegration(TestStyleBuilderTKBase):
         original_bg = button.cget("background")
 
         # Cambiar a tema alternativo
-        real_style.set_theme(alt_theme)
+        # Verificar si existe set_theme, si no usar theme_use
+        if hasattr(real_style, 'set_theme'):
+            real_style.set_theme(alt_theme)
+        else:
+            real_style.theme_use(alt_theme)
 
         # Esperar a que se procesen eventos (para que Publisher notifique)
         self.root.update()
@@ -306,7 +322,10 @@ class TestStyleBuilderTKRealIntegration(TestStyleBuilderTKBase):
         self.assertNotEqual(new_bg, original_bg)
 
         # Restaurar tema original
-        real_style.set_theme(current_theme)
+        if hasattr(real_style, 'set_theme'):
+            real_style.set_theme(current_theme)
+        else:
+            real_style.theme_use(current_theme)
 
     def test_real_stylebuilder_hierarchy(self):
         """Verifica la jerarquía real entre Style, StyleBuilderTTK y StyleBuilderTK."""
