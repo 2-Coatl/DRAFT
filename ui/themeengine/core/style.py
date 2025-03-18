@@ -55,12 +55,12 @@ class Style(ttk.Style):
 
         # # Cargar temas ANTES de intentar usar uno
         self._load_themes()
-        print(f"Después de _load_themes")
-        print(f"_theme_objects: {self._theme_objects}")
-        print(f"_theme_definitions: {self._theme_definitions}")
-        print(f"_theme_names: {self._theme_names}")
-        print(f"_theme_styles: {self._theme_styles}")
-        print(f"_style_registry: {self._style_registry}")
+        # print(f"Después de _load_themes")
+        # print(f"_theme_objects: {self._theme_objects}")
+        # print(f"_theme_definitions: {self._theme_definitions}")
+        # print(f"_theme_names: {self._theme_names}")
+        # print(f"_theme_styles: {self._theme_styles}")
+        # print(f"_style_registry: {self._style_registry}")
 
         #Inicializar ttk.Style
         super().__init__()

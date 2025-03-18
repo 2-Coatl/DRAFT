@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from math import ceil
-from typing import Union, List, Tuple, Callable
+from typing import Union, List, Tuple, Callable, Dict, Any
 from ui.themeengine.core.color import Colors
 
 from ui.themeengine.builders.style_builder_tk import StyleBuilderTK
@@ -16,89 +16,225 @@ class StyleBuilderTTK:
     1. Construcción de estilos TTK bajo demanda
     2. Gestión de temas y colores para widgets TTK
     3. Actualización dinámica de estilos
+
+    Atributos:
+        style (Style): Referencia singleton a la instancia de Style.
+        theme_images (dict): Diccionario para almacenar imágenes del tema.
+        style_builder_tk (StyleBuilderTK): Instancia para manejar widgets Tk.
+
+    Propiedades:
+        colors (Colors): Acceso a los colores del tema actual.
+        theme (ThemeDefinition): Acceso a la definición del tema actual.
+        is_light_theme (bool): Indica si el tema actual es claro.
+
     """
 
-    def __init__(self):
-        """Inicializa el motor de estilos TTK."""
-        #Dependencia circular
+    def __init__(self) -> None:
+        """Inicializa el motor de estilos TTK.
+
+        Este método constructor establece las referencias y recursos necesarios para
+        que el motor de estilos funcione correctamente. Resuelve la dependencia circular
+        con la clase Style, inicializa estructuras de datos para recursos visuales, y
+        crea el tema TTK básico que servirá como punto de partida para todos los estilos.
+
+        La inicialización incluye los siguientes pasos:
+        1. Obtención de la instancia singleton de Style
+        2. Creación de un diccionario vacío para imágenes del tema
+        3. Inicialización del constructor de estilos para widgets Tk tradicionales
+        4. Creación del tema TTK básico
+
+        No recibe parámetros de configuración externa, asumiendo que la configuración
+        necesaria ya está presente en la instancia de Style.
+        """
+        # Resuelve la dependencia circular con el módulo Style
+        # Esta importación se hace localmente para evitar problemas de importación cíclica
+        # entre los módulos Style y StyleBuilderTTK que dependen mutuamente
         from ui.themeengine.core.style import Style
+
+        # Obtiene la instancia única (singleton) de Style que contiene la configuración
+        # del tema actual. Ejemplo: instancia con tema 'light' y colores predefinidos
         self.style: Style = Style.get_instance()
-        self.theme_images = {}
-        self.style_builder_tk = StyleBuilderTK()
+
+        # Inicializa un diccionario vacío para almacenar imágenes del tema
+        # Este diccionario se llenará bajo demanda con imágenes como íconos de botones,
+        # fondos, etc. Ejemplo: {"check_on": PhotoImage(...), "radio_off": PhotoImage(...)}
+        self.theme_images: Dict[str, Any] = {}
+
+        # Crea una instancia del constructor de estilos para widgets Tk tradicionales
+        # Esta instancia auxiliar maneja widgets que no son parte del framework TTK
+        # pero necesitan mantener coherencia visual con los widgets TTK
+        self.style_builder_tk: StyleBuilderTK = StyleBuilderTK()
+
+        # Inicializa el tema TTK básico llamando al método create_theme
+        # Este método configura un nuevo tema TTK basado en 'clam' y lo establece como activo
+        # Esto prepara el framework para la posterior creación de estilos específicos
         self.create_theme()
 
     @property
     def colors(self) -> Colors:
         """Obtiene referencia a los colores del tema actual.
 
+        Esta propiedad proporciona acceso directo al objeto Colors que contiene
+        todas las definiciones de colores para el tema actual, simplificando el acceso
+        a los colores para la construcción de estilos TTK.
+
+        Los colores pueden ser accedidos mediante:
+        - Notación de punto: self.colors.primary
+        - Método get: self.colors.get('primary')
+        - Iteración: for color_label in self.colors
+
         Returns:
-            Colors: Objeto que contiene las definiciones de colores del tema.
+            Colors: Objeto que contiene las definiciones de colores del tema actual.
+                Incluye colores básicos (primary, secondary, etc.) y colores de interfaz
+                (bg, fg, etc.).
         """
+        # Accede al objeto style de la instancia actual, luego a su propiedad theme,
+        # y finalmente a la propiedad colors de theme. Este enfoque permite un acceso
+        # directo a los colores sin necesidad de navegar por toda la jerarquía de objetos
+        # cada vez que se necesite un color para un estilo.
+        #
+        # Por ejemplo, en lugar de escribir:
+        #   bg_color = self.style.theme.colors.bg
+        #   primary_color = self.style.theme.colors.primary
+        #
+        # Se puede escribir de forma más concisa:
+        #   bg_color = self.colors.bg
+        #   primary_color = self.colors.primary
+        #
+        # Esta propiedad no realiza ninguna validación ni manejo de errores, asumiendo que:
+        # 1. El atributo self.style existe y no es None
+        # 2. La propiedad style.theme existe y no es None
+        # 3. La propiedad theme.colors existe y es un objeto Colors válido
+        #
+        # En caso de que alguna de estas condiciones no se cumpla, se producirá un AttributeError.
+        # Esta propiedad es de solo lectura y retorna una referencia directa al objeto colors,
+        # por lo que cualquier modificación afectará al objeto original en style.theme.colors.
         return self.style.theme.colors
 
     @property
     def theme(self) -> ThemeDefinition:
         """Obtiene referencia a la definición del tema actual.
 
+        Esta propiedad proporciona acceso directo al objeto ThemeDefinition que contiene
+        la definición completa del tema actual, incluyendo su nombre, tipo (claro/oscuro)
+        y todos sus colores. Facilita el acceso a las propiedades del tema para la
+        construcción de estilos TTK adaptados al tema actual.
+
+        Los componentes del tema pueden ser accedidos mediante:
+        - Nombre: self.theme.name (ej: "light", "dark")
+        - Tipo: self.theme.type (ej: "light" o "dark")
+        - Colores: self.theme.colors (objeto Colors con todos los colores)
+
         Returns:
-            ThemeDefinition: Objeto que contiene las definiciones del tema.
+            ThemeDefinition: Objeto que contiene las definiciones completas del tema actual.
+
         """
+        # Accede al objeto style de la instancia actual y luego a su propiedad theme,
+        # que contiene la definición completa del tema actual. Este enfoque simplifica
+        # el acceso a las propiedades del tema para la construcción de estilos TTK.
+        #
+        # Por ejemplo, en lugar de escribir:
+        #   theme_name = self.style.theme.name
+        #   theme_type = self.style.theme.type
+        #
+        # Se puede escribir de forma más concisa:
+        #   theme_name = self.theme.name
+        #   theme_type = self.theme.type
+        #
+        # El objeto ThemeDefinition retornado incluye:
+        # - name: Nombre del tema (ej: "light", "dark")
+        # - type: Tipo de tema (LIGHT o DARK)
+        # - colors: Objeto Colors con todos los colores
+        #
+        # Esta propiedad no realiza ninguna validación ni manejo de errores, asumiendo que:
+        # 1. El atributo self.style existe y no es None
+        # 2. La propiedad style.theme existe y es un objeto ThemeDefinition válido
+        #
+        # En caso de que alguna de estas condiciones no se cumpla, se producirá un AttributeError.
         return self.style.theme
 
     @property
     def is_light_theme(self) -> bool:
         """Determina si el tema actual es claro.
 
+        Esta propiedad evalúa el tipo del tema actual para determinar si es claro (light)
+        u oscuro (dark). Proporciona una forma semántica y directa de adaptar el comportamiento
+        de los componentes de la interfaz según el esquema de colores actual.
+
+        La distinción entre temas claros y oscuros es fundamental para:
+        - Ajustar contrastes y visibilidad de elementos
+        - Seleccionar colores complementarios apropiados
+        - Adaptar íconos y recursos gráficos
+        - Optimizar la legibilidad del texto
+
         Returns:
-            bool: True si el tema es claro, False si es oscuro.
+            bool: True si el tema actual es claro (theme.type == 'light'),
+                  False si el tema es oscuro (theme.type != 'light').
         """
+        # Esta propiedad evalúa si el tema actual es de tipo claro ('light')
+        # comparando el valor de theme.type con la constante LIGHT.
+        #
+        # El flujo es:
+        # 1. Acceder a self.style (instancia de Style)
+        # 2. Obtener la propiedad theme (objeto ThemeDefinition)
+        # 3. Leer la propiedad type (normalmente 'light' o 'dark')
+        # 4. Comparar con la constante LIGHT ('light')
+        #
+        # Esta comparación sencilla permite adaptar rápidamente comportamientos
+        # y estilos según el tipo de tema, por ejemplo:
+        #
+        # - Seleccionar diferentes colores de borde o contraste
+        # - Ajustar la visibilidad de elementos
+        # - Optimizar la legibilidad de textos
+        #
+        # La implementación asume que:
+        # - self.style.theme existe y es válido
+        # - theme.type está establecido correctamente
+        # - Solo existen dos tipos principales de tema (claro y oscuro)
+        #
+        # Si alguna de estas condiciones falla, podría producirse un AttributeError.
         return self.style.theme.type == LIGHT
-
-    def scale_size(self, size: Union[int, List, Tuple]) -> Union[int, List]:
-        """Escala el tamaño de imágenes y otros elementos basado en el factor de escala TTK.
-
-        Asegura que los elementos visuales coincidan con la resolución de la pantalla
-        ajustando su tamaño según el sistema operativo y la configuración.
-
-        Args:
-            size: Tamaño a escalar. Puede ser un entero único o una colección de enteros.
-
-        Returns:
-            El tamaño escalado. Si la entrada es un número, retorna un número.
-            Si la entrada es una lista o tupla, retorna una lista de números escalados.
-        """
-        winsys = self.style.master.tk.call("tk", "windowingsystem")
-        if winsys == "aqua":  # macOS
-            BASELINE = 1.000492368291482
-        else:  # otros sistemas
-            BASELINE = 1.33398982438864281
-
-        scaling = self.style.master.tk.call("tk", "scaling")
-        factor = scaling / BASELINE
-
-        if isinstance(size, (int, float)):
-            return ceil(size * factor)
-        elif isinstance(size, (tuple, list)):
-            return [ceil(x * factor) for x in size]
 
     @staticmethod
     def name_to_method(method_name: str) -> Callable:
-        """Obtiene un método por su nombre.
+        """Obtiene un método de la clase por su nombre.
 
-        Convierte un nombre de método en una referencia al método correspondiente
-        dentro de la clase StyleEngineTTK.
+        Convierte un nombre de método (string) en una referencia ejecutable al método
+        correspondiente dentro de la clase StyleBuilderTTK. Permite la resolución dinámica
+        de métodos, facilitando la invocación programática de constructores de estilo y
+        otras funciones de la clase.
+
+        Este método es útil para:
+        - Implementar mapeos configurables entre widgets y sus métodos de estilo
+        - Permitir la personalización de la aplicación mediante configuración externa
+        - Facilitar la extensión del sistema de estilos sin modificar código base
 
         Args:
-            method_name: Nombre del método constructor de estilo.
+            method_name: Nombre del método a obtener. Debe corresponder exactamente
+                         a un método existente en la clase StyleBuilderTTK.
 
         Returns:
-            Callable: El método referenciado por method_name.
+            Callable: Una referencia al método solicitado que puede ser invocada
+                     posteriormente.
 
-        Example:
-            >>> method = StyleBuilderTTK.name_to_method("create_button_style")
-            >>> method(self, "primary")
+        Raises:
+            AttributeError: Si el método especificado no existe en la clase StyleBuilderTTK.
+
         """
+        # Utiliza getattr para obtener la referencia al método a partir de su nombre
+        # getattr(object, name[, default]) busca el atributo 'name' en el objeto
+        # En este caso, busca un método llamado 'method_name' en la clase StyleBuilderTTK
+        #
+        # Ejemplos:
+        # - Si method_name = "create_button_style", obtiene StyleBuilderTTK.create_button_style
+        # - Si method_name = "create_combobox_style", obtiene StyleBuilderTTK.create_combobox_style
+        #
+        # Si el método no existe, getattr lanzará AttributeError
         func = getattr(StyleBuilderTTK, method_name)
+
+        # Retorna la referencia al método obtenido, que puede ser invocada posteriormente
+        # El método retornado normalmente será un método de instancia, por lo que requerirá
+        # una instancia como primer argumento (self) cuando sea invocado
         return func
 
     def create_theme(self) -> None:
@@ -144,6 +280,73 @@ class StyleBuilderTTK:
         # Estilo general aplicado a la vista de tabla
         self.create_link_button_style()
         self.style.configure("symbol.Link.TButton", font="-size 16")
+
+    def scale_size(self, size: Union[int, List, Tuple]) -> Union[int, List]:
+        """Escala el tamaño de imágenes y otros elementos basado en el factor de escala TTK.
+
+        Ajusta dimensiones para mantener proporciones consistentes en diferentes configuraciones
+        de pantalla y sistemas operativos. Utiliza el factor de escala de Tkinter y valores de
+        referencia específicos por plataforma para calcular el tamaño óptimo.
+
+        El método:
+        1. Determina el sistema de ventanas (macOS vs otros)
+        2. Establece un valor base de referencia apropiado
+        3. Obtiene el factor de escala actual del sistema
+        4. Calcula un factor de ajuste personalizado
+        5. Aplica el factor y redondea hacia arriba (ceil)
+
+        Args:
+            size: Dimensión o dimensiones a escalar. Puede ser un número individual (int/float)
+                  o una colección de números (lista/tupla).
+
+        Returns:
+            Union[int, List[int]]: El tamaño escalado.
+                - Si la entrada es un número, retorna un entero escalado.
+                - Si la entrada es una lista/tupla, retorna una lista de enteros escalados.
+
+        Ejemplos:
+            >>> self.scale_size(10)  # Retorna 15 (en un sistema con factor ~1.5)
+            >>> self.scale_size([10, 20])  # Retorna [15, 30]
+            >>> self.scale_size((5, 10, 15))  # Retorna [8, 15, 23]
+
+        Nota:
+            Siempre redondea hacia arriba para evitar elementos demasiado pequeños,
+            lo que podría afectar la legibilidad o usabilidad.
+        """
+
+        # Obtiene el sistema de ventanas actual: 'aqua' (macOS), 'win32' (Windows) o 'x11' (Unix/Linux)
+        # Este valor determina qué factor base se utilizará para el cálculo
+        winsys = self.style.master.tk.call("tk", "windowingsystem")
+
+        # Establece el valor de referencia (BASELINE) según la plataforma
+        # Estos valores representan factores de escala de referencia para normalización
+        if winsys == "aqua":  # macOS
+            # macOS tiene una relación diferente entre píxeles físicos y unidades Tk
+            BASELINE = 1.000492368291482  # Valor muy cercano a 1.0
+        else:  # Windows, Linux u otros
+            # Otros sistemas tienen una relación píxel/unidad diferente
+            BASELINE = 1.33398982438864281  # Aproximadamente 4/3
+
+        # Obtiene el factor de escala actual del sistema Tkinter
+        # Este valor refleja la densidad de píxeles y configuración del sistema
+        # Ejemplos típicos: 1.0 (pantalla estándar), 1.5-2.0 (pantallas HiDPI)
+        scaling = self.style.master.tk.call("tk", "scaling")
+
+        # Calcula el factor de ajuste personalizado dividiendo el scaling actual
+        # por el valor de referencia de la plataforma
+        # Esto normaliza el factor para que sea consistente entre plataformas
+        factor = scaling / BASELINE
+
+        # Aplica el factor según el tipo de entrada
+        if isinstance(size, (int, float)):
+            # Para un número único, multiplica por el factor y redondea hacia arriba
+            # Ejemplo: size=10, factor=1.5 → 10*1.5=15.0 → ceil(15.0)=15
+            return ceil(size * factor)
+        elif isinstance(size, (tuple, list)):
+            # Para colecciones, procesa cada elemento individualmente
+            # Crea una nueva lista con los valores escalados (siempre enteros)
+            # Ejemplo: size=[10,20], factor=1.5 → [ceil(10*1.5), ceil(20*1.5)] → [15, 30]
+            return [ceil(x * factor) for x in size]
 
     def create_button_style(self, colorname=DEFAULT) -> None:
         """Crea un estilo sólido para el widget ttk.Button.
