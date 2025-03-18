@@ -63,11 +63,13 @@ class StyleBuilderTKTestBase(unittest.TestCase):
 
         # Configurar propiedades de los mocks
         self.mock_style.theme = self.mock_theme
-        self.mock_style.colors = self.mock_colors
         self.mock_style.master = self.root
 
         # Configurar colores para pruebas
         self._setup_mock_colors()
+
+        # Asignar el objeto Colors real al mock_style
+        self.mock_style.colors = self.mock_colors  # <-- Asignar después de configurar los colores
 
         # Configurar tema (claro por defecto)
         self.mock_theme.type = LIGHT
@@ -296,12 +298,7 @@ class TestStyleBuilderTKWidgetSpecific(StyleBuilderTKTestBase):
                 widget.destroy()
 
     def test_menu_styling(self):
-        """Verifica la configuración correcta de menús.
-
-        Prueba:
-        - Estilización adecuada de menús
-        - Configuración de tearoff y colores
-        """
+        """Verifica la configuración correcta de menús."""
         # ARRANGE: Crear menú
         menu = tk.Menu(self.root)
 
@@ -309,10 +306,11 @@ class TestStyleBuilderTKWidgetSpecific(StyleBuilderTKTestBase):
         self.style_builder.update_menu_style(menu)
 
         # ASSERT: Verificar configuraciones clave
-        self.assertEqual(menu.cget("background"), str(self.mock_colors.bg))
-        self.assertEqual(menu.cget("foreground"), str(self.mock_colors.fg))
-        self.assertEqual(menu.cget("activebackground"), str(self.mock_colors.selectbg))
-        self.assertEqual(menu.cget("activeforeground"), str(self.mock_colors.selectfg))
+        # Convertir los valores obtenidos a string para comparar
+        self.assertEqual(str(menu.cget("background")), str(self.mock_colors.bg))
+        self.assertEqual(str(menu.cget("foreground")), str(self.mock_colors.fg))
+        self.assertEqual(str(menu.cget("activebackground")), str(self.mock_colors.selectbg))
+        self.assertEqual(str(menu.cget("activeforeground")), str(self.mock_colors.selectfg))
 
 # =============================================================================
 # SECCIÓN 4: PRUEBAS DE INTEGRACIÓN CON IMPLEMENTACIONES REALES
