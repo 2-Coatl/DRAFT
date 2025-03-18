@@ -302,119 +302,159 @@ class TestStyleBuilderTKWidgetSpecific(StyleBuilderTKTestBase):
         self.assertEqual(menu.cget("tearoff"), 0)  # tearoff desactivado
 
 
+
 # =============================================================================
 # SECCIÓN 4: PRUEBAS DE INTEGRACIÓN Y CASOS LÍMITE
 # =============================================================================
 
-class TestStyleBuilderTKIntegration(StyleBuilderTKTestBase):
-    """Pruebas de integración para StyleBuilderTK.
+class TestStyleBuilderTKIntegration(unittest.TestCase):
+    """Pruebas de integración para StyleBuilderTK con implementaciones reales.
 
     Esta clase contiene pruebas para verificar:
-    1. Integración con otras clases del sistema
-    2. Comportamiento durante el ciclo de vida
-    3. Manejo de casos límite y errores
+    1. Integración con implementaciones reales (sin mocks)
+    2. Comportamiento real durante el ciclo de vida de los widgets
+    3. Interacción real con el sistema de temas y colores
     4. Selección dinámica de métodos con Bootstyle
     """
 
-    def test_colors_integration(self):
-        """Verifica la integración correcta con la clase Colors.
+    @classmethod
+    def setUpClass(cls):
+        """Prepara el entorno Tkinter una sola vez para todas las pruebas."""
+        cls.root = tk.Tk()
+        cls.root.withdraw()  # Ocultar ventana durante las pruebas
 
-        Prueba:
-        - Uso correcto de Colors.update_hsv para efectos visuales
-        - Aplicación correcta de colores derivados
-        """
-        # ARRANGE: Mockear Colors.update_hsv
-        with patch('ui.themeengine.core.colors.Colors.update_hsv',
-                   return_value="#005AA3") as mock_update_hsv:
-            # Crear widget a probar
-            button = self.create_widget(tk.Button)
+    @classmethod
+    def tearDownClass(cls):
+        """Limpia los recursos de Tkinter al finalizar todas las pruebas."""
+        cls.root.destroy()
 
-            # ACT: Aplicar estilo
-            self.style_builder.update_button_style(button)
+    def setUp(self):
+        """Configura el entorno para cada prueba con implementaciones reales."""
+        # Nota: No creamos mocks ni realizamos patches
+        # Usamos la implementación real de StyleBuilderTK
+        self.style_builder = StyleBuilderTK()
 
-            # ASSERT: Verificar llamada correcta a Colors.update_hsv
-            mock_update_hsv.assert_called_with(self.mock_colors.primary, vd=-0.1)
+        # Guardamos referencia a la instancia real de Style para verificaciones
+        from ui.themeengine.core.style import Style
+        self.real_style = Style.get_instance()
 
-            # Verificar aplicación del color derivado
-            self.assertEqual(button.cget("activebackground"), "#005AA3")
+        # Guardamos el tema original para restaurarlo después
+        self.original_theme_name = self.real_style.theme_name
 
-            button.destroy()
+    def tearDown(self):
+        """Restaura el tema original después de cada prueba."""
+        # Restaurar el tema original para no afectar otras pruebas
+        if hasattr(self, 'original_theme_name'):
+            self.real_style.set_theme(self.original_theme_name)
 
-    def test_error_handling_invalid_widget(self):
-        """Verifica el manejo adecuado de widgets inválidos.
+    def test_real_style_integration(self):
+        """Verifica la integración con la implementación real de Style."""
+        # Verificar que StyleBuilderTK tiene acceso a la instancia real de Style
+        self.assertIsNotNone(self.style_builder.style)
+        self.assertEqual(self.style_builder.style, self.real_style)
 
-        Prueba:
-        - Comportamiento al pasar widget de tipo incorrecto
-        - Manejo de excepciones apropiado
-        """
-        # ARRANGE: Crear un tipo de widget y un método incompatibles
-        label = self.create_widget(tk.Label)
+        # Verificar acceso a propiedades reales
+        self.assertIsNotNone(self.style_builder.theme)
+        self.assertIsNotNone(self.style_builder.colors)
 
-        # ACT & ASSERT: Verificar que se maneja adecuadamente el error de tipo
-        with self.assertRaises(tk.TclError):
-            # Intentar aplicar estilo de botón a una etiqueta
-            # Esto debería fallar porque algunos atributos no existen
-            self.style_builder.update_button_style(label)
+        # Verificar coherencia con el tipo de tema actual
+        theme_type = self.real_style.theme.type
+        if theme_type == LIGHT:
+            self.assertTrue(self.style_builder.is_light_theme)
+        else:
+            self.assertFalse(self.style_builder.is_light_theme)
 
-        label.destroy()
+    def test_real_widget_styling(self):
+        """Verifica la aplicación de estilos a widgets reales."""
+        # Crear widget para probar
+        button = tk.Button(self.root, text="Test Button")
 
-    def test_widget_lifecycle(self):
-        """Verifica el comportamiento correcto durante el ciclo de vida de widgets.
+        # Guardar configuración inicial
+        initial_bg = button.cget("background")
 
-        Prueba:
-        - Aplicación correcta de estilos a widgets recién creados
-        - Comportamiento con widgets en diferentes estados
-        """
-        # ARRANGE: Crear widget para prueba de ciclo de vida
-        entry = self.create_widget(tk.Entry)
+        # Aplicar estilo
+        self.style_builder.update_button_style(button)
 
-        # ACT: Aplicar estilo inicial
-        self.style_builder.update_entry_style(entry)
+        # Verificar que el estilo se aplicó y cambió la configuración
+        self.assertNotEqual(button.cget("background"), initial_bg)
+        self.assertEqual(button.cget("relief"), tk.FLAT)
 
-        # ASSERT: Verificar estilo inicial
-        self.assertEqual(entry.cget("background"), self.mock_colors.inputbg)
+        # Verificar coherencia con los colores del tema
+        self.assertEqual(button.cget("background"), self.style_builder.colors.primary)
 
-        # Simular cambio de tema (lo que ocurriría durante el ciclo de vida)
-        self.mock_colors.inputbg = "#E0E0E0"  # Nuevo color
+        button.destroy()
 
-        # ACT: Aplicar estilo nuevamente (como ocurriría al cambiar el tema)
-        self.style_builder.update_entry_style(entry)
+    def test_theme_switching_integration(self):
+        """Verifica la actualización de estilos al cambiar entre temas claros y oscuros."""
+        # Crear widget para prueba
+        entry = tk.Entry(self.root)
 
-        # ASSERT: Verificar actualización del estilo
-        self.assertEqual(entry.cget("background"), "#E0E0E0")
+        theme_manager = ThemeManager.get_instance()
+
+        light_theme = next((t for t in theme_manager.get_themes() if t.type == LIGHT), None)
+        dark_theme = next((t for t in theme_manager.get_themes() if t.type == DARK), None)
+
+        if light_theme and dark_theme:
+            # Aplicar tema claro
+            self.real_style.set_theme(light_theme.name)
+            self.style_builder.update_entry_style(entry)
+            light_border = entry.cget("highlightbackground")
+
+            # Aplicar tema oscuro
+            self.real_style.set_theme(dark_theme.name)
+            self.style_builder.update_entry_style(entry)
+            dark_border = entry.cget("highlightbackground")
+
+            # Verificar que los estilos son diferentes entre temas
+            self.assertNotEqual(light_border, dark_border)
 
         entry.destroy()
 
-    def test_bootstyle_dynamic_method_selection(self):
-        """Verifica que Bootstyle seleccione dinámicamente el método correcto de StyleBuilderTK.
-
-        Prueba:
-        - La selección dinámica de métodos a través de getattr
-        - La invocación del método correcto según el tipo de widget
-        """
-
+    def test_bootstyle_real_integration(self):
+        """Verifica la integración real con Bootstyle."""
         # Crear widgets de diferentes tipos
-        button = self.create_widget(tk.Button)
-        label = self.create_widget(tk.Label)
+        button = tk.Button(self.root, text="Test Button")
+        label = tk.Label(self.root, text="Test Label")
 
-        # Crear espías para los métodos de StyleBuilderTK
-        with patch.object(self.style_builder, 'update_button_style') as mock_button_method:
-            with patch.object(self.style_builder, 'update_label_style') as mock_label_method:
-                # Parchear el método _get_builder_tk para que devuelva nuestro builder
-                with patch.object(self.mock_style, '_get_builder_tk',
-                                  return_value=self.style_builder):
-                    # ACT: Llamar a update_tk_widget_style para diferentes widgets
-                    Bootstyle.update_tk_widget_style(button)
-                    Bootstyle.update_tk_widget_style(label)
+        # Aplicar estilos a través de Bootstyle
+        Bootstyle.update_tk_widget_style(button)
+        Bootstyle.update_tk_widget_style(label)
 
-                    # ASSERT: Verificar que se llamó al método correcto para cada widget
-                    mock_button_method.assert_called_once_with(button)
-                    mock_label_method.assert_called_once_with(label)
+        # Verificar que los estilos se aplicaron correctamente
+        self.assertEqual(button.cget("relief"), tk.FLAT)
+        self.assertEqual(label.cget("background"), self.style_builder.colors.bg)
 
         # Limpiar
         button.destroy()
         label.destroy()
 
+    def test_complex_widget_hierarchy(self):
+        """Verifica la aplicación de estilos a jerarquías complejas de widgets."""
+        # Crear una jerarquía de widgets
+        frame = tk.Frame(self.root)
+        inner_frame = tk.Frame(frame)
+        button = tk.Button(inner_frame, text="Nested Button")
+        label = tk.Label(inner_frame, text="Nested Label")
+
+        # Disponer widgets
+        inner_frame.pack()
+        button.pack()
+        label.pack()
+
+        # Aplicar estilos
+        self.style_builder.update_frame_style(frame)
+        self.style_builder.update_frame_style(inner_frame)
+        self.style_builder.update_button_style(button)
+        self.style_builder.update_label_style(label)
+
+        # Verificar coherencia de estilos en la jerarquía
+        self.assertEqual(frame.cget("background"), self.style_builder.colors.bg)
+        self.assertEqual(inner_frame.cget("background"), self.style_builder.colors.bg)
+        self.assertEqual(button.cget("background"), self.style_builder.colors.primary)
+        self.assertEqual(label.cget("background"), self.style_builder.colors.bg)
+
+        # Limpiar
+        frame.destroy()  # Destruye automáticamente los widgets hijos
 
 # =============================================================================
 # SECCIÓN 5: EJECUCIÓN DE PRUEBAS
