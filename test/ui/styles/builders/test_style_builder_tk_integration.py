@@ -6,15 +6,14 @@ from ui.themeengine.utils.bootstyle import Bootstyle
 from ui.themeengine.utils.constants import LIGHT
 
 # =============================================================================
-# SECCIÓN 1: PRUEBAS DE INTEGRACIÓN CON IMPLEMENTACIONES REALES
+# SECCIÓN 1: CLASE BASE PARA PRUEBAS DE INTEGRACIÓN
 # =============================================================================
 
-class TestStyleBuilderTKRealIntegration(unittest.TestCase):
-    """Pruebas de integración para StyleBuilderTK con implementaciones reales.
+class TestStyleBuilderTKBase(unittest.TestCase):
+    """Clase base para pruebas de integración del sistema de estilos.
 
-    Esta clase contiene pruebas que utilizan implementaciones reales de los componentes
-    del sistema de estilos, en lugar de mocks, para verificar el comportamiento
-    integrado del sistema completo.
+    Esta clase proporciona la configuración común, métodos auxiliares y gestión
+    de recursos que serán utilizados por las clases de prueba específicas.
     """
 
     @classmethod
@@ -55,7 +54,6 @@ class TestStyleBuilderTKRealIntegration(unittest.TestCase):
         # Cancelar suscripciones de widgets de prueba
         for widget in self.test_widgets:
             try:
-
                 Publisher.unsubscribe(name=str(widget))
             except:
                 pass
@@ -65,6 +63,118 @@ class TestStyleBuilderTKRealIntegration(unittest.TestCase):
                 widget.destroy()
             except:
                 pass
+
+    def create_basic_widgets(self):
+        """Crea un conjunto básico de widgets para pruebas.
+
+        Returns:
+            tuple: Una tupla con los widgets básicos creados (button, label, entry, frame)
+        """
+        button = tk.Button(self.root, text="Test Button")
+        label = tk.Label(self.root, text="Test Label")
+        entry = tk.Entry(self.root)
+        frame = tk.Frame(self.root)
+
+        self.test_widgets.extend([button, label, entry, frame])
+        return button, label, entry, frame
+
+    def create_compound_interface(self):
+        """Crea una interfaz compuesta con múltiples widgets organizados jerárquicamente.
+
+        Returns:
+            dict: Un diccionario con todos los widgets creados
+        """
+        # Crear una jerarquía de widgets que simula una interfaz real
+        main_frame = tk.Frame(self.root)
+        header_frame = tk.Frame(main_frame)
+        content_frame = tk.Frame(main_frame)
+        footer_frame = tk.Frame(main_frame)
+
+        title_label = tk.Label(header_frame, text="Título de la Aplicación")
+        subtitle_label = tk.Label(header_frame, text="Subtítulo informativo")
+
+        name_label = tk.Label(content_frame, text="Nombre:")
+        name_entry = tk.Entry(content_frame)
+        email_label = tk.Label(content_frame, text="Email:")
+        email_entry = tk.Entry(content_frame)
+
+        save_button = tk.Button(footer_frame, text="Guardar")
+        cancel_button = tk.Button(footer_frame, text="Cancelar")
+
+        # Organizar widgets en la jerarquía
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        header_frame.pack(fill=tk.X)
+        content_frame.pack(fill=tk.BOTH, expand=True)
+        footer_frame.pack(fill=tk.X)
+
+        title_label.pack(pady=5)
+        subtitle_label.pack(pady=2)
+
+        name_label.pack(anchor=tk.W, pady=2)
+        name_entry.pack(fill=tk.X, pady=2)
+        email_label.pack(anchor=tk.W, pady=2)
+        email_entry.pack(fill=tk.X, pady=2)
+
+        save_button.pack(side=tk.RIGHT, padx=5, pady=5)
+        cancel_button.pack(side=tk.RIGHT, padx=5, pady=5)
+
+        # Registrar widgets para limpieza
+        widgets = {
+            'main_frame': main_frame,
+            'header_frame': header_frame,
+            'content_frame': content_frame,
+            'footer_frame': footer_frame,
+            'title_label': title_label,
+            'subtitle_label': subtitle_label,
+            'name_label': name_label,
+            'name_entry': name_entry,
+            'email_label': email_label,
+            'email_entry': email_entry,
+            'save_button': save_button,
+            'cancel_button': cancel_button
+        }
+
+        self.test_widgets.extend(list(widgets.values()))
+        return widgets
+
+    def get_available_themes(self):
+        """Obtiene los temas disponibles en el sistema.
+
+        Returns:
+            tuple: Una tupla con (current_theme, alt_theme) o (None, None) si no hay suficientes temas.
+        """
+        from ui.themeengine.core.style import Style
+
+        # Obtener instancia real de Style
+        real_style = Style.get_instance()
+
+        # Esta función solo funciona si Style tiene los métodos necesarios
+        if not hasattr(real_style, 'get_themes') or not hasattr(real_style, 'set_theme'):
+            return None, None
+
+        # Obtener temas disponibles
+        themes = real_style.get_themes()
+        if len(themes) < 2:
+            return None, None
+
+        # Identificar temas alternativos para la prueba
+        current_theme = real_style.theme_name
+        alt_theme = next((t for t in themes if t != current_theme), None)
+
+        return current_theme, alt_theme
+
+
+# =============================================================================
+# SECCIÓN 2: PRUEBAS DE INTEGRACIÓN CON IMPLEMENTACIONES REALES
+# =============================================================================
+
+class TestStyleBuilderTKRealIntegration(TestStyleBuilderTKBase):
+    """Pruebas de integración para StyleBuilderTK con implementaciones reales.
+
+    Esta clase contiene pruebas que utilizan implementaciones reales de los componentes
+    del sistema de estilos, en lugar de mocks, para verificar el comportamiento
+    integrado del sistema completo.
+    """
 
     def test_real_style_integration(self):
         """Verifica la integración con la implementación real de Style."""
@@ -90,9 +200,8 @@ class TestStyleBuilderTKRealIntegration(unittest.TestCase):
 
     def test_real_widget_styling(self):
         """Verifica la aplicación de estilos a widgets reales."""
-        # Crear widgets para probar
-        button = tk.Button(self.root, text="Test Button")
-        self.test_widgets.append(button)
+        # Crear widget para probar utilizando el método auxiliar
+        button, _, _, _ = self.create_basic_widgets()
 
         # Guardar configuración inicial
         initial_bg = button.cget("background")
@@ -109,10 +218,8 @@ class TestStyleBuilderTKRealIntegration(unittest.TestCase):
 
     def test_real_bootstyle_integration(self):
         """Verifica la integración real entre Bootstyle y StyleBuilderTK."""
-        # Crear widgets para probar
-        label = tk.Label(self.root, text="Test Label")
-        button = tk.Button(self.root, text="Test Button")
-        self.test_widgets.extend([label, button])
+        # Crear widgets para probar utilizando el método auxiliar
+        button, label, _, _ = self.create_basic_widgets()
 
         # Guardar configuración inicial
         initial_label_bg = label.cget("background")
@@ -157,27 +264,16 @@ class TestStyleBuilderTKRealIntegration(unittest.TestCase):
         """Verifica que los widgets se actualizan cuando cambia el tema, usando implementaciones reales."""
         from ui.themeengine.core.style import Style
 
-        # Obtener instancia real de Style
-        real_style = Style.get_instance()
+        # Obtener temas disponibles utilizando el método auxiliar
+        current_theme, alt_theme = self.get_available_themes()
 
-        # Esta prueba solo funciona si Style tiene los métodos necesarios
-        if not hasattr(real_style, 'get_themes') or not hasattr(real_style, 'set_theme'):
-            self.skipTest("Style no tiene los métodos necesarios para esta prueba")
-            return
-
-        # Obtener temas disponibles
-        themes = real_style.get_themes()
-        if len(themes) < 2:
+        # Verificar si podemos realizar la prueba
+        if not current_theme or not alt_theme:
             self.skipTest("No hay suficientes temas para probar el cambio")
             return
 
-        # Identificar temas alternativos para la prueba
-        current_theme = real_style.theme_name
-        alt_theme = next((t for t in themes if t != current_theme), None)
-
-        if not alt_theme:
-            self.skipTest("No se pudo encontrar un tema alternativo")
-            return
+        # Obtener instancia real de Style
+        real_style = Style.get_instance()
 
         # Crear widget para prueba
         button = tk.Button(self.root, text="Theme Change Test")
@@ -196,10 +292,6 @@ class TestStyleBuilderTKRealIntegration(unittest.TestCase):
         self.root.update()
 
         # Verificar que el estilo se actualizó
-        # Nota: Esto depende de que Publisher funcione correctamente
-        # En un sistema bien integrado, el cambio de tema dispararía una notificación
-        # que actualizaría automáticamente el widget
-        #
         # Si esto no funciona automáticamente, podemos forzar la actualización:
         Bootstyle.update_tk_widget_style(button)
 
@@ -236,73 +328,32 @@ class TestStyleBuilderTKRealIntegration(unittest.TestCase):
 
     def test_real_compound_widget_styling(self):
         """Verifica la aplicación de estilos a un conjunto de widgets en una interfaz real."""
-        # Crear una jerarquía de widgets que simula una interfaz real
-        main_frame = tk.Frame(self.root)
-        header_frame = tk.Frame(main_frame)
-        content_frame = tk.Frame(main_frame)
-        footer_frame = tk.Frame(main_frame)
-
-        title_label = tk.Label(header_frame, text="Título de la Aplicación")
-        subtitle_label = tk.Label(header_frame, text="Subtítulo informativo")
-
-        name_label = tk.Label(content_frame, text="Nombre:")
-        name_entry = tk.Entry(content_frame)
-        email_label = tk.Label(content_frame, text="Email:")
-        email_entry = tk.Entry(content_frame)
-
-        save_button = tk.Button(footer_frame, text="Guardar")
-        cancel_button = tk.Button(footer_frame, text="Cancelar")
-
-        # Organizar widgets en la jerarquía
-        main_frame.pack(fill=tk.BOTH, expand=True)
-        header_frame.pack(fill=tk.X)
-        content_frame.pack(fill=tk.BOTH, expand=True)
-        footer_frame.pack(fill=tk.X)
-
-        title_label.pack(pady=5)
-        subtitle_label.pack(pady=2)
-
-        name_label.pack(anchor=tk.W, pady=2)
-        name_entry.pack(fill=tk.X, pady=2)
-        email_label.pack(anchor=tk.W, pady=2)
-        email_entry.pack(fill=tk.X, pady=2)
-
-        save_button.pack(side=tk.RIGHT, padx=5, pady=5)
-        cancel_button.pack(side=tk.RIGHT, padx=5, pady=5)
-
-        # Registrar widgets para limpieza
-        self.test_widgets.extend([
-            main_frame, header_frame, content_frame, footer_frame,
-            title_label, subtitle_label, name_label, name_entry,
-            email_label, email_entry, save_button, cancel_button
-        ])
+        # Crear una jerarquía de widgets que simula una interfaz real utilizando el método auxiliar
+        widgets = self.create_compound_interface()
 
         # Aplicar estilos a todos los widgets
-        for widget in [
-            main_frame, header_frame, content_frame, footer_frame,
-            title_label, subtitle_label, name_label, name_entry,
-            email_label, email_entry, save_button, cancel_button
-        ]:
+        for widget in widgets.values():
             Bootstyle.update_tk_widget_style(widget)
 
         # Verificar que los estilos se aplicaron correctamente a cada tipo de widget
-        for frame in [main_frame, header_frame, content_frame, footer_frame]:
-            self.assertEqual(frame.cget("background"), self.style_builder.colors.bg)
+        for frame_name in ['main_frame', 'header_frame', 'content_frame', 'footer_frame']:
+            self.assertEqual(widgets[frame_name].cget("background"), self.style_builder.colors.bg)
 
-        for label in [title_label, subtitle_label, name_label, email_label]:
-            self.assertEqual(label.cget("background"), self.style_builder.colors.bg)
-            self.assertEqual(label.cget("foreground"), self.style_builder.colors.fg)
+        for label_name in ['title_label', 'subtitle_label', 'name_label', 'email_label']:
+            self.assertEqual(widgets[label_name].cget("background"), self.style_builder.colors.bg)
+            self.assertEqual(widgets[label_name].cget("foreground"), self.style_builder.colors.fg)
 
-        for entry in [name_entry, email_entry]:
-            self.assertEqual(entry.cget("background"), self.style_builder.colors.inputbg)
-            self.assertEqual(entry.cget("foreground"), self.style_builder.colors.inputfg)
+        for entry_name in ['name_entry', 'email_entry']:
+            self.assertEqual(widgets[entry_name].cget("background"), self.style_builder.colors.inputbg)
+            self.assertEqual(widgets[entry_name].cget("foreground"), self.style_builder.colors.inputfg)
 
-        for button in [save_button, cancel_button]:
-            self.assertEqual(button.cget("background"), self.style_builder.colors.primary)
-            self.assertEqual(button.cget("relief"), tk.FLAT)
+        for button_name in ['save_button', 'cancel_button']:
+            self.assertEqual(widgets[button_name].cget("background"), self.style_builder.colors.primary)
+            self.assertEqual(widgets[button_name].cget("relief"), tk.FLAT)
+
 
 # =============================================================================
-# SECCIÓN 2: EJECUCIÓN DE PRUEBAS
+# SECCIÓN 3: EJECUCIÓN DE PRUEBAS
 # =============================================================================
 
 if __name__ == '__main__':
