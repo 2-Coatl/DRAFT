@@ -49,7 +49,6 @@ class Colors:
         inputbg: str,
         active: str,
     ):
-        """[La documentación se mantiene igual...]"""
         self.primary = primary
         self.secondary = secondary
         self.success = success
