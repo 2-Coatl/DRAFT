@@ -708,180 +708,245 @@ class StyleBuilderTTK:
         self.style._register_ttkstyle(ttkstyle)
 
     def create_combobox_style(self, colorname: str = DEFAULT) -> None:
-        """Crea un estilo para el widget Combobox de TTK.
+        """Crea un estilo personalizado para widgets Combobox de TTK.
 
-        Configura la apariencia y comportamiento del widget Combobox, incluyendo
-        sus diferentes estados (normal, deshabilitado, lectura, etc.) y colores.
+        Este método configura la apariencia visual y el comportamiento interactivo
+        de los widgets Combobox de TTK, definiendo cómo se ven y responden en
+        diferentes estados (normal, deshabilitado, solo lectura, etc.).
 
-        Args:
-            colorname: Etiqueta de color a usar como color primario del widget.
-                      Si es DEFAULT, usa los colores base del tema.
-        """
-        STYLE = "TCombobox"
+        La implementación considera el tipo de tema actual (claro u oscuro) y
+        permite personalizar el color primario del widget a través del parámetro
+        colorname, afectando principalmente el color de enfoque y bordes.
 
-        # Determina los colores según el tipo de tema (claro/oscuro)
-        if self.is_light_theme:
-            disabled_fg = self.colors.border
-            bordercolor = self.colors.border
-            readonly = self.colors.light
-        else:
-            disabled_fg = self.colors.selectbg
-            bordercolor = self.colors.selectbg
-            readonly = bordercolor
-
-        # Configura el color de enfoque según el nombre de color
-        if any([colorname == DEFAULT, colorname == ""]):
-            ttkstyle = STYLE
-            element = f"{ttkstyle.replace('TC', 'C')}"
-            focuscolor = self.colors.primary
-        else:
-            ttkstyle = f"{colorname}.{STYLE}"
-            element = f"{ttkstyle.replace('TC', 'C')}"
-            focuscolor = self.colors.get(colorname)
-
-        # Crea los elementos base del combobox
-        self.style.element_create(f"{element}.downarrow", "from", TTK_DEFAULT)
-        self.style.element_create(f"{element}.padding", "from", TTK_CLAM)
-        self.style.element_create(f"{element}.textarea", "from", TTK_CLAM)
-
-        # Ajusta el color del borde si se especifica un color personalizado
-        if all([colorname, colorname != DEFAULT]):
-            bordercolor = focuscolor
-
-        # Configura el estilo base del combobox
-        self.style._build_configure(
-            ttkstyle,
-            bordercolor=bordercolor,
-            darkcolor=self.colors.inputbg,
-            lightcolor=self.colors.inputbg,
-            arrowcolor=self.colors.inputfg,
-            foreground=self.colors.inputfg,
-            fieldbackground=self.colors.inputbg,
-            background=self.colors.inputbg,
-            insertcolor=self.colors.inputfg,
-            relief=tk.FLAT,
-            padding=5,
-            arrowsize=self.scale_size(12),
-        )
-
-        # Configura el mapeo de estados del combobox
-        self.style.map(
-            ttkstyle,
-            background=[("readonly", readonly)],
-            fieldbackground=[("readonly", readonly)],
-            foreground=[("disabled", disabled_fg)],
-            bordercolor=[
-                ("invalid", self.colors.danger),
-                ("focus !disabled", focuscolor),
-                ("hover !disabled", focuscolor),
-            ],
-            lightcolor=[
-                ("focus invalid", self.colors.danger),
-                ("focus !disabled", focuscolor),
-                ("pressed !disabled", focuscolor),
-                ("readonly", readonly),
-            ],
-            darkcolor=[
-                ("focus invalid", self.colors.danger),
-                ("focus !disabled", focuscolor),
-                ("pressed !disabled", focuscolor),
-                ("readonly", readonly),
-            ],
-            arrowcolor=[
-                ("disabled", disabled_fg),
-                ("pressed !disabled", focuscolor),
-                ("focus !disabled", focuscolor),
-                ("hover !disabled", focuscolor),
-            ],
-        )
-
-        # Define el layout del combobox
-        self.style.layout(
-            ttkstyle,
-            [
-                (
-                    "combo.Spinbox.field",
-                    {
-                        "side": tk.TOP,
-                        "sticky": tk.EW,
-                        "children": [
-                            (
-                                "Combobox.downarrow",
-                                {"side": tk.RIGHT, "sticky": tk.NS},
-                            ),
-                            (
-                                "Combobox.padding",
-                                {
-                                    "expand": "1",
-                                    "sticky": tk.NSEW,
-                                    "children": [
-                                        (
-                                            "Combobox.textarea",
-                                            {"sticky": tk.NSEW},
-                                        )
-                                    ],
-                                },
-                            ),
-                        ],
-                    },
-                )
-            ],
-        )
-
-        # Registra el estilo TTK creado
-        self.style._register_ttkstyle(ttkstyle)
-
-    def update_combobox_popdown_style(self, widget) -> None:
-        """Actualiza los elementos legacy del ttk.Combobox.
-
-        Este método se llama cada vez que se cambia el tema para asegurar que
-        los componentes tkinter heredados incrustados en este widget ttk estén
-        estilizados apropiadamente según el tema actual.
-
-        El ttk.Combobox contiene varios elementos que no están estilizados usando
-        el motor de temas ttk. Esto incluye el **popdownwindow** y el **scrollbar**.
-        Ambos widgets se configuran manualmente usando llamadas a tcl/tk.
+        El método genera todos los componentes necesarios para el Combobox:
+        - Flecha desplegable
+        - Área de texto
+        - Padding y estructura de layout
+        - Configuración de colores para todos los estados
 
         Args:
-            widget (ttk.Combobox): El elemento combobox a actualizar.
+            colorname (str, opcional): Etiqueta de color a usar como color primario.
+                Si es DEFAULT o cadena vacía, usa los colores base del tema.
+                Ejemplos: "primary", "info", "danger", etc.
+                Default: DEFAULT.
 
         Returns:
-            None: Este método no retorna nada, solo actualiza los estilos directamente.
+            None: Este método no retorna ningún valor, pero registra el estilo
+            creado en el sistema TTK.
+
+        """
+        # Constante que define el nombre base del estilo TTK para Combobox
+        STYLE = "TCombobox"
+
+        # Ajustar colores según el tipo de tema (claro/oscuro)
+        # Estos colores se usan para estados especiales como deshabilitado o solo lectura
+        if self.is_light_theme:
+            # En temas claros: usar colores más suaves para mejor visibilidad
+            disabled_fg = self.colors.border  # Color para texto deshabilitado
+            bordercolor = self.colors.border  # Color base para bordes
+            readonly = self.colors.light  # Fondo para estado solo-lectura
+        else:
+            # En temas oscuros: usar colores con más contraste
+            disabled_fg = self.colors.selectbg  # Color para texto deshabilitado
+            bordercolor = self.colors.selectbg  # Color base para bordes
+            readonly = bordercolor  # Fondo para estado solo-lectura
+
+        # Determinar nombre de estilo y color de enfoque según el parámetro colorname
+        if any([colorname == DEFAULT, colorname == ""]):
+            # Para color predeterminado: usar el estilo base "TCombobox"
+            ttkstyle = STYLE  # Ejemplo: "TCombobox"
+            element = f"{ttkstyle.replace('TC', 'C')}"  # Ejemplo: "Combobox"
+            focuscolor = self.colors.primary  # Usar color primario del tema
+        else:
+            # Para color personalizado: crear un estilo derivado con prefijo
+            ttkstyle = f"{colorname}.{STYLE}"  # Ejemplo: "info.TCombobox"
+            element = f"{ttkstyle.replace('TC', 'C')}"  # Ejemplo: "info.Combobox"
+            focuscolor = self.colors.get(colorname)  # Obtener color específico
+
+        # Crear los elementos básicos del combobox a partir de temas predefinidos
+        # Estos elementos son los componentes visuales fundamentales del widget
+        self.style.element_create(f"{element}.downarrow", "from", TTK_DEFAULT)  # Flecha desplegable
+        self.style.element_create(f"{element}.padding", "from", TTK_CLAM)  # Espaciado interno
+        self.style.element_create(f"{element}.textarea", "from", TTK_CLAM)  # Área de texto
+
+        # Solo aplicar configuración completa para colores personalizados
+        # Esto evita sobrescribir innecesariamente el estilo predeterminado
+        if all([colorname, colorname != DEFAULT]):
+            # Para estilos personalizados, usar el color de enfoque como color de borde
+            bordercolor = focuscolor
+
+            # Configurar estilo base del combobox con todos sus atributos visuales
+            self.style._build_configure(
+                ttkstyle,
+                bordercolor=bordercolor,  # Color del borde
+                darkcolor=self.colors.inputbg,  # Color para sombras
+                lightcolor=self.colors.inputbg,  # Color para iluminaciones
+                arrowcolor=self.colors.inputfg,  # Color de la flecha desplegable
+                foreground=self.colors.inputfg,  # Color del texto
+                fieldbackground=self.colors.inputbg,  # Color de fondo del campo
+                background=self.colors.inputbg,  # Color de fondo general
+                insertcolor=self.colors.inputfg,  # Color del cursor de inserción
+                relief=tk.FLAT,  # Estilo de borde (plano)
+                padding=5,  # Espaciado interno en píxeles
+                arrowsize=self.scale_size(12),  # Tamaño de flecha adaptado a resolución
+            )
+
+            # Definir comportamiento visual según el estado del widget
+            # Mapea diferentes estados a cambios visuales específicos
+            self.style.map(
+                ttkstyle,
+                # Cambios de fondo para estado solo-lectura
+                background=[("readonly", readonly)],
+                fieldbackground=[("readonly", readonly)],
+
+                # Cambio de color de texto para estado deshabilitado
+                foreground=[("disabled", disabled_fg)],
+
+                # Cambios en color del borde según estado
+                bordercolor=[
+                    ("invalid", self.colors.danger),  # Rojo para validación fallida
+                    ("focus !disabled", focuscolor),  # Color primario cuando tiene foco
+                    ("hover !disabled", focuscolor),  # Color primario al pasar el mouse
+                ],
+
+                # Cambios en color claro según estado
+                lightcolor=[
+                    ("focus invalid", self.colors.danger),  # Rojo para validación fallida con foco
+                    ("focus !disabled", focuscolor),  # Color primario cuando tiene foco
+                    ("pressed !disabled", focuscolor),  # Color primario cuando está presionado
+                    ("readonly", readonly),  # Color especial para solo-lectura
+                ],
+
+                # Cambios en color oscuro según estado
+                darkcolor=[
+                    ("focus invalid", self.colors.danger),  # Rojo para validación fallida con foco
+                    ("focus !disabled", focuscolor),  # Color primario cuando tiene foco
+                    ("pressed !disabled", focuscolor),  # Color primario cuando está presionado
+                    ("readonly", readonly),  # Color especial para solo-lectura
+                ],
+
+                # Cambios en color de flecha según estado
+                arrowcolor=[
+                    ("disabled", disabled_fg),  # Color atenuado cuando deshabilitado
+                    ("pressed !disabled", focuscolor),  # Color primario cuando presionado
+                    ("focus !disabled", focuscolor),  # Color primario cuando tiene foco
+                    ("hover !disabled", focuscolor),  # Color primario al pasar el mouse
+                ],
+            )
+
+            # Definir estructura jerárquica del widget (layout)
+            # Establece cómo se organizan y anidan los elementos visuales
+            self.style.layout(
+                ttkstyle,
+                [
+                    (
+                        "combo.Spinbox.field",  # Contenedor principal basado en Spinbox
+                        {
+                            "side": tk.TOP,  # Posicionado en la parte superior
+                            "sticky": tk.EW,  # Expandirse horizontalmente
+                            "children": [
+                                (
+                                    "Combobox.downarrow",  # Flecha desplegable
+                                    {"side": tk.RIGHT, "sticky": tk.NS},  # A la derecha, altura completa
+                                ),
+                                (
+                                    "Combobox.padding",  # Área de padding
+                                    {
+                                        "expand": "1",  # Expandirse para llenar espacio
+                                        "sticky": tk.NSEW,  # Expandirse en todas direcciones
+                                        "children": [
+                                            (
+                                                "Combobox.textarea",  # Área de texto
+                                                {"sticky": tk.NSEW},  # Expandirse en todas direcciones
+                                            )
+                                        ],
+                                    },
+                                ),
+                            ],
+                        },
+                    )
+                ],
+            )
+
+            # Registrar el estilo TTK creado para evitar recreación innecesaria
+            self.style._register_ttkstyle(ttkstyle)
+
+    def update_combobox_popdown_style(self, widget) -> None:
+        """Actualiza los elementos legacy (heredados) del ttk.Combobox.
+
+        Este método estiliza manualmente los componentes internos del Combobox
+        que no son controlados por el sistema de temas TTK estándar, utilizando
+        llamadas directas a la interfaz Tcl/Tk subyacente.
+
+        El ttk.Combobox contiene dos elementos principales que requieren estilización
+        manual:
+        1. popdownwindow: La ventana desplegable que muestra las opciones
+        2. scrollbar: La barra de desplazamiento vertical para navegar las opciones
+
+        La configuración aplicada incluye:
+        - Colores de fondo y texto
+        - Colores de selección
+        - Grosores y colores de bordes
+        - Estilo de la barra de desplazamiento
+
+        Los colores se adaptan automáticamente según el tema actual (claro u oscuro)
+        para mantener coherencia visual con el resto de la aplicación.
+
+        Args:
+            widget (ttk.Combobox): El widget Combobox cuyos elementos internos
+                                 serán estilizados.
+
+        Returns:
+            None: Este método no retorna ningún valor, pero modifica directamente
+                  la apariencia del widget proporcionado.
+
+        Nota:
+            Este método debe llamarse después de crear el widget Combobox y
+            cada vez que se cambia el tema de la aplicación.
         """
 
-        # Paso 1: Determinación del color del borde
+        # Paso 1: DETERMINACIÓN DEL COLOR DEL BORDE
         # Selecciona el color adecuado según el tema actual (claro u oscuro)
         if self.is_light_theme:
+            # En temas claros: usar el color de borde estándar (normalmente gris claro)
+            # Ejemplo: "#d9d9d9"
             bordercolor = self.colors.border
         else:
+            # En temas oscuros: usar el color de fondo de selección (normalmente más oscuro)
+            # Ejemplo: "#4e5969"
             bordercolor = self.colors.selectbg
 
-        # Paso 2: Configuración de ajustes de estilo Tk
-        # Crea una lista con todas las propiedades de estilo necesarias
+        # Paso 2: PREPARACIÓN DE CONFIGURACIONES DE ESTILO
+        # Crea una lista con todas las propiedades de estilo en formato Tcl/Tk
+        # Las propiedades se agregan como pares [opción, valor]
         tk_settings = []
-        # Configura el ancho del borde
-        tk_settings.extend(["-borderwidth", 2])
-        # Configura el grosor del resaltado
-        tk_settings.extend(["-highlightthickness", 1])
-        # Establece el color del resaltado
-        tk_settings.extend(["-highlightcolor", bordercolor])
-        # Configura el color de fondo
-        tk_settings.extend(["-background", self.colors.inputbg])
-        # Configura el color del texto
-        tk_settings.extend(["-foreground", self.colors.inputfg])
-        # Configura el color de fondo para la selección
-        tk_settings.extend(["-selectbackground", self.colors.selectbg])
-        # Configura el color del texto para la selección
-        tk_settings.extend(["-selectforeground", self.colors.selectfg])
 
-        # Paso 3: Configuración del estilo de la ventana popdown
-        # Obtiene la referencia a la ventana popdown del combobox
+        # Configuración de bordes y resaltado
+        tk_settings.extend(["-borderwidth", 2])  # Ancho del borde: 2px
+        tk_settings.extend(["-highlightthickness", 1])  # Grosor del resaltado: 1px
+        tk_settings.extend(["-highlightcolor", bordercolor])  # Color del resaltado
+
+        # Configuración de colores principales
+        tk_settings.extend(["-background", self.colors.inputbg])  # Color de fondo
+        tk_settings.extend(["-foreground", self.colors.inputfg])  # Color del texto
+
+        # Configuración de colores para elementos seleccionados
+        tk_settings.extend(["-selectbackground", self.colors.selectbg])  # Fondo selección
+        tk_settings.extend(["-selectforeground", self.colors.selectfg])  # Texto selección
+
+        # Paso 3: OBTENCIÓN Y CONFIGURACIÓN DE LA VENTANA POPDOWN
+        # Obtiene la referencia Tcl a la ventana popdown mediante comandos Tcl/Tk
+        # Ejemplo de valor retornado: ".140257291655416.140257288977872"
         popdown = widget.tk.eval(f"ttk::combobox::PopdownWindow {widget}")
-        # Aplica las configuraciones de estilo al listbox del popdown
+
+        # Aplica las configuraciones al listbox (.f.l) dentro del popdown
+        # .f es el frame, .l es el listbox
         widget.tk.call(f"{popdown}.f.l", "configure", *tk_settings)
 
-        # Paso 4: Configuración del estilo de la barra de desplazamiento
-        # Define el estilo vertical para la barra de desplazamiento
+        # Paso 4: CONFIGURACIÓN DE LA BARRA DE DESPLAZAMIENTO
+        # Define el nombre del estilo TTK para la barra de desplazamiento vertical
         sb_style = "TCombobox.Vertical.TScrollbar"
-        # Aplica el estilo a la barra de desplazamiento del popdown
+
+        # Aplica el estilo a la barra de desplazamiento (.f.sb) del popdown
+        # .f es el frame, .sb es la barra de desplazamiento
         widget.tk.call(f"{popdown}.f.sb", "configure", "-style", sb_style)
