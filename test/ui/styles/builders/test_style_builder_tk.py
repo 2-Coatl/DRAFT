@@ -6,7 +6,8 @@ import unittest
 import tkinter as tk
 from unittest.mock import MagicMock, patch
 from ui.themeengine.utils.constants import LIGHT, DARK
-
+from ui.themeengine.builders.style_builder_tk import StyleBuilderTK
+from ui.themeengine.utils.bootstyle import Bootstyle
 
 # =============================================================================
 # SECCIÓN 1: CLASE BASE DE PRUEBAS - FIXTURES Y CONFIGURACIÓN COMÚN
@@ -48,7 +49,7 @@ class StyleBuilderTKTestBase(unittest.TestCase):
         - Instancia fresca de StyleBuilderTK para cada prueba
         """
         # Importar aquí para evitar problemas de importación circular en el test
-        from ui.themeengine.builders.style_builder_tk import StyleBuilderTK
+
 
         # Crear mocks para Style, ThemeDefinition y Colors
         self.mock_colors = MagicMock()
@@ -381,6 +382,38 @@ class TestStyleBuilderTKIntegration(StyleBuilderTKTestBase):
         self.assertEqual(entry.cget("background"), "#E0E0E0")
 
         entry.destroy()
+
+    def test_bootstyle_dynamic_method_selection(self):
+        """Verifica que Bootstyle seleccione dinámicamente el método correcto de StyleBuilderTK.
+
+        Prueba:
+        - La selección dinámica de métodos a través de getattr
+        - La invocación del método correcto según el tipo de widget
+        """
+        # ARRANGE: Importar Bootstyle y preparar mocks
+
+
+        # Crear widgets de diferentes tipos
+        button = self.create_widget(tk.Button)
+        label = self.create_widget(tk.Label)
+
+        # Crear espías para los métodos de StyleBuilderTK
+        with patch.object(self.style_builder, 'update_button_style') as mock_button_method:
+            with patch.object(self.style_builder, 'update_label_style') as mock_label_method:
+                # Parchear el método _get_builder_tk para que devuelva nuestro builder
+                with patch.object(self.mock_style, '_get_builder_tk',
+                                  return_value=self.style_builder):
+                    # ACT: Llamar a update_tk_widget_style para diferentes widgets
+                    Bootstyle.update_tk_widget_style(button)
+                    Bootstyle.update_tk_widget_style(label)
+
+                    # ASSERT: Verificar que se llamó al método correcto para cada widget
+                    mock_button_method.assert_called_once_with(button)
+                    mock_label_method.assert_called_once_with(label)
+
+        # Limpiar
+        button.destroy()
+        label.destroy()
 
 
 # =============================================================================
