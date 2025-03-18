@@ -1,8 +1,16 @@
+# =============================================================================
+# SECCIÓN 0: IMPORTACIONES Y CONFIGURACIÓN INICIAL
+# =============================================================================
+
 import unittest
 import tkinter as tk
 from unittest.mock import MagicMock, patch
 from ui.themeengine.utils.constants import LIGHT, DARK
 
+
+# =============================================================================
+# SECCIÓN 1: CLASE BASE DE PRUEBAS - FIXTURES Y CONFIGURACIÓN COMÚN
+# =============================================================================
 
 class StyleBuilderTKTestBase(unittest.TestCase):
     """Clase base para pruebas del motor de estilos de widgets Tkinter nativos.
@@ -105,6 +113,10 @@ class StyleBuilderTKTestBase(unittest.TestCase):
         self.mock_theme.type = theme_type
 
 
+# =============================================================================
+# SECCIÓN 2: PRUEBAS DE FUNCIONALIDAD BÁSICA DE STYLEBUILDER
+# =============================================================================
+
 class TestStyleBuilderTKFunctionality(StyleBuilderTKTestBase):
     """Pruebas de funcionalidad para StyleBuilderTK.
 
@@ -179,6 +191,10 @@ class TestStyleBuilderTKFunctionality(StyleBuilderTKTestBase):
                 if widget_class != tk.Tk:
                     widget.destroy()
 
+
+# =============================================================================
+# SECCIÓN 3: PRUEBAS ESPECÍFICAS PARA DIFERENTES TIPOS DE WIDGETS
+# =============================================================================
 
 class TestStyleBuilderTKWidgetSpecific(StyleBuilderTKTestBase):
     """Pruebas específicas para diferentes tipos de widgets.
@@ -283,6 +299,10 @@ class TestStyleBuilderTKWidgetSpecific(StyleBuilderTKTestBase):
         self.assertEqual(menu.cget("tearoff"), 0)  # tearoff desactivado
 
 
+# =============================================================================
+# SECCIÓN 4: PRUEBAS DE INTEGRACIÓN Y CASOS LÍMITE
+# =============================================================================
+
 class TestStyleBuilderTKIntegration(StyleBuilderTKTestBase):
     """Pruebas de integración para StyleBuilderTK.
 
@@ -290,6 +310,7 @@ class TestStyleBuilderTKIntegration(StyleBuilderTKTestBase):
     1. Integración con otras clases del sistema
     2. Comportamiento durante el ciclo de vida
     3. Manejo de casos límite y errores
+    4. Selección dinámica de métodos con Bootstyle
     """
 
     def test_colors_integration(self):
@@ -361,6 +382,10 @@ class TestStyleBuilderTKIntegration(StyleBuilderTKTestBase):
 
         entry.destroy()
 
+
+# =============================================================================
+# SECCIÓN 5: EJECUCIÓN DE PRUEBAS
+# =============================================================================
 
 if __name__ == '__main__':
     unittest.main()
