@@ -1,10 +1,10 @@
 import unittest
 import tkinter as tk
 from ui.themeengine.builders.style_builder_tk import StyleBuilderTK
+from ui.themeengine.core.style import Style
 from ui.themeengine.communication.publisher import Publisher
 from ui.themeengine.utils.bootstyle import Bootstyle
-from ui.themeengine.utils.constants import LIGHT
-
+from ui.themeengine.utils.constants import LIGHT, DEFAULT_THEME
 # =============================================================================
 # SECCIÓN 1: CLASE BASE PARA PRUEBAS DE INTEGRACIÓN
 # =============================================================================
@@ -29,15 +29,22 @@ class TestStyleBuilderTKBase(unittest.TestCase):
 
     def setUp(self):
         """Configura el entorno real para cada prueba de integración."""
-        # Importar componentes reales del sistema
-        from ui.themeengine.core.style import Style
+
+        # Inicializar el estilo con root como master si no existe o no tiene master
+        if Style.instance is None or not hasattr(Style.instance, 'master') or Style.instance.master is None:
+            # Crear nueva instancia de Style utilizando self.root como master
+            self.original_style = Style(DEFAULT_THEME)
+            # Establecer explícitamente el master
+            self.original_style.master = self.root
+        else:
+            # Solo guardamos referencia al singleton existente
+            self.original_style = Style.get_instance()
 
         # Guardar referencia al tema actual para restaurarlo después
-        self.original_style = Style.get_instance()
         if hasattr(self.original_style, 'theme_name'):
             self.original_theme = self.original_style.theme_name
 
-        # Crear instancia real de StyleBuilderTK
+        # Ahora es seguro crear la instancia de StyleBuilderTK
         self.style_builder = StyleBuilderTK()
 
         # Guardar referencia a Publisher para limpiar suscripciones después
@@ -70,10 +77,10 @@ class TestStyleBuilderTKBase(unittest.TestCase):
         Returns:
             tuple: Una tupla con los widgets básicos creados (button, label, entry, frame)
         """
-        button = tk.Button(self.root, text="Test Button")
-        label = tk.Label(self.root, text="Test Label")
-        entry = tk.Entry(self.root)
-        frame = tk.Frame(self.root)
+        button = tk.Button(self.root, text="Test Button", autostyle=False)
+        label = tk.Label(self.root, text="Test Label", autostyle=False)
+        entry = tk.Entry(self.root, autostyle=False)
+        frame = tk.Frame(self.root, autostyle=False)
 
         self.test_widgets.extend([button, label, entry, frame])
         return button, label, entry, frame
@@ -143,7 +150,6 @@ class TestStyleBuilderTKBase(unittest.TestCase):
         Returns:
             tuple: Una tupla con (current_theme, alt_theme) o (None, None) si no hay suficientes temas.
         """
-        from ui.themeengine.core.style import Style
 
         # Obtener instancia real de Style
         real_style = Style.get_instance()
