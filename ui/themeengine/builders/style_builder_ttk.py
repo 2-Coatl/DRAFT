@@ -238,47 +238,146 @@ class StyleBuilderTTK:
         return func
 
     def create_theme(self) -> None:
-        """Inicializa el tema TTK con la configuración base.
+        """Inicializa un tema TTK personalizado con la configuración base.
 
-        Crea un nuevo tema TTK y lo establece como el tema activo,
-        aplicando la configuración inicial necesaria.
+        Este método crea un nuevo tema TTK basado en 'clam', lo establece como el
+        tema activo en el sistema, y aplica la configuración inicial necesaria para
+        todos los widgets. Es una parte fundamental del proceso de inicialización
+        del sistema de temas.
+
+        El proceso incluye tres pasos principales:
+        1. Creación del tema personalizado basado en 'clam'
+        2. Activación del tema en el sistema TTK
+        3. Configuración detallada de todos los componentes del tema
+
+        Este método no recibe parámetros y se basa en el estado actual de la instancia,
+        específicamente en las propiedades 'style' y 'theme'. Utiliza la infraestructura
+        de temas de tkinter.ttk para crear y aplicar el tema personalizado.
+
+        Returns:
+            None: Este método no devuelve ningún valor, pero como efecto secundario
+                crea y activa un nuevo tema TTK en el sistema.
+
+        Dependencias:
+            - tkinter y tkinter.ttk: Módulos estándar para interfaz gráfica.
+            - self.style: Instancia de la clase Style personalizada.
+            - self.theme: Objeto que contiene la definición del tema actual.
+            - TTK_CLAM: Constante con valor 'clam' (tema base de TTK).
         """
+        # Paso 1: Crear un nuevo tema TTK personalizado
+        # Utiliza el nombre del tema actual y lo basa en el tema 'clam' de TTK
+        # 'clam' proporciona un conjunto visual coherente como punto de partida
+        # que funciona de manera consistente en diferentes plataformas (Windows, Mac, Linux)
+        # Ejemplo: Si self.theme.name es "dark", crea un tema llamado "dark"
         self.style.theme_create(self.theme.name, TTK_CLAM)
+
+        # Paso 2: Establecer el tema creado como tema activo en el sistema TTK
+        # Utiliza el método estático theme_use de ttk.Style (no el método de instancia)
+        # Esto activa el tema para todos los widgets TTK de la aplicación
+        # y actualiza la apariencia de los widgets existentes inmediatamente
+        # A partir de aquí, todos los widgets nuevos usarán este tema por defecto
         ttk.Style.theme_use(self.style, self.theme.name)
+
+        # Paso 3: Aplicar la configuración específica del tema
+        # Esto desencadena una serie de actualizaciones que configuran:
+        # - El estilo predeterminado (raíz '.') que afecta a todos los widgets
+        # - Estilos específicos para diferentes tipos de widgets
+        # - Otras personalizaciones necesarias para el tema actual
+        # La cadena de llamadas incluye create_default_style(), create_link_button_style(), etc.
         self.update_ttk_theme_settings()
 
     def update_ttk_theme_settings(self) -> None:
-        """Actualiza la configuración del tema.
+        """Coordina la actualización de la configuración visual del tema TTK actual.
 
-        Este método se llama internamente cada vez que el tema cambia
-        para actualizar los diversos componentes del tema.
+        Este método sirve como punto central para iniciar la cadena de actualizaciones
+        necesarias cuando el tema cambia. Es responsable de asegurar que todos los
+        componentes visuales se configuren correctamente según el tema actual.
+
+        El método es llamado en dos escenarios principales:
+        1. Durante la creación de un nuevo tema (`create_theme()`)
+        2. Cuando se cambia dinámicamente de un tema a otro
+
+        La implementación actual configura el estilo raíz a través de `create_default_style()`
+        y proporciona un punto de extensión para agregar más actualizaciones específicas
+        según sea necesario.
+
+        Flujo de ejecución típico:
+        - Configuración del estilo raíz '.' que afecta a todos los widgets
+        - Creación de estilos específicos (como botones tipo enlace)
+        - [Punto de extensión] Otras actualizaciones específicas del tema
+
+        Returns:
+            None: Este método no devuelve ningún valor, pero como efecto secundario
+                configura todos los componentes visuales del tema TTK actual.
+
+        See Also:
+            create_theme: Método que crea un nuevo tema TTK y llama a este método.
+            create_default_style: Método llamado para configurar el estilo raíz.
         """
+        # Paso 1: Configurar el estilo raíz y estilos básicos
+        # Esta llamada inicia la configuración del estilo base '.' que afecta a todos los widgets
+        # y también configura algunos estilos básicos como el de botón tipo enlace
+        # Es el primer paso esencial en la cadena de actualización del tema
         self.create_default_style()
-        # Aquí se pueden agregar más actualizaciones de tema según sea necesario
 
     def create_default_style(self) -> None:
-        """Configura el estilo predeterminado para widgets TTK.
+        """Configura el estilo predeterminado para widgets TTK y estilos básicos adicionales.
 
-        Establece la configuración base del estilo raíz '.' que sirve como
-        base para todos los widgets TTK. Este método debe llamarse primero
-        antes de aplicar cualquier otro estilo durante la creación del tema.
+        Este método establece la configuración base del estilo raíz '.' que sirve como
+        fundamento visual para todos los widgets TTK. Define las propiedades visuales
+        fundamentales como colores de fondo, texto, selección y bordes que serán
+        heredadas por todos los widgets TTK a menos que se sobrescriban específicamente.
+
+        Además de configurar el estilo raíz, este método también inicializa algunos
+        estilos básicos adicionales como el estilo de botón tipo enlace y su variante
+        para símbolos.
+
+        Este método debe llamarse primero antes de aplicar cualquier otro estilo durante
+        la creación o actualización del tema, ya que establece la base visual sobre la
+        que se construirán los demás estilos.
+
+        Propiedades configuradas en el estilo raíz:
+        - background: Color de fondo principal
+        - foreground: Color de texto principal
+        - darkcolor: Color para bordes y efectos 3D
+        - troughcolor: Color para canaletas en scrollbars y progressbars
+        - selectbg/selectbackground: Color de fondo para elementos seleccionados
+        - selectfg/selectforeground: Color de texto para elementos seleccionados
+        - fieldbg: Color de fondo para campos de entrada (siempre blanco)
+        - borderwidth: Ancho del borde (1 píxel)
+        - focuscolor: Color del indicador de foco
+
+        Returns:
+            None: Este método no devuelve ningún valor, pero como efecto secundario
+                configura el estilo raíz y otros estilos básicos en el sistema TTK.
+
+        See Also:
+            update_ttk_theme_settings: Método que llama a este como primer paso de configuración.
+            create_link_button_style: Método llamado por este para configurar el estilo de enlaces.
         """
         self.style._build_configure(
-            style=".",
-            background=self.colors.bg,
-            darkcolor=self.colors.border,
-            foreground=self.colors.fg,
-            troughcolor=self.colors.bg,
-            selectbg=self.colors.selectbg,
-            selectfg=self.colors.selectfg,
-            selectforeground=self.colors.selectfg,
-            selectbackground=self.colors.selectbg,
-            fieldbg="white",
-            borderwidth=1,
-            focuscolor="",
+            style=".",  # Identificador del estilo raíz
+            background=self.colors.bg,  # Color de fondo principal (ej: "#f0f0f0" en tema claro)
+            darkcolor=self.colors.border,  # Color para bordes y efectos 3D (ej: "#c0c0c0")
+            foreground=self.colors.fg,  # Color de texto principal (ej: "#333333" en tema claro)
+            troughcolor=self.colors.bg,  # Color de canaletas en scrollbars/progressbars (mismo que el fondo)
+            selectbg=self.colors.selectbg,  # Color de fondo para elementos seleccionados (ej: "#0078d7")
+            selectfg=self.colors.selectfg,  # Color de texto para elementos seleccionados (ej: "#ffffff")
+            selectforeground=self.colors.selectfg,  # Alias de selectfg para compatibilidad
+            selectbackground=self.colors.selectbg,  # Alias de selectbg para compatibilidad
+            fieldbg="white",  # Color de fondo para campos de entrada (siempre blanco para legibilidad)
+            borderwidth=1,  # Ancho del borde en píxeles (valor estándar)
+            focuscolor="",  # Color del indicador de foco (vacío = usar predeterminado)
         )
-        # Estilo general aplicado a la vista de tabla
+
+        # Paso 2: Crear el estilo de botón tipo enlace (botones que parecen enlaces web)
+        # Este estilo se considera básico y se crea temprano en el proceso de configuración
+        # Permite tener botones que visualmente se comportan como enlaces de hipertexto
         self.create_link_button_style()
+
+        # Paso 3: Configurar variante del estilo de enlace para símbolos/iconos
+        # Esta variante usa un tamaño de fuente mayor (16) para mostrar símbolos o iconos basados en texto
+        # Es útil para botones que muestran iconos simples mediante caracteres tipográficos
         self.style.configure("symbol.Link.TButton", font="-size 16")
 
     def scale_size(self, size: Union[int, List, Tuple]) -> Union[int, List]:
@@ -303,11 +402,6 @@ class StyleBuilderTTK:
             Union[int, List[int]]: El tamaño escalado.
                 - Si la entrada es un número, retorna un entero escalado.
                 - Si la entrada es una lista/tupla, retorna una lista de enteros escalados.
-
-        Ejemplos:
-            >>> self.scale_size(10)  # Retorna 15 (en un sistema con factor ~1.5)
-            >>> self.scale_size([10, 20])  # Retorna [15, 30]
-            >>> self.scale_size((5, 10, 15))  # Retorna [8, 15, 23]
 
         Nota:
             Siempre redondea hacia arriba para evitar elementos demasiado pequeños,
@@ -348,168 +442,260 @@ class StyleBuilderTTK:
             # Ejemplo: size=[10,20], factor=1.5 → [ceil(10*1.5), ceil(20*1.5)] → [15, 30]
             return [ceil(x * factor) for x in size]
 
-    def create_button_style(self, colorname=DEFAULT) -> None:
-        """Crea un estilo sólido para el widget ttk.Button.
+    def create_button_style(self, colorname: str = DEFAULT) -> None:
+        """Crea un estilo visual personalizado para widgets ttk.Button.
 
-        Crea y configura un estilo personalizado para botones ttk, incluyendo
-        estados normal, deshabilitado, presionado y hover.
+        Este método genera y registra un estilo TTK completo para botones, definiendo
+        su apariencia visual en todos sus estados posibles (normal, deshabilitado,
+        presionado, hover). El estilo creado se adapta automáticamente al tema actual
+        y puede ser personalizado mediante la especificación de un color base.
+
+        La generación del estilo incluye:
+        - Determinación de colores base según el parámetro y tema actual
+        - Cálculo de colores derivados para diferentes estados interactivos
+        - Configuración de propiedades visuales básicas (relieve, padding, etc.)
+        - Definición del comportamiento visual en diferentes estados
+        - Registro del estilo en el sistema para su posterior utilización
 
         Args:
-            colorname (str): La etiqueta de color usada para estilizar el widget.
+            colorname (str, opcional): Etiqueta de color para estilizar el botón.
+                Valores comunes: 'primary', 'success', 'info', 'warning', 'danger'.
+                Si es DEFAULT o vacío, se utiliza el color primario del tema.
+                Defaults a DEFAULT ('default').
 
         Returns:
-            None: Este método no retorna nada, solo crea y registra el estilo.
+            None: Este método no devuelve ningún valor, pero como efecto secundario
+                crea y registra un estilo TTK que puede ser utilizado por widgets
+                ttk.Button mediante la propiedad 'style'.
+
         """
-        # Paso 1: Definición del estilo base
-        # Establece el nombre base del estilo para el botón
+        # Definición del estilo base para botones TTK
+        # Este nombre se usa como identificador en el sistema de estilos TTK
         STYLE = "TButton"
 
-        # Paso 2: Determinación de colores base
-        # Define el nombre del estilo y los colores principales según el color proporcionado
+        # Determinación del nombre del estilo y colores base según el parámetro recibido
         if any([colorname == DEFAULT, colorname == ""]):
-            # Si es color por defecto, usa el estilo primario
+            # Caso 1: Color por defecto - usar color primario del tema
+            # ttkstyle: Nombre simple sin prefijo (ej: "TButton")
+            # foreground: Color de texto con contraste adecuado para color primario
+            # background: Color primario del tema actual (ej: azul "#007bff")
             ttkstyle = STYLE
             foreground = self.colors.get_foreground(PRIMARY)
             background = self.colors.primary
         else:
-            # Si es color personalizado, construye el nombre del estilo y obtiene los colores
+            # Caso 2: Color personalizado - construir nombre y obtener colores correspondientes
+            # ttkstyle: Nombre compuesto con prefijo de color (ej: "success.TButton")
+            # foreground: Color de texto apropiado para el color especificado
+            # background: Color correspondiente al nombre (ej: verde "#28a745" para 'success')
             ttkstyle = f"{colorname}.{STYLE}"
             foreground = self.colors.get_foreground(colorname)
             background = self.colors.get(colorname)
 
-        # Paso 3: Cálculo de colores derivados
-        # Calcula los colores para diferentes estados del botón
+        # Cálculo de colores derivados para diferentes estados del botón
+        # Utilizamos el mismo color para el borde que para el fondo (botón sólido)
         bordercolor = background
-        # Color de fondo para estado deshabilitado (10% de opacidad)
+
+        # Color de fondo para estado deshabilitado - 10% de opacidad del texto sobre fondo
+        # Genera un color grisáceo atenuado para indicar que el botón está deshabilitado
+        # Ejemplo: Si fg="#000000" y bg="#ffffff" → aproximadamente "#e6e6e6" (gris claro)
         disabled_bg = Colors.make_transparent(0.10, self.colors.fg, self.colors.bg)
-        # Color de texto para estado deshabilitado (30% de opacidad)
+
+        # Color de texto para estado deshabilitado - 30% de opacidad del texto sobre fondo
+        # Genera un texto atenuado para mostrar que el botón está deshabilitado
+        # Ejemplo: Mismos colores → aproximadamente "#b3b3b3" (gris medio)
         disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
-        # Color para estado presionado (80% de opacidad)
+
+        # Color para estado presionado - 80% de opacidad del color base sobre fondo
+        # Crea un efecto visual de botón presionado (ligeramente oscurecido)
+        # Ejemplo: Si background="#007bff" y bg="#ffffff" → aproximadamente "#3395ff"
         pressed = Colors.make_transparent(0.80, background, self.colors.bg)
-        # Color para estado hover (90% de opacidad)
+
+        # Color para estado hover - 90% de opacidad del color base sobre fondo
+        # Crea un efecto visual sutil cuando el cursor está sobre el botón
+        # Ejemplo: Con mismos colores → aproximadamente "#1a87ff"
         hover = Colors.make_transparent(0.90, background, self.colors.bg)
 
-        # Paso 4: Configuración del estilo base
-        # Establece las propiedades visuales básicas del botón
+        # Configuración del estilo base con propiedades visuales fundamentales
         self.style._build_configure(
-            ttkstyle,
-            foreground=foreground,
-            background=background,
-            bordercolor=bordercolor,
-            darkcolor=background,
-            lightcolor=background,
-            relief=tk.RAISED,
-            focusthickness=0,
-            focuscolor=foreground,
-            padding=(10, 5),
-            anchor=tk.CENTER,
+            ttkstyle,  # Nombre del estilo a configurar
+            foreground=foreground,  # Color del texto del botón
+            background=background,  # Color de fondo principal
+            bordercolor=bordercolor,  # Color del borde (igual al fondo para aspecto sólido)
+            darkcolor=background,  # Color oscuro para efectos 3D (igual al fondo)
+            lightcolor=background,  # Color claro para efectos 3D (igual al fondo)
+            relief=tk.RAISED,  # Relieve sutil para efecto 3D ligero
+            focusthickness=0,  # Sin borde visible cuando el botón tiene el foco
+            focuscolor=foreground,  # Color de enfoque (igual al texto)
+            padding=(10, 5),  # Espaciado interno: 10px horizontal, 5px vertical
+            anchor=tk.CENTER,  # Alineación del contenido centrada
         )
 
-        # Paso 5: Mapeo de estados
-        # Define cómo cambian los colores según el estado del botón
+        # Mapeo de estados para definir cambios visuales según la interacción del usuario
         self.style.map(
-            ttkstyle,
-            # Configura el color del texto en estado deshabilitado
-            foreground=[("disabled", disabled_fg)],
-            # Configura los colores de fondo para diferentes estados
+            ttkstyle,  # Nombre del estilo a mapear
+
+            # Color del texto - solo cambia en estado deshabilitado
+            foreground=[
+                ("disabled", disabled_fg),  # Texto atenuado cuando está deshabilitado
+            ],
+
+            # Color de fondo - cambia según el estado del botón
+            # El orden importa: la última coincidencia tiene prioridad
             background=[
-                ("disabled", disabled_bg),
-                ("pressed !disabled", pressed),
-                ("hover !disabled", hover),
+                ("disabled", disabled_bg),  # Grisáceo cuando está deshabilitado
+                ("pressed !disabled", pressed),  # Color oscurecido cuando está presionado
+                ("hover !disabled", hover),  # Color sutilmente alterado al pasar el cursor
             ],
-            # Configura el color del borde para estado deshabilitado
-            bordercolor=[("disabled", disabled_bg)],
-            # Configura el color oscuro para diferentes estados
+
+            # Color del borde - cambia solo en estado deshabilitado
+            bordercolor=[
+                ("disabled", disabled_bg),  # Borde grisáceo cuando está deshabilitado
+            ],
+
+            # Color oscuro para efectos 3D - cambia según el estado
             darkcolor=[
-                ("disabled", disabled_bg),
-                ("pressed !disabled", pressed),
-                ("hover !disabled", hover),
+                ("disabled", disabled_bg),  # Grisáceo cuando está deshabilitado
+                ("pressed !disabled", pressed),  # Oscurecido cuando está presionado
+                ("hover !disabled", hover),  # Sutilmente alterado al pasar el cursor
             ],
-            # Configura el color claro para diferentes estados
+
+            # Color claro para efectos 3D - cambia según el estado (mismo patrón)
             lightcolor=[
-                ("disabled", disabled_bg),
-                ("pressed !disabled", pressed),
-                ("hover !disabled", hover),
+                ("disabled", disabled_bg),  # Grisáceo cuando está deshabilitado
+                ("pressed !disabled", pressed),  # Oscurecido cuando está presionado
+                ("hover !disabled", hover),  # Sutilmente alterado al pasar el cursor
             ],
         )
 
-        # Paso 6: Registro del estilo
-        # Registra el estilo creado en el sistema de estilos
+        # Registro del estilo creado en el sistema de estilos TTK
+        # Esto permite que el estilo sea localizado y reutilizado cuando sea necesario
+        # También evita recrear el mismo estilo múltiples veces
         self.style._register_ttkstyle(ttkstyle)
 
-    def create_link_button_style(self, colorname=DEFAULT) -> None:
-        """Crea un estilo de botón tipo enlace para el widget ttk.Button.
+    def create_link_button_style(self, colorname: str = DEFAULT) -> None:
+        """Crea un estilo de botón que simula un enlace web para widgets ttk.Button.
 
-        Configura la apariencia y comportamiento de un botón que simula ser un enlace,
-        permitiendo diferentes variantes de color y estados.
+        Este método genera y registra un estilo TTK que hace que un botón se comporte y
+        se vea como un enlace de texto, sin el aspecto visual tradicional de un botón
+        (sin fondo visible ni bordes). El enlace cambia de color al interactuar con él,
+        simulando el comportamiento estándar de los enlaces web.
+
+        Características principales:
+        - Apariencia de texto simple sin bordes ni fondo visible
+        - Cambio de color al pasar el cursor (hover) o al hacer clic (pressed)
+        - Efecto visual sutil de "presionado" al hacer clic
+        - Adaptación automática al tema actual de la aplicación
+        - Posibilidad de personalizar el color base del enlace
 
         Args:
-            colorname: Etiqueta de color usada para estilizar el widget.
-                      Si es DEFAULT, usa los colores base del tema.
+            colorname (str, opcional): Etiqueta de color para el texto del enlace.
+                Si es DEFAULT o vacío, usa el color de texto estándar del tema.
+                Si es LIGHT, usa el color de texto estándar pero con nombre específico.
+                Si es otro valor, usa ese color específico de la paleta.
+                Valores comunes: 'primary', 'info', 'success', etc.
+                Defaults a DEFAULT ('default').
+
+        Returns:
+            None: Este método no devuelve ningún valor, pero como efecto secundario
+                crea y registra un estilo TTK que puede ser utilizado por widgets
+                ttk.Button mediante la propiedad 'style'.
+
         """
+        # Nombre base del estilo para botones tipo enlace
+        # Este sufijo distingue este estilo especial de los botones normales
         STYLE = "Link.TButton"
 
-        # Definición de colores para estados pressed y hover
-        pressed = self.colors.info
-        hover = self.colors.info
+        # Definición de colores para estados interactivos
+        # A diferencia de los botones normales, usamos un color fijo (info) para ambos estados
+        # Normalmente este es un azul informativo que se asocia con enlaces
+        # Ejemplo: Si self.colors.info es "#17a2b8", ambos estados usarán este color
+        pressed = self.colors.info  # Color cuando el enlace se presiona
+        hover = self.colors.info  # Color cuando el cursor está sobre el enlace
 
-        # Determina el color de primer plano y el nombre del estilo
+        # Determinación del color del texto y nombre del estilo según el parámetro
         if any([colorname == DEFAULT, colorname == ""]):
+            # Caso 1: Color por defecto - usar el color de texto estándar del tema
+            # Ejemplo: Si self.colors.fg es "#333333", el enlace tendrá este color
             foreground = self.colors.fg
-            ttkstyle = STYLE
+            ttkstyle = STYLE  # Nombre sin prefijo: "Link.TButton"
         elif colorname == LIGHT:
+            # Caso 2: Color LIGHT - comportamiento especial para temas claros
+            # Usa el mismo color de texto estándar pero con nombre distintivo
             foreground = self.colors.fg
-            ttkstyle = f"{colorname}.{STYLE}"
+            ttkstyle = f"{colorname}.{STYLE}"  # Nombre: "light.Link.TButton"
         else:
+            # Caso 3: Color personalizado - usar el color específico de la paleta
+            # Ejemplo: Si colorname es "primary", usa el color primario del tema
             foreground = self.colors.get(colorname)
-            ttkstyle = f"{colorname}.{STYLE}"
+            ttkstyle = f"{colorname}.{STYLE}"  # Nombre: "primary.Link.TButton"
 
-        # Calcula el color para el estado deshabilitado
+        # Cálculo del color para el estado deshabilitado
+        # Usamos 30% de opacidad del color de texto sobre el fondo para un efecto atenuado
+        # Ejemplo: Si fg="#000000" y bg="#ffffff" → aproximadamente "#b3b3b3" (gris)
         disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
 
-        # Configura el estilo base del botón
+        # Configuración del estilo base para simular un enlace
+        # La clave es usar el color de fondo como color de todos los elementos
+        # esto hace que el botón parezca "invisible" excepto por su texto
         self.style._build_configure(
-            ttkstyle,
-            foreground=foreground,
-            background=self.colors.bg,
-            bordercolor=self.colors.bg,
-            darkcolor=self.colors.bg,
-            lightcolor=self.colors.bg,
-            relief=tk.RAISED,
-            focusthickness=0,
-            focuscolor=foreground,
-            anchor=tk.CENTER,
-            padding=(10, 5),
+            ttkstyle,  # Nombre del estilo a configurar
+            foreground=foreground,  # Color del texto (según parámetro)
+            background=self.colors.bg,  # Fondo igual al de la aplicación ("invisible")
+            bordercolor=self.colors.bg,  # Borde invisible (igual al fondo)
+            darkcolor=self.colors.bg,  # Color oscuro invisible (igual al fondo)
+            lightcolor=self.colors.bg,  # Color claro invisible (igual al fondo)
+            relief=tk.RAISED,  # Relieve técnicamente presente pero no visible
+            focusthickness=0,  # Sin borde visible cuando tiene el foco
+            focuscolor=foreground,  # Color de enfoque igual al texto
+            anchor=tk.CENTER,  # Alineación del texto centrada
+            padding=(10, 5),  # Espaciado interno: 10px horizontal, 5px vertical
         )
 
-        # Configura el mapeo de estados del botón
+        # Mapeo de estados para definir cambios visuales según la interacción
         self.style.map(
             ttkstyle,
+            # Efecto visual sutil al presionar: cambia ligeramente el relieve (-1)
+            # Esto crea una sensación de "hundimiento" al hacer clic
             shiftrelief=[("pressed !disabled", -1)],
+
+            # Configuración del color del texto según el estado
+            # Solo el texto cambia de color, manteniendo la apariencia de enlace
             foreground=[
-                ("disabled", disabled_fg),
-                ("pressed !disabled", pressed),
-                ("hover !disabled", hover),
+                ("disabled", disabled_fg),  # Atenuado cuando está deshabilitado
+                ("pressed !disabled", pressed),  # Color info cuando está presionado
+                ("hover !disabled", hover),  # Color info cuando el cursor está encima
             ],
+
+            # Configuración del color de enfoque según el estado
             focuscolor=[
-                ("pressed !disabled", pressed),
-                ("hover !disabled", pressed),
+                ("pressed !disabled", pressed),  # Color info cuando está presionado
+                ("hover !disabled", pressed),  # Color info cuando el cursor está encima
             ],
+
+            # Las siguientes propiedades mantienen el color de fondo en todos los estados
+            # Esto asegura que el botón parezca un enlace de texto simple
+            # sin importar el estado de interacción
             background=[
                 ("disabled", self.colors.bg),
                 ("pressed !disabled", self.colors.bg),
                 ("hover !disabled", self.colors.bg),
             ],
+
+            # Color del borde igual al fondo en todos los estados (invisible)
             bordercolor=[
                 ("disabled", self.colors.bg),
                 ("pressed !disabled", self.colors.bg),
                 ("hover !disabled", self.colors.bg),
             ],
+
+            # Color oscuro igual al fondo en todos los estados (invisible)
             darkcolor=[
                 ("disabled", self.colors.bg),
                 ("pressed !disabled", self.colors.bg),
                 ("hover !disabled", self.colors.bg),
             ],
+
+            # Color claro igual al fondo en todos los estados (invisible)
             lightcolor=[
                 ("disabled", self.colors.bg),
                 ("pressed !disabled", self.colors.bg),
@@ -517,7 +703,8 @@ class StyleBuilderTTK:
             ],
         )
 
-        # Registra el estilo TTK
+        # Registro del estilo creado en el sistema de estilos TTK
+        # Esto permite su utilización posterior y evita recreación innecesaria
         self.style._register_ttkstyle(ttkstyle)
 
     def create_combobox_style(self, colorname: str = DEFAULT) -> None:
