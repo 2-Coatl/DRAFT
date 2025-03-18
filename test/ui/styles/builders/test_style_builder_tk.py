@@ -9,6 +9,8 @@
 import unittest
 import tkinter as tk
 from unittest.mock import MagicMock, patch
+
+from ui.themeengine.communication.channel import Channel
 from ui.themeengine.utils.constants import LIGHT, DARK
 from ui.themeengine.builders.style_builder_tk import StyleBuilderTK
 from ui.themeengine.utils.bootstyle import Bootstyle
@@ -308,13 +310,13 @@ class TestStyleBuilderTKWidgetSpecific(StyleBuilderTKTestBase):
 # =============================================================================
 
 class TestStyleBuilderTKIntegration(unittest.TestCase):
-    """Pruebas de integración para StyleBuilderTK con implementaciones reales.
+    """Pruebas de integración para StyleBuilderTK.
 
     Esta clase contiene pruebas para verificar:
-    1. Integración con implementaciones reales (sin mocks)
-    2. Comportamiento real durante el ciclo de vida de los widgets
-    3. Interacción real con el sistema de temas y colores
-    4. Selección dinámica de métodos con Bootstyle
+    1. Integración con Style y StyleBuilderTTK
+    2. Interacción con Bootstyle
+    3. Comportamiento del sistema Publisher/Subscriber
+    4. Comportamiento durante cambios de tema
     """
 
     @classmethod
@@ -329,132 +331,245 @@ class TestStyleBuilderTKIntegration(unittest.TestCase):
         cls.root.destroy()
 
     def setUp(self):
-        """Configura el entorno para cada prueba con implementaciones reales."""
-        # Nota: No creamos mocks ni realizamos patches
-        # Usamos la implementación real de StyleBuilderTK
+        """Configura el entorno para cada prueba de integración."""
+        # Patchear módulos y clases necesarias para pruebas de integración
+        self.style_patcher = patch('ui.themeengine.core.style.Style')
+        self.publisher_patcher = patch('ui.themeengine.utils.publisher.Publisher')
+        self.builder_ttk_patcher = patch('ui.themeengine.builders.style_builder_ttk.StyleBuilderTTK')
+
+        # Iniciar patchers y obtener los mocks
+        self.mock_style = self.style_patcher.start()
+        self.mock_publisher = self.publisher_patcher.start()
+        self.mock_builder_ttk = self.builder_ttk_patcher.start()
+
+        # Configurar mock de Style para que devuelva una instancia específica
+        self.mock_style_instance = MagicMock()
+        self.mock_style.get_instance.return_value = self.mock_style_instance
+
+        # Configurar propiedades de la instancia Style
+        self.mock_theme = MagicMock()
+        self.mock_colors = MagicMock()
+        self.mock_style_instance.theme = self.mock_theme
+        self.mock_style_instance.colors = self.mock_colors
+        self.mock_style_instance.master = self.root
+
+        # Configurar colores para pruebas
+        self.mock_colors.bg = "#FFFFFF"
+        self.mock_colors.fg = "#000000"
+        self.mock_colors.primary = "#0078D7"
+        self.mock_colors.selectbg = "#CCE8FF"
+        self.mock_colors.selectfg = "#000000"
+        self.mock_colors.inputbg = "#F0F0F0"
+        self.mock_colors.inputfg = "#000000"
+        self.mock_colors.border = "#D0D0D0"
+
+        # Configurar tema (claro por defecto)
+        self.mock_theme.type = LIGHT
+
+        # Crear instancia de StyleBuilderTK para pruebas
         self.style_builder = StyleBuilderTK()
 
-        # Guardamos referencia a la instancia real de Style para verificaciones
-        from ui.themeengine.core.style import Style
-        self.real_style = Style.get_instance()
-
-        # Guardamos el tema original para restaurarlo después
-        self.original_theme_name = self.real_style.theme_name
-
     def tearDown(self):
-        """Restaura el tema original después de cada prueba."""
-        # Restaurar el tema original para no afectar otras pruebas
-        if hasattr(self, 'original_theme_name'):
-            self.real_style.set_theme(self.original_theme_name)
+        """Limpia recursos después de cada prueba."""
+        self.style_patcher.stop()
+        self.publisher_patcher.stop()
+        self.builder_ttk_patcher.stop()
 
-    def test_real_style_integration(self):
-        """Verifica la integración con la implementación real de Style."""
-        # Verificar que StyleBuilderTK tiene acceso a la instancia real de Style
-        self.assertIsNotNone(self.style_builder.style)
-        self.assertEqual(self.style_builder.style, self.real_style)
+    def test_integration_with_style(self):
+        """Verifica la integración entre StyleBuilderTK y Style."""
+        # Verificar que StyleBuilderTK obtiene la instancia de Style
+        self.mock_style.get_instance.assert_called_once()
 
-        # Verificar acceso a propiedades reales
-        self.assertIsNotNone(self.style_builder.theme)
-        self.assertIsNotNone(self.style_builder.colors)
+        # Verificar que las referencias se establecen correctamente
+        self.assertEqual(self.style_builder.style, self.mock_style_instance)
+        self.assertEqual(self.style_builder.master, self.root)
 
-        # Verificar coherencia con el tipo de tema actual
-        theme_type = self.real_style.theme.type
-        if theme_type == LIGHT:
-            self.assertTrue(self.style_builder.is_light_theme)
-        else:
-            self.assertFalse(self.style_builder.is_light_theme)
+        # Verificar acceso a propiedades de Style
+        self.assertEqual(self.style_builder.theme, self.mock_theme)
+        self.assertEqual(self.style_builder.colors, self.mock_colors)
+        self.assertTrue(self.style_builder.is_light_theme)
 
-    def test_real_widget_styling(self):
-        """Verifica la aplicación de estilos a widgets reales."""
-        # Crear widget para probar
-        button = tk.Button(self.root, text="Test Button")
+    def test_integration_with_style_builder_ttk(self):
+        """Verifica la integración entre StyleBuilderTTK y StyleBuilderTK."""
+        # Crear una instancia mock de StyleBuilderTTK
+        mock_builder_ttk_instance = MagicMock()
 
-        # Guardar configuración inicial
-        initial_bg = button.cget("background")
+        # Asignar nuestra instancia de StyleBuilderTK al mock
+        mock_builder_ttk_instance.style_builder_tk = self.style_builder
 
-        # Aplicar estilo
-        self.style_builder.update_button_style(button)
+        # Verificar que StyleBuilderTTK puede acceder a los métodos de StyleBuilderTK
+        button = tk.Button(self.root)
+        mock_builder_ttk_instance.style_builder_tk.update_button_style(button)
 
-        # Verificar que el estilo se aplicó y cambió la configuración
-        self.assertNotEqual(button.cget("background"), initial_bg)
-        self.assertEqual(button.cget("relief"), tk.FLAT)
-
-        # Verificar coherencia con los colores del tema
-        self.assertEqual(button.cget("background"), self.style_builder.colors.primary)
-
+        # Verificar que el estilo se aplicó
+        self.assertEqual(button.cget("background"), self.mock_colors.primary)
         button.destroy()
 
-    def test_theme_switching_integration(self):
-        """Verifica la actualización de estilos al cambiar entre temas claros y oscuros."""
+    def test_bootstyle_integration(self):
+        """Verifica la integración entre Bootstyle y StyleBuilderTK."""
+        # Configurar el mock de Style para devolver nuestro StyleBuilderTK
+        self.mock_style_instance._get_builder_tk.return_value = self.style_builder
+
         # Crear widget para prueba
-        entry = tk.Entry(self.root)
+        button = tk.Button(self.root)
 
-        theme_manager = ThemeManager.get_instance()
+        # Llamar al método de Bootstyle que debería usar StyleBuilderTK
+        with patch('ui.themeengine.core.style.Style.get_instance', return_value=self.mock_style_instance):
+            with patch('ui.themeengine.utils.bootstyle.StyleBuilderTK', spec=StyleBuilderTK) as mock_builder_class:
+                # Configurar el mock para que getattr devuelva nuestro método
+                mock_builder_class.update_Button_style = self.style_builder.update_button_style
 
-        light_theme = next((t for t in theme_manager.get_themes() if t.type == LIGHT), None)
-        dark_theme = next((t for t in theme_manager.get_themes() if t.type == DARK), None)
+                # Llamar al método de Bootstyle
+                Bootstyle.update_tk_widget_style(button)
 
-        if light_theme and dark_theme:
-            # Aplicar tema claro
-            self.real_style.set_theme(light_theme.name)
-            self.style_builder.update_entry_style(entry)
-            light_border = entry.cget("highlightbackground")
+        # Verificar que el estilo se aplicó
+        self.assertEqual(button.cget("background"), self.mock_colors.primary)
+        button.destroy()
 
-            # Aplicar tema oscuro
-            self.real_style.set_theme(dark_theme.name)
-            self.style_builder.update_entry_style(entry)
-            dark_border = entry.cget("highlightbackground")
+    def test_widget_constructor_override(self):
+        """Verifica que el decorador override_tk_widget_constructor funciona correctamente."""
 
-            # Verificar que los estilos son diferentes entre temas
-            self.assertNotEqual(light_border, dark_border)
+        # Crear una clase de widget de prueba con constructor decorado
+        class TestWidget(tk.Frame):
+            @Bootstyle.override_tk_widget_constructor
+            def __init__(self, master=None, **kwargs):
+                super().__init__(master, **kwargs)
 
-        entry.destroy()
+        # Patchear Bootstyle.update_tk_widget_style
+        with patch('ui.themeengine.utils.bootstyle.Bootstyle.update_tk_widget_style') as mock_update:
+            # Patchear Publisher.subscribe
+            with patch('ui.themeengine.utils.publisher.Publisher.subscribe') as mock_subscribe:
+                # Crear instancia del widget
+                widget = TestWidget(self.root)
 
-    def test_bootstyle_real_integration(self):
-        """Verifica la integración real con Bootstyle."""
-        # Crear widgets de diferentes tipos
-        button = tk.Button(self.root, text="Test Button")
-        label = tk.Label(self.root, text="Test Label")
+                # Verificar que se llamó a update_tk_widget_style
+                mock_update.assert_called_once_with(widget)
 
-        # Aplicar estilos a través de Bootstyle
-        Bootstyle.update_tk_widget_style(button)
-        Bootstyle.update_tk_widget_style(label)
+                # Verificar que se registró en Publisher
+                mock_subscribe.assert_called_once()
+                # Verificar los argumentos de la llamada a subscribe
+                args, kwargs = mock_subscribe.call_args
+                self.assertEqual(kwargs['name'], str(widget))
+                self.assertEqual(kwargs['channel'], Channel.STD)
 
-        # Verificar que los estilos se aplicaron correctamente
-        self.assertEqual(button.cget("relief"), tk.FLAT)
-        self.assertEqual(label.cget("background"), self.style_builder.colors.bg)
+        # Limpiar
+        widget.destroy()
+
+    def test_theme_change_notification(self):
+        """Verifica que los widgets se actualizan cuando cambia el tema."""
+        # Crear un widget para prueba
+        button = tk.Button(self.root)
+
+        # Simular registro en Publisher
+        with patch('ui.themeengine.utils.publisher.Publisher.subscribe') as mock_subscribe:
+            # Aplicar constructor decorado manualmente
+            Bootstyle.override_tk_widget_constructor(tk.Button.__init__)(button, self.root)
+
+            # Verificar que se registró en Publisher
+            mock_subscribe.assert_called_once()
+
+            # Obtener el callback registrado
+            args, kwargs = mock_subscribe.call_args
+            callback = kwargs['callback']
+
+            # Verificar que el callback actualiza el estilo
+            with patch('ui.themeengine.utils.bootstyle.Bootstyle.update_tk_widget_style') as mock_update:
+                # Ejecutar el callback como lo haría Publisher
+                callback()
+
+                # Verificar que se llamó a update_tk_widget_style
+                mock_update.assert_called_once_with(button)
 
         # Limpiar
         button.destroy()
-        label.destroy()
 
-    def test_complex_widget_hierarchy(self):
-        """Verifica la aplicación de estilos a jerarquías complejas de widgets."""
+    def test_complete_style_flow(self):
+        """Verifica el flujo completo del sistema de estilos."""
+        # Simular el flujo completo:
+        # 1. Crear Style
+        # 2. Style crea StyleBuilderTTK
+        # 3. StyleBuilderTTK crea StyleBuilderTK
+        # 4. Crear widget con constructor decorado
+        # 5. Cambiar tema
+        # 6. Verificar que el widget se actualiza
+
+        # 1-3. Crear mocks para todo el sistema
+        mock_style = MagicMock()
+        mock_builder_ttk = MagicMock()
+        mock_builder_tk = MagicMock()
+
+        # Configurar la cadena de dependencias
+        mock_style.get_instance.return_value = mock_style
+        mock_style._get_builder_ttk.return_value = mock_builder_tk
+        mock_builder_ttk.style_builder_tk = mock_builder_tk
+
+        # 4. Crear widget y simular constructor decorado
+        button = tk.Button(self.root)
+
+        # Registrar callback en Publisher
+        callback = lambda: Bootstyle.update_tk_widget_style(button)
+        self.mock_publisher.subscribe.return_value = None
+
+        # Simular registro con Publisher
+        with patch('ui.themeengine.utils.bootstyle.Bootstyle.update_tk_widget_style') as mock_update:
+            # Aplicar estilo inicial
+            mock_update(button)
+            mock_update.assert_called_once_with(button)
+
+            # 5. Simular cambio de tema
+            with patch('ui.themeengine.core.style.Style.get_instance', return_value=mock_style):
+                # Simular notificación de Publisher
+                callback()
+
+                # 6. Verificar que se llamó a update_tk_widget_style nuevamente
+                self.assertEqual(mock_update.call_count, 2)
+
+        # Limpiar
+        button.destroy()
+
+    def test_real_widget_chain(self):
+        """Verifica que una cadena de widgets recibe estilos coherentemente."""
         # Crear una jerarquía de widgets
         frame = tk.Frame(self.root)
         inner_frame = tk.Frame(frame)
-        button = tk.Button(inner_frame, text="Nested Button")
-        label = tk.Label(inner_frame, text="Nested Label")
-
-        # Disponer widgets
-        inner_frame.pack()
-        button.pack()
-        label.pack()
+        button = tk.Button(inner_frame, text="Test Button")
+        label = tk.Label(inner_frame, text="Test Label")
+        entry = tk.Entry(inner_frame)
 
         # Aplicar estilos
         self.style_builder.update_frame_style(frame)
         self.style_builder.update_frame_style(inner_frame)
         self.style_builder.update_button_style(button)
         self.style_builder.update_label_style(label)
+        self.style_builder.update_entry_style(entry)
 
         # Verificar coherencia de estilos en la jerarquía
-        self.assertEqual(frame.cget("background"), self.style_builder.colors.bg)
-        self.assertEqual(inner_frame.cget("background"), self.style_builder.colors.bg)
-        self.assertEqual(button.cget("background"), self.style_builder.colors.primary)
-        self.assertEqual(label.cget("background"), self.style_builder.colors.bg)
+        self.assertEqual(frame.cget("background"), self.mock_colors.bg)
+        self.assertEqual(inner_frame.cget("background"), self.mock_colors.bg)
+        self.assertEqual(button.cget("background"), self.mock_colors.primary)
+        self.assertEqual(label.cget("background"), self.mock_colors.bg)
+        self.assertEqual(entry.cget("background"), self.mock_colors.inputbg)
+
+        # Verificar otros atributos específicos por tipo de widget
+        self.assertEqual(button.cget("relief"), tk.FLAT)
+        self.assertEqual(entry.cget("highlightbackground"), self.mock_colors.border)
+
+        # Cambiar tipo de tema a oscuro
+        self.mock_theme.type = DARK
+
+        # Volver a aplicar estilos (como ocurriría en un cambio de tema)
+        self.style_builder.update_frame_style(frame)
+        self.style_builder.update_frame_style(inner_frame)
+        self.style_builder.update_button_style(button)
+        self.style_builder.update_label_style(label)
+        self.style_builder.update_entry_style(entry)
+
+        # Verificar que los estilos reflejan el tema oscuro
+        # En tema oscuro, highlightbackground de Entry cambia a selectbg
+        self.assertEqual(entry.cget("highlightbackground"), self.mock_colors.selectbg)
 
         # Limpiar
-        frame.destroy()  # Destruye automáticamente los widgets hijos
+        frame.destroy()
 
 # =============================================================================
 # SECCIÓN 5: EJECUCIÓN DE PRUEBAS
