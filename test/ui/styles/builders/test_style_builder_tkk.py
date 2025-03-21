@@ -5,11 +5,9 @@ from tkinter import ttk
 import sys
 import os
 
-
 # Importaciones que se van a parchear
 from ui.themeengine.builders.style_builder_ttk import StyleBuilderTTK
 from ui.themeengine.utils.constants import LIGHT, TTK_CLAM, DEFAULT
-
 
 
 class TestStyleBuilderTTKBase(unittest.TestCase):
