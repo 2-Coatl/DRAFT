@@ -138,3 +138,20 @@ def enable_high_dpi_awareness(
         warnings.warn(
             "Para aplicar un factor de escalado, se deben proporcionar tanto 'root' como 'scaling'"
         )
+
+
+def get_image_name(image):
+    """Extract and return the tcl/tk image name from a PhotoImage
+    object.
+
+    Parameters:
+
+        image (ImageTk.PhotoImage):
+            A photoimage object.
+
+    Returns:
+
+        str:
+            The tcl/tk name of the photoimage object.
+    """
+    return image._PhotoImage__photo.name

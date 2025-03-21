@@ -2,12 +2,13 @@ import tkinter as tk
 from tkinter import ttk
 from math import ceil
 from typing import Union, List, Tuple, Callable, Dict, Any
-from ui.themeengine.core.color import Colors
+from PIL import ImageTk, ImageDraw, Image
 
+from ui.themeengine.core.color import Colors
 from ui.themeengine.builders.style_builder_tk import StyleBuilderTK
 from ui.themeengine.core.theme import ThemeDefinition
 from ui.themeengine.utils.constants import LIGHT, TTK_CLAM, DEFAULT, TTK_DEFAULT, PRIMARY
-
+from ui.themeengine.utils import utility as util
 
 class StyleBuilderTTK:
     """Motor de estilos para widgets TTK.
@@ -950,3 +951,314 @@ class StyleBuilderTTK:
         # Aplica el estilo a la barra de desplazamiento (.f.sb) del popdown
         # .f es el frame, .sb es la barra de desplazamiento
         widget.tk.call(f"{popdown}.f.sb", "configure", "-style", sb_style)
+
+    def create_separator_style(self, colorname=DEFAULT):
+        """Create a style for the ttk.Separator widget.
+
+        Parameters:
+
+            colorname (str):
+                The primary widget color.
+        """
+        HSTYLE = "Horizontal.TSeparator"
+        VSTYLE = "Vertical.TSeparator"
+
+        hsize = [40, 1]
+        vsize = [1, 40]
+
+        # style colors
+        if self.is_light_theme:
+            default_color = self.colors.border
+        else:
+            default_color = self.colors.selectbg
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            background = default_color
+            h_ttkstyle = HSTYLE
+            v_ttkstyle = VSTYLE
+        else:
+            background = self.colors.get(colorname)
+            h_ttkstyle = f"{colorname}.{HSTYLE}"
+            v_ttkstyle = f"{colorname}.{VSTYLE}"
+
+        # horizontal separator
+        h_element = h_ttkstyle.replace(".TS", ".S")
+        h_img = ImageTk.PhotoImage(Image.new("RGB", hsize, background))
+        h_name = util.get_image_name(h_img)
+        self.theme_images[h_name] = h_img
+
+        self.style.element_create(f"{h_element}.separator", "image", h_name)
+        self.style.layout(
+            h_ttkstyle, [(f"{h_element}.separator", {"sticky": tk.EW})]
+        )
+
+        # vertical separator
+        v_element = v_ttkstyle.replace(".TS", ".S")
+        v_img = ImageTk.PhotoImage(Image.new("RGB", vsize, background))
+        v_name = util.get_image_name(v_img)
+        self.theme_images[v_name] = v_img
+        self.style.element_create(f"{v_element}.separator", "image", v_name)
+        self.style.layout(
+            v_ttkstyle, [(f"{v_element}.separator", {"sticky": tk.NS})]
+        )
+        self.style._register_ttkstyle(h_ttkstyle)
+        self.style._register_ttkstyle(v_ttkstyle)
+
+    def create_striped_progressbar_assets(self, thickness, colorname=DEFAULT):
+        """Create the striped progressbar image and return as a
+        `PhotoImage`
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+
+        Returns:
+
+            Tuple[str]:
+                A list of photoimage names.
+        """
+        if any([colorname == DEFAULT, colorname == ""]):
+            barcolor = self.colors.primary
+        else:
+            barcolor = self.colors.get(colorname)
+
+        # calculate value of the light color
+        brightness = Colors.rgb_to_hsv(*Colors.hex_to_rgb(barcolor))[2]
+        if brightness < 0.4:
+            value_delta = 0.3
+        elif brightness > 0.8:
+            value_delta = 0
+        else:
+            value_delta = 0.1
+
+        barcolor_light = Colors.update_hsv(barcolor, sd=-0.2, vd=value_delta)
+
+        # horizontal progressbar
+        img = Image.new("RGBA", (100, 100), barcolor_light)
+        draw = ImageDraw.Draw(img)
+        draw.polygon(
+            xy=[(0, 0), (48, 0), (100, 52), (100, 100)],
+            fill=barcolor,
+        )
+        draw.polygon(xy=[(0, 52), (48, 100), (0, 100)], fill=barcolor)
+
+        _resized = img.resize((thickness, thickness), Image.LANCZOS)
+        h_img = ImageTk.PhotoImage(_resized)
+        h_name = h_img._PhotoImage__photo.name
+        v_img = ImageTk.PhotoImage(_resized.rotate(90))
+        v_name = v_img._PhotoImage__photo.name
+
+        self.theme_images[h_name] = h_img
+        self.theme_images[v_name] = v_img
+        return h_name, v_name
+
+    def create_striped_progressbar_style(self, colorname=DEFAULT):
+        """Create a striped style for the ttk.Progressbar widget.
+
+        Parameters:
+
+            colorname (str):
+                The primary widget color label.
+        """
+        HSTYLE = "Striped.Horizontal.TProgressbar"
+        VSTYLE = "Striped.Vertical.TProgressbar"
+
+        thickness = self.scale_size(12)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            h_ttkstyle = HSTYLE
+            v_ttkstyle = VSTYLE
+        else:
+            h_ttkstyle = f"{colorname}.{HSTYLE}"
+            v_ttkstyle = f"{colorname}.{VSTYLE}"
+
+        if self.is_light_theme:
+            if colorname == LIGHT:
+                troughcolor = self.colors.bg
+                bordercolor = self.colors.light
+            else:
+                troughcolor = self.colors.light
+                bordercolor = troughcolor
+        else:
+            troughcolor = Colors.update_hsv(self.colors.selectbg, vd=-0.2)
+            bordercolor = troughcolor
+
+        # ( horizontal, vertical )
+        images = self.create_striped_progressbar_assets(thickness, colorname)
+
+        # horizontal progressbar
+        h_element = h_ttkstyle.replace(".TP", ".P")
+        self.style.element_create(
+            f"{h_element}.pbar",
+            "image",
+            images[0],
+            width=thickness,
+            sticky=tk.EW,
+        )
+        self.style.layout(
+            h_ttkstyle,
+            [
+                (
+                    f"{h_element}.trough",
+                    {
+                        "sticky": tk.NSEW,
+                        "children": [
+                            (
+                                f"{h_element}.pbar",
+                                {"side": tk.LEFT, "sticky": tk.NS},
+                            )
+                        ],
+                    },
+                )
+            ],
+        )
+        self.style._build_configure(
+            h_ttkstyle,
+            troughcolor=troughcolor,
+            thickness=thickness,
+            bordercolor=bordercolor,
+            borderwidth=1,
+        )
+
+        # vertical progressbar
+        v_element = v_ttkstyle.replace(".TP", ".P")
+        self.style.element_create(
+            f"{v_element}.pbar",
+            "image",
+            images[1],
+            width=thickness,
+            sticky=tk.NS,
+        )
+        self.style.layout(
+            v_ttkstyle,
+            [
+                (
+                    f"{v_element}.trough",
+                    {
+                        "sticky": tk.NSEW,
+                        "children": [
+                            (
+                                f"{v_element}.pbar",
+                                {"side": tk.BOTTOM, "sticky": tk.EW},
+                            )
+                        ],
+                    },
+                )
+            ],
+        )
+        self.style._build_configure(
+            v_ttkstyle,
+            troughcolor=troughcolor,
+            bordercolor=bordercolor,
+            thickness=thickness,
+            borderwidth=1,
+        )
+        self.style._register_ttkstyle(h_ttkstyle)
+        self.style._register_ttkstyle(v_ttkstyle)
+
+    def create_progressbar_style(self, colorname=DEFAULT):
+        """Create a solid ttk style for the ttk.Progressbar widget.
+
+        Parameters:
+
+            colorname (str):
+                The primary widget color.
+        """
+        H_STYLE = "Horizontal.TProgressbar"
+        V_STYLE = "Vertical.TProgressbar"
+
+        thickness = self.scale_size(10)
+
+        if self.is_light_theme:
+            if colorname == LIGHT:
+                troughcolor = self.colors.bg
+                bordercolor = self.colors.light
+            else:
+                troughcolor = self.colors.light
+                bordercolor = troughcolor
+        else:
+            troughcolor = Colors.update_hsv(self.colors.selectbg, vd=-0.2)
+            bordercolor = troughcolor
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            background = self.colors.primary
+            h_ttkstyle = H_STYLE
+            v_ttkstyle = V_STYLE
+        else:
+            background = self.colors.get(colorname)
+            h_ttkstyle = f"{colorname}.{H_STYLE}"
+            v_ttkstyle = f"{colorname}.{V_STYLE}"
+
+        self.style._build_configure(
+            h_ttkstyle,
+            thickness=thickness,
+            borderwidth=1,
+            bordercolor=bordercolor,
+            lightcolor=self.colors.border,
+            pbarrelief=tk.FLAT,
+            troughcolor=troughcolor,
+        )
+        existing_elements = self.style.element_names()
+
+        self.style._build_configure(
+            v_ttkstyle,
+            thickness=thickness,
+            borderwidth=1,
+            bordercolor=bordercolor,
+            lightcolor=self.colors.border,
+            pbarrelief=tk.FLAT,
+            troughcolor=troughcolor,
+        )
+        existing_elements = self.style.element_names()
+
+        # horizontal progressbar
+        h_element = h_ttkstyle.replace(".TP", ".P")
+        trough_element = f"{h_element}.trough"
+        pbar_element = f"{h_element}.pbar"
+        if trough_element not in existing_elements:
+            self.style.element_create(trough_element, "from", TTK_CLAM)
+            self.style.element_create(pbar_element, "from", TTK_DEFAULT)
+
+        self.style.layout(
+            h_ttkstyle,
+            [
+                (
+                    trough_element,
+                    {
+                        "sticky": "nswe",
+                        "children": [
+                            (pbar_element, {"side": "left", "sticky": "ns"})
+                        ],
+                    },
+                )
+            ],
+        )
+        self.style._build_configure(h_ttkstyle, background=background)
+
+        # vertical progressbar
+        v_element = v_ttkstyle.replace(".TP", ".P")
+        trough_element = f"{v_element}.trough"
+        pbar_element = f"{v_element}.pbar"
+        if trough_element not in existing_elements:
+            self.style.element_create(trough_element, "from", TTK_CLAM)
+            self.style.element_create(pbar_element, "from", TTK_DEFAULT)
+            self.style._build_configure(v_ttkstyle, background=background)
+        self.style.layout(
+            v_ttkstyle,
+            [
+                (
+                    trough_element,
+                    {
+                        "sticky": "nswe",
+                        "children": [
+                            (pbar_element, {"side": "bottom", "sticky": "we"})
+                        ],
+                    },
+                )
+            ],
+        )
+
+        # register ttkstyles
+        self.style._register_ttkstyle(h_ttkstyle)
+        self.style._register_ttkstyle(v_ttkstyle)
