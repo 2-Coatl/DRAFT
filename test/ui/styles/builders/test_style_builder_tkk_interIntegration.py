@@ -10,8 +10,6 @@ from ui.themeengine.builders.style_builder_ttk import StyleBuilderTTK
 from ui.themeengine.utils.constants import LIGHT
 
 
-
-
 class TestStyleBuilderTTKTkinterIntegration(unittest.TestCase):
     """Pruebas de integración con Tkinter real."""
 
