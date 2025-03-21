@@ -261,8 +261,12 @@ class Bootstyle:
     ) -> str:
         """Actualiza el estilo TTK o lo crea si no existe.
 
-        Actualiza el estilo del widget proporcionado o crea uno nuevo si no existe.
-        Maneja casos especiales como los ComboBox.
+        Implementa múltiples patrones de diseño de forma pragmática:
+        1. Chain of Responsibility: Secuencia de pasos de procesamiento con decisiones en cada etapa
+        2. Facade: Simplifica la interacción con el sistema complejo de estilos TTK
+        3. Factory: Resuelve dinámicamente qué método constructor utilizar
+        4. Observer: Suscribe widgets a cambios de tema (específico para ComboBox)
+        5. Interacción con Singleton: Utiliza la instancia única de Style
 
         Args:
             widget: El widget a actualizar.
@@ -274,62 +278,73 @@ class Bootstyle:
             El nombre del estilo TTK o cadena vacía si no hay estilo.
         """
         # print("\n--- Dentro de update_ttk_widget_style ---")
-        # Paso 1: Inicialización del estilo
-        # Previene dependencias circulares e inicializa el gestor de estilos
+        # ===== CHAIN OF RESPONSIBILITY: PASO 1 =====
+        # Inicialización del estilo y prevención de dependencias circulares
+        # Implementa Singleton indirectamente al obtener la instancia única
         from ui.themeengine.core.style import Style
         style: Style = Style.get_instance() or Style()
-
-        # Paso 2: Obtención del estilo actual
+        # ===== CHAIN OF RESPONSIBILITY: PASO 2 =====
+        # Obtención del estilo actual si no se proporciona explícitamente
         # Si no se proporciona un estilo, intenta obtenerlo del widget
         if style_string is None:
             if widget is None:
                 return ""
             style_string = widget.cget("style")
         # print(f"style_string {style_string}")
-        # Paso 3: Validaciones iniciales del estilo
+        # ===== CHAIN OF RESPONSIBILITY: PASO 3 =====
+        # Validaciones iniciales del estilo (casos especiales)
         # Verifica si hay un estilo válido para procesar
         if not style_string:
             return ""
 
         if style_string == '.':
             return '.'
-
-        # Paso 4: Construcción y verificación del estilo
+        # ===== CHAIN OF RESPONSIBILITY: PASO 4 =====
+        # Construcción y verificación del nombre completo del estilo
+        # FACADE: Oculta la complejidad de generación de nombres de estilo
         # Genera el nombre del estilo y lo construye si no existe
         ttkstyle = Bootstyle.ttkstyle_name(widget, style_string, **kwargs)
-        # print(f"4 Generando el nombre del estilo {ttkstyle}")
+        # ===== CHAIN OF RESPONSIBILITY: PASO 5 =====
+        # Verificación de existencia y construcción del estilo si es necesario
+        # print(f"5 Generando el nombre del estilo {ttkstyle}")
         if not style.style_exists_in_theme(ttkstyle):
-            # 4.1: Obtención de propiedades para la construcción
+            # 5.1: Obtención de propiedades para la construcción
             widget_color = Bootstyle.ttkstyle_widget_color(ttkstyle)
             method_name = Bootstyle.ttkstyle_method_name(widget, ttkstyle)
-
-            # 4.2: Construcción del estilo usando el builder
+            # ===== FACTORY: RESOLUCIÓN DINÁMICA DEL MÉTODO CONSTRUCTOR =====
+            # Obtiene el builder y resuelve dinámicamente el método a utilizar
+            # 5.2: Construcción del estilo usando el builder
             builder: StyleBuilderTTK = style._get_builder()
-            # print(f"4.2 Construcción del estilo usando el builder (StyleBuilderTTK) {builder}")
+            # print(f"5.2 Construcción del estilo usando el builder (StyleBuilderTTK) {builder}")
             builder_method = builder.name_to_method(method_name)
             builder_method(builder, widget_color)
 
-        # Paso 5: Manejo especial para widgets tipo Combobox
+        # ===== CHAIN OF RESPONSIBILITY: PASO 6 =====
+        # Manejo especial para widgets tipo Combobox
+        # ===== OBSERVER: SUSCRIPCIÓN A CAMBIOS DE TEMA =====
+        # Paso 6: Manejo especial para widgets tipo Combobox
         # Configura suscripciones y actualizaciones específicas para combobox
         try:
             if widget and widget.winfo_class() == "TCombobox":
                 builder: StyleBuilderTTK = style._get_builder()
-                # 5.1: Obtención de identificadores únicos
+                # 6.1: Obtención de identificadores únicos para el widget
                 winfo_id = hex(widget.winfo_id())
                 winfo_pathname = widget.winfo_pathname(winfo_id)
-
-                # 5.2: Suscripción a cambios de tema
+                # Suscripción al sistema de publicación/suscripción
+                # Implementa Observer para actualizar estilo cuando cambia el tema
+                # 6.2: Suscripción a cambios de tema
                 Publisher.subscribe(
                     name=winfo_pathname,
                     callback=lambda w=widget: builder.update_combobox_popdown_style(w),
                     channel=Channel.STD,
                 )
-                # 5.3: Actualización inicial del estilo del popdown
+                # 6.3: Actualización inicial del estilo del popdown
                 builder.update_combobox_popdown_style(widget)
         except:
             pass
-
-        # Paso 6: Retorno del estilo generado
+        # ===== CHAIN OF RESPONSIBILITY: PASO 7 =====
+        # Retorno del estilo generado o actualizado
+        # Paso 7: Retorno del estilo generado
         return ttkstyle
 
 

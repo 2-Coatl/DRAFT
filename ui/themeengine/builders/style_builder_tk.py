@@ -247,7 +247,6 @@ class StyleBuilderTK:
         # configuración afecta a la apariencia base de la aplicación
         widget.configure(background=self.colors.bg)
 
-
     def update_checkbutton_style(self, widget: tk.Checkbutton) -> None:
         """Actualiza el estilo de un botón de verificación.
 
@@ -531,7 +530,6 @@ class StyleBuilderTK:
             borderwidth=0, # Elimina el borde del botón para un aspecto más plano y moderno
         )
 
-
     def update_menu_style(self, widget: tk.Menu) -> None:
         """Actualiza el estilo de un menú.
 
@@ -560,7 +558,6 @@ class StyleBuilderTK:
             relief=tk.FLAT, # Elimina el efecto 3D tradicional para un aspecto más moderno
             borderwidth=0, # Elimina el borde del menú para un aspecto más plano y moderno
         )
-
 
     def update_labelframe_style(self, widget: tk.LabelFrame) -> None:
         """Actualiza el estilo de un marco con etiqueta.
