@@ -119,14 +119,48 @@ class TestStyleBuilderTTKBase(unittest.TestCase):
             theme_type (str): Tipo de tema ('light' o 'dark')
         """
         self.mock_style.theme.type = theme_type
+        self.mock_style.theme.name = "light" if theme_type == LIGHT else "dark"
 
         # Ajustar colores base según el tipo de tema
         if theme_type == LIGHT:
+            # Colores para tema claro
             self.mock_colors.bg = "#ffffff"
             self.mock_colors.fg = "#000000"
+            self.mock_colors.border = "#dddddd"
+            self.mock_colors.primary = "#0078d7"
+            self.mock_colors.info = "#17a2b8"
+            self.mock_colors.danger = "#dc3545"
+            self.mock_colors.selectbg = "#0078d7"
+            self.mock_colors.selectfg = "#ffffff"
+            self.mock_colors.light = "#f8f9fa"
+            self.mock_colors.inputbg = "#ffffff"
+            self.mock_colors.inputfg = "#000000"
         else:
+            # Colores para tema oscuro
             self.mock_colors.bg = "#222222"
             self.mock_colors.fg = "#ffffff"
+            self.mock_colors.border = "#444444"
+            self.mock_colors.primary = "#0096FF"  # Un azul más brillante para tema oscuro
+            self.mock_colors.info = "#25c0d4"  # Info más brillante
+            self.mock_colors.danger = "#ff4d5e"  # Danger más brillante
+            self.mock_colors.selectbg = "#0096FF"
+            self.mock_colors.selectfg = "#ffffff"
+            self.mock_colors.light = "#333333"  # "light" más oscuro en tema oscuro
+            self.mock_colors.inputbg = "#333333"
+            self.mock_colors.inputfg = "#ffffff"
+
+        # También actualizar el comportamiento de get() para reflejar el cambio de tema
+        def get_color_based_on_theme(color_name):
+            if color_name == "primary":
+                return self.mock_colors.primary
+            elif color_name == "info":
+                return self.mock_colors.info
+            elif color_name == "danger":
+                return self.mock_colors.danger
+            # Añadir otros casos según sea necesario
+            return "#0078d7"  # Valor por defecto
+
+        self.mock_colors.get.side_effect = get_color_based_on_theme
 
     def configure_platform(self, platform, scaling):
         """Configura el mock para simular una plataforma y factor de escala.
@@ -135,10 +169,15 @@ class TestStyleBuilderTTKBase(unittest.TestCase):
             platform (str): Sistema de ventanas ('win32', 'aqua', 'x11')
             scaling (float): Factor de escala (1.0, 1.5, 2.0, etc.)
         """
-        self.mock_style.master.tk.call.side_effect = [
-            platform,  # Respuesta para "tk windowingsystem"
-            scaling  # Respuesta para "tk scaling"
-        ]
+
+        def mock_tk_call(*args):
+            if args[0] == "tk" and args[1] == "windowingsystem":
+                return platform
+            elif args[0] == "tk" and args[1] == "scaling":
+                return scaling
+            return None
+
+        self.mock_style.master.tk.call.side_effect = mock_tk_call
 
 
 class TestStyleBuilderTTKProperties(TestStyleBuilderTTKBase):
@@ -372,10 +411,15 @@ class TestStyleBuilderTTKStyleCreation(TestStyleBuilderTTKBase):
         # Crear instancia y preparar pruebas
         builder = self.create_builder()
 
+        # Configurar plataforma y escala antes de la prueba
+        self.configure_platform("win32", 1.5)
+
         for method_name, colorname, expected_style, expected_bg, should_register in test_cases:
             with self.subTest(method=method_name, color=colorname):
                 # Resetear mocks para cada caso
                 self.reset_mocks()
+                # IMPORTANTE: Se configura el mock para tk.call ya que reset_mocks() lo resetea
+                self.configure_platform("win32", 1.5)
 
                 # Obtener el método a probar
                 method = getattr(builder, method_name)
@@ -436,6 +480,7 @@ class TestStyleBuilderTTKStyleCreation(TestStyleBuilderTTKBase):
 
         # Configurar tema claro para comportamiento predecible
         self.configure_theme_type(LIGHT)
+        self.configure_platform("win32", 1.5)
 
         # Ejecutar método con color personalizado
         builder.create_combobox_style("primary")
@@ -501,6 +546,8 @@ class TestStyleBuilderTTKThemeAdaptation(TestStyleBuilderTTKBase):
         # Crear instancia
         builder = self.create_builder()
 
+        # Configurar plataforma para todos los tests
+        self.configure_platform("win32", 1.5)
         # Preparar estilos y métodos a probar
         styles_to_test = [
             ("create_button_style", "primary"),
@@ -513,6 +560,7 @@ class TestStyleBuilderTTKThemeAdaptation(TestStyleBuilderTTKBase):
                 # Configurar tema claro
                 self.configure_theme_type(LIGHT)
                 self.reset_mocks()
+                self.configure_platform("win32", 1.5)  # Volver a configurar después de reset
 
                 # Crear estilo con tema claro
                 method = getattr(builder, method_name)
