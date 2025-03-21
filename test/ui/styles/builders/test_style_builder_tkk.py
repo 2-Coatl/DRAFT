@@ -290,14 +290,17 @@ class TestStyleBuilderTTKInitialization(TestStyleBuilderTTKBase):
             # Ejecutar método a probar
             builder.create_default_style()
 
-            # Verificar configuración del estilo raíz
+            # Verificar que se llamó a _build_configure
             self.mock_style._build_configure.assert_called_once()
-            args, kwargs = self.mock_style._build_configure.call_args
 
-            # Verificar que se configuró el estilo raíz (.)
-            self.assertEqual(args[0], ".")
+            # Obtener los argumentos con nombre (kwargs) de la llamada
+            kwargs = self.mock_style._build_configure.call_args[1]
 
-            # Verificar que se configuraron los colores básicos
+            # Verificar que el parámetro 'style' tiene el valor correcto
+            self.assertIn('style', kwargs, "El parámetro 'style' no está presente en la llamada")
+            self.assertEqual(kwargs['style'], ".")
+
+            # Verificar que los kwargs contienen los colores esperados
             self.assertEqual(kwargs["background"], self.mock_colors.bg)
             self.assertEqual(kwargs["foreground"], self.mock_colors.fg)
             self.assertEqual(kwargs["selectbg"], self.mock_colors.selectbg)
@@ -307,7 +310,7 @@ class TestStyleBuilderTTKInitialization(TestStyleBuilderTTKBase):
 
             # Verificar configuración de symbol.Link.TButton
             self.mock_style.configure.assert_called_once()
-            args, kwargs = self.mock_style.configure.call_args
+            args, button_kwargs = self.mock_style.configure.call_args
             self.assertEqual(args[0], "symbol.Link.TButton")
 
 
