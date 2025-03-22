@@ -1475,148 +1475,239 @@ class StyleBuilderTTK:
         self.style._register_ttkstyle(v_ttkstyle)  # Registrar estilo vertical
 
     def create_scale_assets(self, colorname=DEFAULT, size=14):
-        """Create the assets used for the ttk.Scale widget.
+        """Crea los activos visuales (imágenes) para el widget ttk.Scale.
 
-        The slider handle is automatically adjusted to fit the
-        screen resolution.
+        Este método genera las imágenes necesarias para personalizar completamente
+        un widget de escala deslizante, incluyendo:
+
+        1. El controlador (handle) del deslizador en cuatro estados:
+           - Normal: estado predeterminado
+           - Presionado: cuando se está arrastrando
+           - Hover: cuando el cursor está encima
+           - Deshabilitado: cuando el widget está inactivo
+
+        2. Las pistas (tracks) por las que se desliza el controlador:
+           - Horizontal: para escalas con orientación horizontal
+           - Vertical: para escalas con orientación vertical
+
+        El tamaño del controlador se ajusta automáticamente según la resolución de
+        la pantalla para garantizar una buena experiencia de usuario en diferentes
+        dispositivos.
 
         Parameters:
+            colorname (str, opcional):
+                Nombre del color a utilizar para el controlador. Debe corresponder
+                a un color definido en self.colors (como 'primary', 'secondary', etc.).
+                Si es 'default' o una cadena vacía, se utilizará el color primario.
+                El valor 'light' tiene un tratamiento especial para el color de la pista
+                en temas claros.
+                Valor predeterminado: 'default'
 
-            colorname (str):
-                The color label.
-
-            size (int):
-                The size diameter of the slider circle; default=16.
+            size (int, opcional):
+                Diámetro base del círculo del controlador en píxeles. Este valor será
+                escalado automáticamente según la resolución de la pantalla.
+                Valor predeterminado: 14
 
         Returns:
+            Tuple[str, str, str, str, str, str]:
+                Una tupla con seis identificadores de imágenes en el siguiente orden:
+                1. Controlador en estado normal
+                2. Controlador en estado presionado
+                3. Controlador en estado hover
+                4. Controlador en estado deshabilitado
+                5. Pista horizontal
+                6. Pista vertical
 
-            Tuple[str]:
-                A tuple of PhotoImage names to be used in the image
-                layout when building the style.
+                Estos identificadores pueden usarse posteriormente para acceder a las imágenes
+                almacenadas en self.theme_images.
         """
-        size = self.scale_size(size)
+        # Escalar el tamaño según la densidad de la pantalla
+        size = self.scale_size(size)  # Ej: 14 -> 21 en pantallas de alta densidad
+
+        # Determinar colores para componentes según el tema actual
         if self.is_light_theme:
-            disabled_color = self.colors.border
+            # En temas claros
+            disabled_color = self.colors.border  # Color para estado deshabilitado (ej: "#ced4da")
             if colorname == LIGHT:
-                track_color = self.colors.bg
+                # Caso especial para el color 'light'
+                track_color = self.colors.bg  # Color de fondo para la pista (ej: "#f8f9fa")
             else:
-                track_color = self.colors.light
+                # Para otros colores en tema claro
+                track_color = self.colors.light  # Color claro para la pista (ej: "#e9ecef")
         else:
-            disabled_color = self.colors.selectbg
-            track_color = Colors.update_hsv(self.colors.selectbg, vd=-0.2)
+            # En temas oscuros
+            disabled_color = self.colors.selectbg  # Color de selección para deshabilitado (ej: "#375a7f")
+            # Versión más oscura del color de selección para la pista
+            track_color = Colors.update_hsv(self.colors.selectbg, vd=-0.2)  # Ej: "#2d4869"
 
+        # Determinar el color base para el controlador
         if any([colorname == DEFAULT, colorname == ""]):
-            normal_color = self.colors.primary
+            # Si no se especifica un color válido, usar color primario
+            normal_color = self.colors.primary  # Ej: "#007bff"
         else:
-            normal_color = self.colors.get(colorname)
+            # Si se especifica un color, usarlo
+            normal_color = self.colors.get(colorname)  # Ej: self.colors.success -> "#28a745"
 
-        pressed_color = Colors.update_hsv(normal_color, vd=-0.1)
-        hover_color = Colors.update_hsv(normal_color, vd=0.1)
+        # Calcular colores derivados para estados especiales
+        # Color para estado presionado: ligeramente más oscuro
+        pressed_color = Colors.update_hsv(normal_color, vd=-0.1)  # Ej: "#0062cc"
+        # Color para estado hover: ligeramente más claro
+        hover_color = Colors.update_hsv(normal_color, vd=0.1)  # Ej: "#3395ff"
 
-        # normal state
-        _normal = Image.new("RGBA", (100, 100))
-        draw = ImageDraw.Draw(_normal)
-        draw.ellipse((0, 0, 95, 95), fill=normal_color)
+        # ----- CREACIÓN DE IMÁGENES PARA EL CONTROLADOR EN DIFERENTES ESTADOS -----
+
+        # Estado normal
+        _normal = Image.new("RGBA", (100, 100))  # Imagen base transparente
+        draw = ImageDraw.Draw(_normal)  # Objeto para dibujar en la imagen
+        draw.ellipse((0, 0, 95, 95), fill=normal_color)  # Dibujar círculo
+        # Redimensionar al tamaño final y convertir a formato Tkinter
         normal_img = ImageTk.PhotoImage(
-            _normal.resize((size, size), Image.LANCZOS)
+            _normal.resize((size, size), Image.LANCZOS)  # LANCZOS para mejor calidad
         )
-        normal_name = util.get_image_name(normal_img)
+        # Generar nombre único y almacenar para evitar que el GC la elimine
+        normal_name = util.get_image_name(normal_img)  # Ej: "pyimage1"
         self.theme_images[normal_name] = normal_img
 
-        # pressed state
+        # Estado presionado (cuando se hace clic)
         _pressed = Image.new("RGBA", (100, 100))
         draw = ImageDraw.Draw(_pressed)
-        draw.ellipse((0, 0, 95, 95), fill=pressed_color)
+        draw.ellipse((0, 0, 95, 95), fill=pressed_color)  # Color más oscuro
         pressed_img = ImageTk.PhotoImage(
             _pressed.resize((size, size), Image.LANCZOS)
         )
-        pressed_name = util.get_image_name(pressed_img)
+        pressed_name = util.get_image_name(pressed_img)  # Ej: "pyimage2"
         self.theme_images[pressed_name] = pressed_img
 
-        # hover state
+        # Estado hover (cuando el cursor está encima)
         _hover = Image.new("RGBA", (100, 100))
         draw = ImageDraw.Draw(_hover)
-        draw.ellipse((0, 0, 95, 95), fill=hover_color)
+        draw.ellipse((0, 0, 95, 95), fill=hover_color)  # Color más claro
         hover_img = ImageTk.PhotoImage(
             _hover.resize((size, size), Image.LANCZOS)
         )
-        hover_name = util.get_image_name(hover_img)
+        hover_name = util.get_image_name(hover_img)  # Ej: "pyimage3"
         self.theme_images[hover_name] = hover_img
 
-        # disabled state
+        # Estado deshabilitado (cuando el widget está inactivo)
         _disabled = Image.new("RGBA", (100, 100))
         draw = ImageDraw.Draw(_disabled)
-        draw.ellipse((0, 0, 95, 95), fill=disabled_color)
+        draw.ellipse((0, 0, 95, 95), fill=disabled_color)  # Color gris o apagado
         disabled_img = ImageTk.PhotoImage(
             _disabled.resize((size, size), Image.LANCZOS)
         )
-        disabled_name = util.get_image_name(disabled_img)
+        disabled_name = util.get_image_name(disabled_img)  # Ej: "pyimage4"
         self.theme_images[disabled_name] = disabled_img
 
-        # vertical track
+        # ----- CREACIÓN DE IMÁGENES PARA LAS PISTAS -----
+
+        # Pista horizontal (rectángulo ancho pero bajo)
         h_track_img = ImageTk.PhotoImage(
             Image.new("RGB", self.scale_size((40, 5)), track_color)
         )
-        h_track_name = util.get_image_name(h_track_img)
+        h_track_name = util.get_image_name(h_track_img)  # Ej: "pyimage5"
         self.theme_images[h_track_name] = h_track_img
 
-        # horizontal track
+        # Pista vertical (rectángulo alto pero estrecho)
         v_track_img = ImageTk.PhotoImage(
             Image.new("RGB", self.scale_size((5, 40)), track_color)
         )
-        v_track_name = util.get_image_name(v_track_img)
+        v_track_name = util.get_image_name(v_track_img)  # Ej: "pyimage6"
         self.theme_images[v_track_name] = v_track_img
 
+        # Devolver todos los identificadores de imágenes en orden específico
         return (
-            normal_name,
-            pressed_name,
-            hover_name,
-            disabled_name,
-            h_track_name,
-            v_track_name,
+            normal_name,  # Identificador para imagen de estado normal
+            pressed_name,  # Identificador para imagen de estado presionado
+            hover_name,  # Identificador para imagen de estado hover
+            disabled_name,  # Identificador para imagen de estado deshabilitado
+            h_track_name,  # Identificador para imagen de pista horizontal
+            v_track_name,  # Identificador para imagen de pista vertical
         )
 
     def create_scale_style(self, colorname=DEFAULT):
-        """Create a style for the ttk.Scale widget.
+        """Crea un estilo personalizado para widgets ttk.Scale.
+
+        Este método genera estilos TTK para controles deslizantes (escalas)
+        con apariencia personalizada tanto en orientación horizontal como vertical.
+        Utiliza los activos visuales (imágenes) generados por el método
+        create_scale_assets para crear controles deslizantes visualmente atractivos
+        que responden a diferentes estados (normal, hover, presionado, deshabilitado).
 
         Parameters:
+            colorname (str, opcional):
+                Nombre del color a utilizar para el control deslizante. Debe corresponder
+                a un color definido en self.colors (como 'primary', 'secondary', etc.).
 
-            colorname (str):
-                The color label used to style the widget.
+                Si es 'default' o una cadena vacía, se utilizarán los estilos base con
+                prefijo de orientación.
+
+                Valor predeterminado: 'default'
+
+        Returns:
+            None: Este método no retorna ningún valor, pero tiene los siguientes efectos:
+
+            1. Crea dos estilos TTK:
+               - Si colorname es 'default': "Horizontal.TScale" y "Vertical.TScale"
+               - Si se especifica colorname: "{colorname}.Horizontal.TScale" y
+                 "{colorname}.Vertical.TScale"
+
+            2. Configura elementos y layouts para proporcionar una experiencia visual
+               personalizada y responsiva
+
+            3. Registra los estilos en el sistema de estilos TTK
+
         """
-        STYLE = "TScale"
+        # Definir constante para el nombre base del estilo
+        STYLE = "TScale"  # Nombre estándar de TTK para controles deslizantes
 
+        # Determinar los nombres completos de los estilos
         if any([colorname == DEFAULT, colorname == ""]):
-            h_ttkstyle = f"Horizontal.{STYLE}"
-            v_ttkstyle = f"Vertical.{STYLE}"
+            # Si no se especifica un color válido, usar prefijos de orientación
+            h_ttkstyle = f"Horizontal.{STYLE}"  # Ej: "Horizontal.TScale"
+            v_ttkstyle = f"Vertical.{STYLE}"  # Ej: "Vertical.TScale"
         else:
-            h_ttkstyle = f"{colorname}.Horizontal.{STYLE}"
-            v_ttkstyle = f"{colorname}.Vertical.{STYLE}"
+            # Si se especifica un color, usarlo como prefijo
+            h_ttkstyle = f"{colorname}.Horizontal.{STYLE}"  # Ej: "primary.Horizontal.TScale"
+            v_ttkstyle = f"{colorname}.Vertical.{STYLE}"  # Ej: "primary.Vertical.TScale"
 
-        # ( normal, pressed, hover, disabled, htrack, vtrack )
+        # Obtener las imágenes necesarias para los controles deslizantes
+        # La tupla contiene: (normal, pressed, hover, disabled, pista_horizontal, pista_vertical)
         images = self.create_scale_assets(colorname)
 
-        # horizontal scale
-        h_element = h_ttkstyle.replace(".TS", ".S")
+        # ---- CREACIÓN DEL ESTILO HORIZONTAL ----
+        # Convertir el nombre de estilo a nombre de elemento (quitar el prefijo 'T')
+        h_element = h_ttkstyle.replace(".TS", ".S")  # Ej: "Horizontal.Scale"
+
+        # Crear elemento para el deslizador horizontal con imágenes para diferentes estados
         self.style.element_create(
-            f"{h_element}.slider",
-            "image",
-            images[0],
-            ("disabled", images[3]),
-            ("pressed", images[1]),
-            ("hover", images[2]),
+            f"{h_element}.slider",  # Nombre del elemento
+            "image",  # Tipo de elemento (basado en imagen)
+            images[0],  # Imagen para estado normal
+            ("disabled", images[3]),  # Imagen para estado deshabilitado
+            ("pressed", images[1]),  # Imagen para estado presionado
+            ("hover", images[2]),  # Imagen para estado hover
         )
-        self.style.element_create(f"{h_element}.track", "image", images[4])
+
+        # Crear elemento para la pista horizontal
+        self.style.element_create(
+            f"{h_element}.track",  # Nombre del elemento
+            "image",  # Tipo de elemento (basado en imagen)
+            images[4],  # Imagen de pista horizontal
+        )
+
+        # Definir el layout del estilo horizontal
         self.style.layout(
-            h_ttkstyle,
+            h_ttkstyle,  # Nombre del estilo
             [
                 (
-                    f"{h_element}.focus",
+                    f"{h_element}.focus",  # Elemento contenedor (foco)
                     {
-                        "expand": "1",
-                        "sticky": tk.NSEW,
+                        "expand": "1",  # Expandir para ocupar todo el espacio
+                        "sticky": tk.NSEW,  # Adherir en todas direcciones
                         "children": [
+                            # Pista horizontal expandida horizontalmente
                             (f"{h_element}.track", {"sticky": tk.EW}),
+                            # Deslizador colocado en el lado izquierdo
                             (
                                 f"{h_element}.slider",
                                 {"side": tk.LEFT, "sticky": ""},
@@ -1626,27 +1717,42 @@ class StyleBuilderTTK:
                 )
             ],
         )
-        # vertical scale
-        v_element = v_ttkstyle.replace(".TS", ".S")
+
+        # ---- CREACIÓN DEL ESTILO VERTICAL ----
+        # Convertir el nombre de estilo a nombre de elemento (quitar el prefijo 'T')
+        v_element = v_ttkstyle.replace(".TS", ".S")  # Ej: "Vertical.Scale"
+
+        # Crear elemento para el deslizador vertical con imágenes para diferentes estados
+        # Usa las mismas imágenes de estado que el deslizador horizontal
         self.style.element_create(
             f"{v_element}.slider",
             "image",
-            images[0],
-            ("disabled", images[3]),
-            ("pressed", images[1]),
-            ("hover", images[2]),
+            images[0],  # Normal
+            ("disabled", images[3]),  # Deshabilitado
+            ("pressed", images[1]),  # Presionado
+            ("hover", images[2]),  # Hover
         )
-        self.style.element_create(f"{v_element}.track", "image", images[5])
+
+        # Crear elemento para la pista vertical
+        self.style.element_create(
+            f"{v_element}.track",
+            "image",
+            images[5],  # Imagen de pista vertical
+        )
+
+        # Definir el layout del estilo vertical
         self.style.layout(
-            v_ttkstyle,
+            v_ttkstyle,  # Nombre del estilo
             [
                 (
-                    f"{v_element}.focus",
+                    f"{v_element}.focus",  # Elemento contenedor (foco)
                     {
-                        "expand": "1",
-                        "sticky": tk.NSEW,
+                        "expand": "1",  # Expandir para ocupar todo el espacio
+                        "sticky": tk.NSEW,  # Adherir en todas direcciones
                         "children": [
+                            # Pista vertical expandida verticalmente
                             (f"{v_element}.track", {"sticky": tk.NS}),
+                            # Deslizador colocado en la parte superior
                             (
                                 f"{v_element}.slider",
                                 {"side": tk.TOP, "sticky": ""},
@@ -1656,93 +1762,152 @@ class StyleBuilderTTK:
                 )
             ],
         )
-        # register ttkstyles
-        self.style._register_ttkstyle(h_ttkstyle)
-        self.style._register_ttkstyle(v_ttkstyle)
 
+        # Registrar los estilos creados en el sistema
+        self.style._register_ttkstyle(h_ttkstyle)  # Registrar estilo horizontal
+        self.style._register_ttkstyle(v_ttkstyle)  # Registrar estilo vertical
 
     def create_floodgauge_style(self, colorname=DEFAULT):
-        """Create a ttk style for the ttkbootstrap.widgets.Floodgauge
-        widget. This is a custom widget style that uses components of
-        the progressbar and label.
+        """Crea un estilo TTK para el widget Floodgauge.
+
+        Este método genera estilos para un widget personalizado llamado Floodgauge,
+        que combina elementos de barra de progreso (progressbar) y etiqueta (label).
+        El resultado es una barra de progreso con texto superpuesto que puede mostrar
+        información mientras se llena.
+
+        El estilo creado incluye configuraciones tanto para orientación horizontal
+        como vertical, con un grosor fijo de 50 píxeles y texto centrado con tamaño
+        de fuente 14.
 
         Parameters:
+            colorname (str, opcional):
+                Nombre del color a utilizar para el widget. Debe corresponder
+                a un color definido en self.colors (como 'primary', 'secondary', etc.).
 
-            colorname (str):
-                The color label used to style the widget.
+                Si es 'default' o una cadena vacía, se utilizará el color primario del tema.
+
+                El valor 'light' tiene un tratamiento especial, utilizando el color de fondo
+                del tema para el canal y el color de texto estándar para el texto.
+
+                Valor predeterminado: 'default'
+
+        Returns:
+            None: Este método no retorna ningún valor, pero tiene los siguientes efectos:
+
+            1. Crea dos estilos TTK:
+               - Si colorname es 'default': "Horizontal.TFloodgauge" y "Vertical.TFloodgauge"
+               - Si se especifica colorname: "{colorname}.Horizontal.TFloodgauge" y
+                 "{colorname}.Vertical.TFloodgauge"
+
+            2. Configura elementos, layouts y propiedades visuales para ambos estilos
+
+            3. Registra los estilos en el sistema de estilos TTK
+
         """
-        HSTYLE = "Horizontal.TFloodgauge"
-        VSTYLE = "Vertical.TFloodgauge"
-        FLOOD_FONT = "-size 14"
+        # Definir constantes para nombres de estilo y fuente
+        HSTYLE = "Horizontal.TFloodgauge"  # Estilo base para Floodgauge horizontal
+        VSTYLE = "Vertical.TFloodgauge"  # Estilo base para Floodgauge vertical
+        FLOOD_FONT = "-size 14"  # Especificación de fuente tamaño 14
 
+        # Determinar nombres de estilo y color de fondo según el parámetro colorname
         if any([colorname == DEFAULT, colorname == ""]):
-            h_ttkstyle = HSTYLE
-            v_ttkstyle = VSTYLE
-            background = self.colors.primary
+            # Si no se especifica un color válido, usar nombres base y color primario
+            h_ttkstyle = HSTYLE  # Ej: "Horizontal.TFloodgauge"
+            v_ttkstyle = VSTYLE  # Ej: "Vertical.TFloodgauge"
+            background = self.colors.primary  # Ej: "#007bff"
         else:
-            h_ttkstyle = f"{colorname}.{HSTYLE}"
-            v_ttkstyle = f"{colorname}.{VSTYLE}"
-            background = self.colors.get(colorname)
+            # Si se especifica un color, usarlo como prefijo y como color de fondo
+            h_ttkstyle = f"{colorname}.{HSTYLE}"  # Ej: "danger.Horizontal.TFloodgauge"
+            v_ttkstyle = f"{colorname}.{VSTYLE}"  # Ej: "danger.Vertical.TFloodgauge"
+            background = self.colors.get(colorname)  # Ej: self.colors.danger -> "#dc3545"
 
+        # Determinar colores de primer plano y canal según el color seleccionado
         if colorname == LIGHT:
-            foreground = self.colors.fg
-            troughcolor = self.colors.bg
+            # Caso especial para el color 'light'
+            foreground = self.colors.fg  # Color de texto estándar (Ej: "#212529")
+            troughcolor = self.colors.bg  # Color de fondo estándar (Ej: "#f8f9fa")
         else:
-            troughcolor = Colors.update_hsv(background, sd=-0.3, vd=0.8)
-            foreground = self.colors.selectfg
+            # Para otros colores, calcular colores derivados
+            # Canal: versión más clara y menos saturada del color de fondo
+            troughcolor = Colors.update_hsv(background, sd=-0.3, vd=0.8)  # Ej: "#d1e6ff"
+            # Texto: color de texto para selección (generalmente blanco)
+            foreground = self.colors.selectfg  # Ej: "#ffffff"
 
-        # horizontal floodgauge
-        h_element = h_ttkstyle.replace(".TF", ".F")
+        # ---- CREACIÓN DEL ESTILO HORIZONTAL ----
+        # Convertir el nombre de estilo a nombre de elemento (quitar el prefijo 'T')
+        h_element = h_ttkstyle.replace(".TF", ".F")  # Ej: "Horizontal.Floodgauge"
+
+        # Crear elementos reutilizando componentes de temas existentes
+        # Elemento canal basado en tema Clam
         self.style.element_create(f"{h_element}.trough", "from", TTK_CLAM)
+        # Elemento barra de progreso basado en tema Default
         self.style.element_create(f"{h_element}.pbar", "from", TTK_DEFAULT)
+
+        # Definir el layout del estilo horizontal
         self.style.layout(
-            h_ttkstyle,
+            h_ttkstyle,  # Nombre del estilo
             [
                 (
-                    f"{h_element}.trough",
+                    f"{h_element}.trough",  # Elemento canal (contenedor)
                     {
                         "children": [
+                            # Barra de progreso expandida verticalmente
                             (f"{h_element}.pbar", {"sticky": tk.NS}),
+                            # Etiqueta para mostrar texto sobre la barra
                             ("Floodgauge.label", {"sticky": ""}),
                         ],
-                        "sticky": tk.NSEW,
+                        "sticky": tk.NSEW,  # Canal expandido en todas direcciones
                     },
                 )
             ],
         )
+
+        # Configurar propiedades visuales del estilo horizontal
         self.style._build_configure(
             h_ttkstyle,
-            thickness=50,
-            borderwidth=1,
-            bordercolor=background,
-            lightcolor=background,
-            pbarrelief=tk.FLAT,
-            troughcolor=troughcolor,
-            background=background,
-            foreground=foreground,
-            justify=tk.CENTER,
-            anchor=tk.CENTER,
-            font=FLOOD_FONT,
+            thickness=50,  # Grosor fijo de 50 píxeles
+            borderwidth=1,  # Ancho del borde de 1 píxel
+            bordercolor=background,  # Color del borde igual al color de fondo
+            lightcolor=background,  # Color claro igual al color de fondo
+            pbarrelief=tk.FLAT,  # Relieve plano para la barra de progreso
+            troughcolor=troughcolor,  # Color del canal calculado previamente
+            background=background,  # Color de fondo calculado previamente
+            foreground=foreground,  # Color de texto calculado previamente
+            justify=tk.CENTER,  # Texto centrado horizontalmente
+            anchor=tk.CENTER,  # Texto anclado al centro
+            font=FLOOD_FONT,  # Fuente de tamaño 14
         )
-        # vertical floodgauge
-        v_element = v_ttkstyle.replace(".TF", ".F")
+
+        # ---- CREACIÓN DEL ESTILO VERTICAL ----
+        # Convertir el nombre de estilo a nombre de elemento (quitar el prefijo 'T')
+        v_element = v_ttkstyle.replace(".TF", ".F")  # Ej: "Vertical.Floodgauge"
+
+        # Crear elementos reutilizando componentes de temas existentes
+        # Elemento canal basado en tema Clam
         self.style.element_create(f"{v_element}.trough", "from", TTK_CLAM)
+        # Elemento barra de progreso basado en tema Default
         self.style.element_create(f"{v_element}.pbar", "from", TTK_DEFAULT)
+
+        # Definir el layout del estilo vertical
         self.style.layout(
-            v_ttkstyle,
+            v_ttkstyle,  # Nombre del estilo
             [
                 (
-                    f"{v_element}.trough",
+                    f"{v_element}.trough",  # Elemento canal (contenedor)
                     {
                         "children": [
+                            # Barra de progreso expandida horizontalmente (diferencia con horizontal)
                             (f"{v_element}.pbar", {"sticky": tk.EW}),
+                            # Etiqueta para mostrar texto sobre la barra
                             ("Floodgauge.label", {"sticky": ""}),
                         ],
-                        "sticky": tk.NSEW,
+                        "sticky": tk.NSEW,  # Canal expandido en todas direcciones
                     },
                 )
             ],
         )
+
+        # Configurar propiedades visuales del estilo vertical (idénticas al horizontal)
         self.style._build_configure(
             v_ttkstyle,
             thickness=50,
@@ -1757,211 +1922,368 @@ class StyleBuilderTTK:
             anchor=tk.CENTER,
             font=FLOOD_FONT,
         )
-        # register ttkstyles
-        self.style._register_ttkstyle(h_ttkstyle)
-        self.style._register_ttkstyle(v_ttkstyle)
+
+        # Registrar los estilos creados en el sistema
+        self.style._register_ttkstyle(h_ttkstyle)  # Registrar estilo horizontal
+        self.style._register_ttkstyle(v_ttkstyle)  # Registrar estilo vertical
 
     def create_arrow_assets(self, arrowcolor, pressed, active):
-        """Create arrow assets used for various widget buttons.
+        """Crea activos de flechas utilizados para varios botones de widgets.
 
-        !!! note
-            This method is currently not being utilized.
+        Este método genera imágenes de flechas en cuatro direcciones (arriba, abajo,
+        izquierda, derecha) con tres estados diferentes (normal, presionado, activo).
+        Las imágenes generadas se almacenan en el diccionario `theme_images` para su
+        uso posterior en la aplicación.
 
-        Parameters:
+        !!! Nota:
+            Este método actualmente no está siendo utilizado.
 
+        Args:
             arrowcolor (str):
-                The color value to use as the arrow fill color.
+                El valor de color a utilizar como color de relleno para la flecha
+                en estado normal.
 
             pressed (str):
-                The color value to use when the arrow is pressed.
+                El valor de color a utilizar cuando la flecha está presionada.
 
             active (str):
-                The color value to use when the arrow is active or
-                hovered.
+                El valor de color a utilizar cuando la flecha está activa o
+                con el cursor encima.
+
+        Returns:
+            tuple: Una tupla con tres elementos, cada uno conteniendo los nombres de
+                   las imágenes para cada estado (normal, presionado, activo). Cada
+                   elemento es una tupla de 4 strings con el formato:
+                   (flecha_arriba, flecha_abajo, flecha_izquierda, flecha_derecha)
+
+        Ejemplo:
+            ```python
+            # Crear assets de flechas con colores específicos
+            normal_color = "#333333"
+            pressed_color = "#555555"
+            active_color = "#777777"
+
+            arrow_assets = style_builder.create_arrow_assets(
+                normal_color, pressed_color, active_color
+            )
+
+            # Los nombres de las imágenes están disponibles en arrow_assets
+            normal_arrows, pressed_arrows, active_arrows = arrow_assets
+            up_arrow_name, down_arrow_name, left_arrow_name, right_arrow_name = normal_arrows
+            ```
         """
 
-        def draw_arrow(color: str):
+        # Función interna para generar un conjunto de flechas en las cuatro direcciones
+        def draw_arrow(color: str) -> tuple[str, str, str, str]:
+            """Dibuja y almacena un conjunto de flechas en cuatro direcciones.
 
+            Args:
+                color: Color para dibujar las flechas.
+
+            Returns:
+                Tupla con los nombres de las imágenes (arriba, abajo, izquierda, derecha).
+            """
+            # Crear imagen base transparente de 11x11 píxeles
             img = Image.new("RGBA", (11, 11))
+            # Obtener objeto de dibujo para manipular la imagen
             draw = ImageDraw.Draw(img)
+            # Escalar el tamaño según la configuración DPI del sistema
+            # Ejemplo: en pantalla de alta densidad podría ser [22, 22]
             size = self.scale_size([11, 11])
 
-            draw.line([2, 6, 2, 9], fill=color)
-            draw.line([3, 5, 3, 8], fill=color)
-            draw.line([4, 4, 4, 7], fill=color)
-            draw.line([5, 3, 5, 6], fill=color)
-            draw.line([6, 4, 6, 7], fill=color)
-            draw.line([7, 5, 7, 8], fill=color)
-            draw.line([8, 6, 8, 9], fill=color)
+            # Dibujar líneas que forman una flecha hacia arriba
+            # Cada draw.line([x1, y1, x2, y2], fill=color) dibuja una línea con el color especificado
+            draw.line([2, 6, 2, 9], fill=color)  # Vertical izquierda
+            draw.line([3, 5, 3, 8], fill=color)  # Vertical izquierda-centro
+            draw.line([4, 4, 4, 7], fill=color)  # Vertical centro-izquierda
+            draw.line([5, 3, 5, 6], fill=color)  # Vertical centro
+            draw.line([6, 4, 6, 7], fill=color)  # Vertical centro-derecha
+            draw.line([7, 5, 7, 8], fill=color)  # Vertical derecha-centro
+            draw.line([8, 6, 8, 9], fill=color)  # Vertical derecha
 
+            # Redimensionar la imagen al tamaño escalado usando interpolación bicúbica
             img = img.resize(size, Image.BICUBIC)
 
-            up_img = ImageTk.PhotoImage(img)
-            up_name = util.get_image_name(up_img)
-            self.theme_images[up_name] = up_img
+            # --- Crear y almacenar las cuatro direcciones de flechas ---
 
+            # 1. Flecha hacia arriba (imagen original)
+            up_img = ImageTk.PhotoImage(img)
+            up_name = util.get_image_name(up_img)  # Genera un nombre único (ej: "arrow_up_ff5733")
+            self.theme_images[up_name] = up_img  # Almacena en caché para evitar garbage collection
+
+            # 2. Flecha hacia abajo (rotar 180°)
             down_img = ImageTk.PhotoImage(img.rotate(180))
             down_name = util.get_image_name(down_img)
             self.theme_images[down_name] = down_img
 
+            # 3. Flecha hacia la izquierda (rotar 90°)
             left_img = ImageTk.PhotoImage(img.rotate(90))
             left_name = util.get_image_name(left_img)
             self.theme_images[left_name] = left_img
 
+            # 4. Flecha hacia la derecha (rotar -90°)
             right_img = ImageTk.PhotoImage(img.rotate(-90))
             right_name = util.get_image_name(right_img)
             self.theme_images[right_name] = right_img
 
+            # Retornar los nombres/referencias de las cuatro imágenes
             return up_name, down_name, left_name, right_name
 
-        normal_names = draw_arrow(arrowcolor)
-        pressed_names = draw_arrow(pressed)
-        active_names = draw_arrow(active)
+        # Generar flechas para cada estado usando el color correspondiente
+        normal_names = draw_arrow(arrowcolor)  # Estado normal
+        pressed_names = draw_arrow(pressed)  # Estado presionado
+        active_names = draw_arrow(active)  # Estado activo/hover
 
+        # Retornar tupla con las tres tuplas de nombres de imágenes
+        # Ejemplo: (("arrow_up_normal", "arrow_down_normal", ...), ("arrow_up_pressed", ...), ...)
         return normal_names, pressed_names, active_names
 
     def create_round_scrollbar_assets(self, thumbcolor, pressed, active):
-        """Create image assets to be used when building the round
-        scrollbar style.
+        """Crea activos de imagen para barras de desplazamiento redondeadas.
 
-        Parameters:
+        Este método genera imágenes para los thumbs (controles deslizantes) de las barras de
+        desplazamiento con esquinas redondeadas, tanto en orientación horizontal como vertical,
+        y en tres estados diferentes: normal, presionado y activo/hover. Las imágenes generadas
+        se almacenan en el diccionario `theme_images` para su uso posterior.
 
+        La generación de imágenes utiliza una técnica de sobremuestreo (10x) y posterior
+        redimensionado para asegurar bordes suaves y una alta calidad visual en las esquinas
+        redondeadas.
+
+        Args:
             thumbcolor (str):
-                The color value of the thumb in normal state.
+                El valor de color para el thumb en estado normal.
 
             pressed (str):
-                The color value to use when the thumb is pressed.
+                El valor de color a utilizar cuando el thumb está presionado.
 
             active (str):
-                The color value to use when the thumb is active or
-                hovered.
-        """
-        vsize = self.scale_size([9, 28])
-        hsize = self.scale_size([28, 9])
+                El valor de color a utilizar cuando el thumb está activo o
+                con el cursor encima (hover).
 
-        def rounded_rect(size, fill):
+        Returns:
+            tuple[str, str, str, str, str, str]: Una tupla con seis elementos, que son los
+            identificadores únicos de las imágenes generadas en el siguiente orden:
+            1. Thumb horizontal en estado normal
+            2. Thumb horizontal en estado presionado
+            3. Thumb horizontal en estado activo
+            4. Thumb vertical en estado normal
+            5. Thumb vertical en estado presionado
+            6. Thumb vertical en estado activo
+
+        """
+        # Definir tamaños escalados para thumbs verticales y horizontales
+        # ajustados según la configuración DPI del sistema
+        vsize = self.scale_size([9, 28])  # Tamaño para orientación vertical (ancho x alto)
+        hsize = self.scale_size([28, 9])  # Tamaño para orientación horizontal (ancho x alto)
+
+        def rounded_rect(size: list[int], fill: str) -> str:
+            """Crea un rectángulo redondeado y devuelve su identificador.
+
+            Args:
+                size: Dimensiones finales [ancho, alto] de la imagen.
+                fill: Color de relleno del rectángulo.
+
+            Returns:
+                Identificador único de la imagen creada.
+            """
+            # Ampliar tamaño por factor de 10 para mejor calidad
+            # Ejemplo: [28, 9] -> [280, 90]
             x = size[0] * 10
             y = size[1] * 10
+
+            # Crear imagen base transparente con tamaño ampliado
             img = Image.new("RGBA", (x, y))
             draw = ImageDraw.Draw(img)
-            radius = min([x, y]) // 2
-            draw.rounded_rectangle([0, 0, x - 1, y - 1], radius, fill)
-            image = ImageTk.PhotoImage(img.resize(size, Image.BICUBIC))
-            name = util.get_image_name(image)
-            self.theme_images[name] = image
-            return name
 
-        # create images
+            # Calcular radio para las esquinas redondeadas (mitad de la dimensión menor)
+            # Ejemplo: para [280, 90], radio = 45
+            radius = min([x, y]) // 2
+
+            # Dibujar rectángulo redondeado con el color especificado
+            # Las coordenadas [0, 0, x-1, y-1] abarcan toda la imagen menos el borde extremo
+            draw.rounded_rectangle([0, 0, x - 1, y - 1], radius, fill)
+
+            # Redimensionar a tamaño final y convertir a formato Tkinter
+            # Usar interpolación bicúbica para mantener bordes suaves
+            image = ImageTk.PhotoImage(img.resize(size, Image.BICUBIC))
+
+            # Generar nombre único para la imagen y almacenarla en el diccionario
+            name = util.get_image_name(image)
+            self.theme_images[name] = image  # Mantiene referencia para evitar garbage collection
+
+            return name  # Devolver el identificador único
+
+        # --- Generar imágenes para thumbs horizontales en tres estados ---
+
+        # Thumb horizontal en estado normal
         h_normal_img = rounded_rect(hsize, thumbcolor)
+        # Thumb horizontal en estado presionado
         h_pressed_img = rounded_rect(hsize, pressed)
+        # Thumb horizontal en estado activo/hover
         h_active_img = rounded_rect(hsize, active)
 
+        # --- Generar imágenes para thumbs verticales en tres estados ---
+
+        # Thumb vertical en estado normal
         v_normal_img = rounded_rect(vsize, thumbcolor)
+        # Thumb vertical en estado presionado
         v_pressed_img = rounded_rect(vsize, pressed)
+        # Thumb vertical en estado activo/hover
         v_active_img = rounded_rect(vsize, active)
 
+        # Retornar tupla con los seis identificadores de imágenes
+        # Orden: horizontal (normal, presionado, activo), vertical (normal, presionado, activo)
         return (
-            h_normal_img,
-            h_pressed_img,
-            h_active_img,
-            v_normal_img,
-            v_pressed_img,
-            v_active_img,
+            h_normal_img,  # Horizontal normal
+            h_pressed_img,  # Horizontal presionado
+            h_active_img,  # Horizontal activo
+            v_normal_img,  # Vertical normal
+            v_pressed_img,  # Vertical presionado
+            v_active_img,  # Vertical activo
         )
 
     def create_round_scrollbar_style(self, colorname=DEFAULT):
-        """Create a round style for the ttk.Scrollbar widget.
+        """Crea un estilo redondeado para el widget ttk.Scrollbar.
 
-        Parameters:
+        Este método configura estilos personalizados tanto para barras de desplazamiento
+        horizontales como verticales con una apariencia redondeada. Genera todos los
+        recursos visuales necesarios y define la estructura y comportamiento de los widgets.
 
-            colorname (str):
-                The color label used to style the widget.
+        El estilo creado adapta automáticamente los colores según el tema actual (claro u
+        oscuro) y la etiqueta de color proporcionada, generando diferentes versiones para
+        los estados normal, presionado y activo (hover).
+
+        Args:
+            colorname (str, optional):
+                La etiqueta de color utilizada para estilizar el widget. Si es DEFAULT o
+                cadena vacía, se utiliza un estilo base sin prefijo de color.
+                Los valores posibles incluyen: 'primary', 'secondary', 'success', 'info',
+                'warning', 'danger', 'light', 'dark', etc.
+                Valor predeterminado: DEFAULT.
+
+        Returns:
+            None: Este método no retorna ningún valor, pero modifica el estado interno
+                  creando y registrando dos estilos TTK nuevos (horizontal y vertical).
+
         """
+        # Constante que define el sufijo base para estilos de scrollbar
         STYLE = "TScrollbar"
 
+        # --- Determinación de nombres de estilo y color base ---
+
+        # Caso 1: Sin color específico (estilo base)
         if any([colorname == DEFAULT, colorname == ""]):
-            h_ttkstyle = f"Round.Horizontal.{STYLE}"
-            v_ttkstyle = f"Round.Vertical.{STYLE}"
+            # Nombres de estilo sin prefijo de color
+            h_ttkstyle = f"Round.Horizontal.{STYLE}"  # Ej: "Round.Horizontal.TScrollbar"
+            v_ttkstyle = f"Round.Vertical.{STYLE}"  # Ej: "Round.Vertical.TScrollbar"
 
+            # Color de fondo adaptado al tipo de tema
             if self.is_light_theme:
-                background = self.colors.border
+                background = self.colors.border  # Color de borde en tema claro
             else:
-                background = self.colors.selectbg
+                background = self.colors.selectbg  # Color de selección en tema oscuro
 
+        # Caso 2: Color específico proporcionado
         else:
-            h_ttkstyle = f"{colorname}.Round.Horizontal.{STYLE}"
-            v_ttkstyle = f"{colorname}.Round.Vertical.{STYLE}"
-            background = self.colors.get(colorname)
+            # Nombres de estilo con prefijo de color
+            h_ttkstyle = f"{colorname}.Round.Horizontal.{STYLE}"  # Ej: "primary.Round.Horizontal.TScrollbar"
+            v_ttkstyle = f"{colorname}.Round.Vertical.{STYLE}"  # Ej: "primary.Round.Vertical.TScrollbar"
 
+            # Obtener color dinámicamente según la etiqueta proporcionada
+            background = self.colors.get(colorname)  # Ej: self.colors.primary, self.colors.success, etc.
+
+        # --- Cálculo de colores específicos para diferentes partes y estados ---
+
+        # Color del canal (troughcolor) adaptado al tipo de tema
         if self.is_light_theme:
             if colorname == LIGHT:
-                troughcolor = self.colors.bg
+                troughcolor = self.colors.bg  # Fondo normal para tema "light" en tema claro
             else:
-                troughcolor = self.colors.light
+                troughcolor = self.colors.light  # Color claro para otros temas en tema claro
         else:
-            troughcolor = Colors.update_hsv(self.colors.selectbg, vd=-0.2)
+            # Para tema oscuro, versión más oscura del color de selección
+            troughcolor = Colors.update_hsv(self.colors.selectbg, vd=-0.2)  # Reduce brillo en 20%
 
-        pressed = Colors.update_hsv(background, vd=-0.05)
-        active = Colors.update_hsv(background, vd=0.05)
+        # Colores para estados específicos
+        pressed = Colors.update_hsv(background, vd=-0.05)  # Versión más oscura para estado presionado
+        active = Colors.update_hsv(background, vd=0.05)  # Versión más clara para estado activo/hover
 
+        # --- Generación de imágenes para los thumbs ---
+
+        # Obtener imágenes para todos los estados y orientaciones
         scroll_images = self.create_round_scrollbar_assets(
             background, pressed, active
         )
+        # scroll_images contiene 6 identificadores:
+        # 0: thumb horizontal normal, 1: h-presionado, 2: h-activo,
+        # 3: thumb vertical normal, 4: v-presionado, 5: v-activo
 
-        # horizontal scrollbar
+        # === CONFIGURACIÓN DE BARRA DE DESPLAZAMIENTO HORIZONTAL ===
+
+        # 1. Configuración básica de apariencia
         self.style._build_configure(
             h_ttkstyle,
-            troughcolor=troughcolor,
-            darkcolor=troughcolor,
-            bordercolor=troughcolor,
-            lightcolor=troughcolor,
-            arrowcolor=background,
-            arrowsize=self.scale_size(11),
-            background=troughcolor,
-            relief=tk.FLAT,
-            borderwidth=0,
+            troughcolor=troughcolor,  # Color del canal
+            darkcolor=troughcolor,  # Color oscuro (sombra)
+            bordercolor=troughcolor,  # Color del borde
+            lightcolor=troughcolor,  # Color claro (iluminación)
+            arrowcolor=background,  # Color de las flechas
+            arrowsize=self.scale_size(11),  # Tamaño de flecha escalado según DPI
+            background=troughcolor,  # Color de fondo
+            relief=tk.FLAT,  # Sin relieve
+            borderwidth=0,  # Sin borde
         )
+
+        # 2. Creación del elemento thumb personalizado
         self.style.element_create(
-            f"{h_ttkstyle}.thumb",
-            "image",
-            scroll_images[0],
-            ("pressed", scroll_images[1]),
-            ("active", scroll_images[2]),
-            border=self.scale_size(9),
-            padding=0,
-            sticky=tk.EW,
+            f"{h_ttkstyle}.thumb",  # Nombre único del elemento
+            "image",  # Tipo de elemento (basado en imagen)
+            scroll_images[0],  # Imagen para estado normal
+            ("pressed", scroll_images[1]),  # Imagen para estado presionado
+            ("active", scroll_images[2]),  # Imagen para estado activo/hover
+            border=self.scale_size(9),  # Tamaño de borde escalado
+            padding=0,  # Sin relleno
+            sticky=tk.EW,  # Adherencia este-oeste
         )
+
+        # 3. Definición del layout (estructura jerárquica)
         self.style.layout(
             h_ttkstyle,
             [
                 (
-                    "Horizontal.Scrollbar.trough",
+                    "Horizontal.Scrollbar.trough",  # Canal principal
                     {
-                        "sticky": "we",
+                        "sticky": "we",  # Adherencia oeste-este
                         "children": [
                             (
-                                "Horizontal.Scrollbar.leftarrow",
+                                "Horizontal.Scrollbar.leftarrow",  # Flecha izquierda
                                 {"side": "left", "sticky": ""},
                             ),
                             (
-                                "Horizontal.Scrollbar.rightarrow",
+                                "Horizontal.Scrollbar.rightarrow",  # Flecha derecha
                                 {"side": "right", "sticky": ""},
                             ),
                             (
-                                f"{h_ttkstyle}.thumb",
-                                {"expand": "1", "sticky": "nswe"},
+                                f"{h_ttkstyle}.thumb",  # Thumb personalizado
+                                {"expand": "1", "sticky": "nswe"},  # Expandible, adherencia completa
                             ),
                         ],
                     },
                 )
             ],
         )
-        self.style._build_configure(h_ttkstyle, arrowcolor=background)
+
+        # 4. Configuración de colores de flecha
+        self.style._build_configure(h_ttkstyle, arrowcolor=background)  # Color base
         self.style.map(
-            h_ttkstyle, arrowcolor=[("pressed", pressed), ("active", active)]
+            h_ttkstyle,
+            arrowcolor=[("pressed", pressed), ("active", active)]  # Mapeo de estados
         )
 
-        # vertical scrollbar
+        # === CONFIGURACIÓN DE BARRA DE DESPLAZAMIENTO VERTICAL ===
+
+        # 1. Configuración básica de apariencia (similar a horizontal)
         self.style._build_configure(
             v_ttkstyle,
             troughcolor=troughcolor,
@@ -1973,34 +2295,38 @@ class StyleBuilderTTK:
             background=troughcolor,
             relief=tk.FLAT,
         )
+
+        # 2. Creación del elemento thumb personalizado
         self.style.element_create(
             f"{v_ttkstyle}.thumb",
             "image",
-            scroll_images[3],
-            ("pressed", scroll_images[4]),
-            ("active", scroll_images[5]),
+            scroll_images[3],  # Imagen vertical normal (#3 en la tupla)
+            ("pressed", scroll_images[4]),  # Vertical presionado (#4)
+            ("active", scroll_images[5]),  # Vertical activo (#5)
             border=self.scale_size(9),
             padding=0,
-            sticky=tk.NS,
+            sticky=tk.NS,  # Adherencia norte-sur
         )
+
+        # 3. Definición del layout
         self.style.layout(
             v_ttkstyle,
             [
                 (
-                    "Vertical.Scrollbar.trough",
+                    "Vertical.Scrollbar.trough",  # Canal vertical
                     {
-                        "sticky": "ns",
+                        "sticky": "ns",  # Adherencia norte-sur
                         "children": [
                             (
-                                "Vertical.Scrollbar.uparrow",
+                                "Vertical.Scrollbar.uparrow",  # Flecha arriba
                                 {"side": "top", "sticky": ""},
                             ),
                             (
-                                "Vertical.Scrollbar.downarrow",
+                                "Vertical.Scrollbar.downarrow",  # Flecha abajo
                                 {"side": "bottom", "sticky": ""},
                             ),
                             (
-                                f"{v_ttkstyle}.thumb",
+                                f"{v_ttkstyle}.thumb",  # Thumb personalizado
                                 {"expand": "1", "sticky": "nswe"},
                             ),
                         ],
@@ -2008,11 +2334,16 @@ class StyleBuilderTTK:
                 )
             ],
         )
+
+        # 4. Configuración de colores de flecha
         self.style._build_configure(v_ttkstyle, arrowcolor=background)
         self.style.map(
-            v_ttkstyle, arrowcolor=[("pressed", pressed), ("active", active)]
+            v_ttkstyle,
+            arrowcolor=[("pressed", pressed), ("active", active)]
         )
 
-        # register ttkstyles
+        # --- Registro de estilos creados ---
+
+        # Registrar los estilos TTK para evitar recreación y seguimiento
         self.style._register_ttkstyle(h_ttkstyle)
         self.style._register_ttkstyle(v_ttkstyle)
