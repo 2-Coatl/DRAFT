@@ -1139,21 +1139,26 @@ class StyleBuilderTTK:
         return h_name, v_name
 
     def create_striped_progressbar_style(self, colorname=DEFAULT):
-        """Crea un estilo personalizado con patrón rayado para widgets ttk.Progressbar.
+        """Crea un estilo con patrón rayado para widgets ttk.Progressbar.
 
         Este método genera estilos TTK para barras de progreso con un patrón rayado
-        diagonal. El estilo se adapta automáticamente al tema actual (claro/oscuro)
-        y puede personalizarse con diferentes colores.
+        diagonal. Crea tanto la versión horizontal como vertical, y se adapta
+        automáticamente al tema actual (claro/oscuro).
 
-        NOTA: Actualmente, este método crea completamente el estilo horizontal, pero
-        solo registra el nombre del estilo vertical sin implementar su elemento ni layout.
+        El método utiliza imágenes rayadas generadas por el método
+        create_striped_progressbar_assets y configura todas las propiedades visuales
+        necesarias, incluyendo colores, bordes y disposición de los elementos.
 
         Parameters:
             colorname (str, opcional):
                 Nombre del color a utilizar para la barra de progreso. Debe corresponder
                 a un color definido en self.colors (como 'primary', 'secondary', etc.).
-                Si es 'default' o una cadena vacía, se utilizará el estilo base sin prefijo.
-                El valor 'light' tiene un tratamiento especial para el color del canal.
+
+                Si es 'default' o una cadena vacía, se utilizarán los estilos base sin prefijo.
+
+                El valor 'light' tiene un tratamiento especial para los colores de canal y borde
+                en temas claros.
+
                 Valor predeterminado: 'default'
 
         Returns:
@@ -1165,14 +1170,14 @@ class StyleBuilderTTK:
                - Si se especifica colorname: "{colorname}.Striped.Horizontal.TProgressbar" y
                  "{colorname}.Striped.Vertical.TProgressbar"
 
-            2. Configura el layout y las propiedades visuales del estilo horizontal
+            2. Configura el layout y las propiedades visuales de ambos estilos
 
-            3. Registra ambos estilos en el sistema de estilos TTK
+            3. Registra los estilos en el sistema de estilos TTK
 
         """
         # Definir constantes para los nombres base de los estilos
-        HSTYLE = "Striped.Horizontal.TProgressbar"  # Estilo base para barra horizontal
-        VSTYLE = "Striped.Vertical.TProgressbar"  # Estilo base para barra vertical
+        HSTYLE = "Striped.Horizontal.TProgressbar"  # Estilo base para barra horizontal rayada
+        VSTYLE = "Striped.Vertical.TProgressbar"  # Estilo base para barra vertical rayada
 
         # Calcular el grosor de la barra adaptado a la densidad de la pantalla
         thickness = self.scale_size(12)  # Escala el valor base de 12 píxeles
@@ -1208,11 +1213,11 @@ class StyleBuilderTTK:
         # Devuelve una tupla (imagen_horizontal, imagen_vertical)
         images = self.create_striped_progressbar_assets(thickness, colorname)
 
-        # CREACIÓN DEL ESTILO HORIZONTAL
+        # ---- CREACIÓN DEL ESTILO HORIZONTAL ----
         # Convertir el nombre de estilo a nombre de elemento (quitar el prefijo 'T')
         h_element = h_ttkstyle.replace(".TP", ".P")  # Ej: "Striped.Horizontal.Progressbar"
 
-        # Crear un elemento visual personalizado para la barra de progreso
+        # Crear un elemento visual personalizado para la barra de progreso horizontal
         self.style.element_create(
             f"{h_element}.pbar",  # Nombre del elemento
             "image",  # Tipo de elemento (basado en imagen)
@@ -1240,7 +1245,7 @@ class StyleBuilderTTK:
             ],
         )
 
-        # Configurar propiedades visuales del estilo
+        # Configurar propiedades visuales del estilo horizontal
         self.style._build_configure(
             h_ttkstyle,  # Nombre del estilo
             troughcolor=troughcolor,  # Color del canal
@@ -1249,11 +1254,50 @@ class StyleBuilderTTK:
             borderwidth=1,  # Ancho del borde (1 píxel)
         )
 
+        # ---- CREACIÓN DEL ESTILO VERTICAL ----
+        # Convertir el nombre de estilo a nombre de elemento (quitar el prefijo 'T')
+        v_element = v_ttkstyle.replace(".TP", ".P")  # Ej: "Striped.Vertical.Progressbar"
+
+        # Crear un elemento visual personalizado para la barra de progreso vertical
+        self.style.element_create(
+            f"{v_element}.pbar",  # Nombre del elemento
+            "image",  # Tipo de elemento (basado en imagen)
+            images[1],  # Imagen vertical (rotada 90°)
+            width=thickness,  # Ancho igual al grosor calculado
+            sticky=tk.NS,  # Expansión vertical
+        )
+
+        # Definir el layout del estilo vertical
+        self.style.layout(
+            v_ttkstyle,  # Nombre del estilo
+            [
+                (
+                    f"{v_element}.trough",  # Elemento canal (contenedor)
+                    {
+                        "sticky": tk.NSEW,  # Expandir en todas direcciones
+                        "children": [
+                            (
+                                f"{v_element}.pbar",  # Elemento barra de progreso
+                                {"side": tk.BOTTOM, "sticky": tk.EW},  # Alineado abajo, expandido horizontalmente
+                            )
+                        ],
+                    },
+                )
+            ],
+        )
+
+        # Configurar propiedades visuales del estilo vertical
+        self.style._build_configure(
+            v_ttkstyle,  # Nombre del estilo
+            troughcolor=troughcolor,  # Color del canal
+            bordercolor=bordercolor,  # Color del borde
+            thickness=thickness,  # Grosor de la barra
+            borderwidth=1,  # Ancho del borde (1 píxel)
+        )
+
         # Registrar los estilos creados en el sistema
         self.style._register_ttkstyle(h_ttkstyle)  # Registrar estilo horizontal
         self.style._register_ttkstyle(v_ttkstyle)  # Registrar estilo vertical
-
-        # NOTA: Falta la creación del elemento y layout para el estilo vertical
 
     def create_progressbar_style(self, colorname=DEFAULT):
         """Crea un estilo sólido para widgets ttk.Progressbar.
@@ -1429,3 +1473,546 @@ class StyleBuilderTTK:
         # Registrar los estilos creados en el sistema
         self.style._register_ttkstyle(h_ttkstyle)  # Registrar estilo horizontal
         self.style._register_ttkstyle(v_ttkstyle)  # Registrar estilo vertical
+
+    def create_scale_assets(self, colorname=DEFAULT, size=14):
+        """Create the assets used for the ttk.Scale widget.
+
+        The slider handle is automatically adjusted to fit the
+        screen resolution.
+
+        Parameters:
+
+            colorname (str):
+                The color label.
+
+            size (int):
+                The size diameter of the slider circle; default=16.
+
+        Returns:
+
+            Tuple[str]:
+                A tuple of PhotoImage names to be used in the image
+                layout when building the style.
+        """
+        size = self.scale_size(size)
+        if self.is_light_theme:
+            disabled_color = self.colors.border
+            if colorname == LIGHT:
+                track_color = self.colors.bg
+            else:
+                track_color = self.colors.light
+        else:
+            disabled_color = self.colors.selectbg
+            track_color = Colors.update_hsv(self.colors.selectbg, vd=-0.2)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            normal_color = self.colors.primary
+        else:
+            normal_color = self.colors.get(colorname)
+
+        pressed_color = Colors.update_hsv(normal_color, vd=-0.1)
+        hover_color = Colors.update_hsv(normal_color, vd=0.1)
+
+        # normal state
+        _normal = Image.new("RGBA", (100, 100))
+        draw = ImageDraw.Draw(_normal)
+        draw.ellipse((0, 0, 95, 95), fill=normal_color)
+        normal_img = ImageTk.PhotoImage(
+            _normal.resize((size, size), Image.LANCZOS)
+        )
+        normal_name = util.get_image_name(normal_img)
+        self.theme_images[normal_name] = normal_img
+
+        # pressed state
+        _pressed = Image.new("RGBA", (100, 100))
+        draw = ImageDraw.Draw(_pressed)
+        draw.ellipse((0, 0, 95, 95), fill=pressed_color)
+        pressed_img = ImageTk.PhotoImage(
+            _pressed.resize((size, size), Image.LANCZOS)
+        )
+        pressed_name = util.get_image_name(pressed_img)
+        self.theme_images[pressed_name] = pressed_img
+
+        # hover state
+        _hover = Image.new("RGBA", (100, 100))
+        draw = ImageDraw.Draw(_hover)
+        draw.ellipse((0, 0, 95, 95), fill=hover_color)
+        hover_img = ImageTk.PhotoImage(
+            _hover.resize((size, size), Image.LANCZOS)
+        )
+        hover_name = util.get_image_name(hover_img)
+        self.theme_images[hover_name] = hover_img
+
+        # disabled state
+        _disabled = Image.new("RGBA", (100, 100))
+        draw = ImageDraw.Draw(_disabled)
+        draw.ellipse((0, 0, 95, 95), fill=disabled_color)
+        disabled_img = ImageTk.PhotoImage(
+            _disabled.resize((size, size), Image.LANCZOS)
+        )
+        disabled_name = util.get_image_name(disabled_img)
+        self.theme_images[disabled_name] = disabled_img
+
+        # vertical track
+        h_track_img = ImageTk.PhotoImage(
+            Image.new("RGB", self.scale_size((40, 5)), track_color)
+        )
+        h_track_name = util.get_image_name(h_track_img)
+        self.theme_images[h_track_name] = h_track_img
+
+        # horizontal track
+        v_track_img = ImageTk.PhotoImage(
+            Image.new("RGB", self.scale_size((5, 40)), track_color)
+        )
+        v_track_name = util.get_image_name(v_track_img)
+        self.theme_images[v_track_name] = v_track_img
+
+        return (
+            normal_name,
+            pressed_name,
+            hover_name,
+            disabled_name,
+            h_track_name,
+            v_track_name,
+        )
+
+    def create_scale_style(self, colorname=DEFAULT):
+        """Create a style for the ttk.Scale widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "TScale"
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            h_ttkstyle = f"Horizontal.{STYLE}"
+            v_ttkstyle = f"Vertical.{STYLE}"
+        else:
+            h_ttkstyle = f"{colorname}.Horizontal.{STYLE}"
+            v_ttkstyle = f"{colorname}.Vertical.{STYLE}"
+
+        # ( normal, pressed, hover, disabled, htrack, vtrack )
+        images = self.create_scale_assets(colorname)
+
+        # horizontal scale
+        h_element = h_ttkstyle.replace(".TS", ".S")
+        self.style.element_create(
+            f"{h_element}.slider",
+            "image",
+            images[0],
+            ("disabled", images[3]),
+            ("pressed", images[1]),
+            ("hover", images[2]),
+        )
+        self.style.element_create(f"{h_element}.track", "image", images[4])
+        self.style.layout(
+            h_ttkstyle,
+            [
+                (
+                    f"{h_element}.focus",
+                    {
+                        "expand": "1",
+                        "sticky": tk.NSEW,
+                        "children": [
+                            (f"{h_element}.track", {"sticky": tk.EW}),
+                            (
+                                f"{h_element}.slider",
+                                {"side": tk.LEFT, "sticky": ""},
+                            ),
+                        ],
+                    },
+                )
+            ],
+        )
+        # vertical scale
+        v_element = v_ttkstyle.replace(".TS", ".S")
+        self.style.element_create(
+            f"{v_element}.slider",
+            "image",
+            images[0],
+            ("disabled", images[3]),
+            ("pressed", images[1]),
+            ("hover", images[2]),
+        )
+        self.style.element_create(f"{v_element}.track", "image", images[5])
+        self.style.layout(
+            v_ttkstyle,
+            [
+                (
+                    f"{v_element}.focus",
+                    {
+                        "expand": "1",
+                        "sticky": tk.NSEW,
+                        "children": [
+                            (f"{v_element}.track", {"sticky": tk.NS}),
+                            (
+                                f"{v_element}.slider",
+                                {"side": tk.TOP, "sticky": ""},
+                            ),
+                        ],
+                    },
+                )
+            ],
+        )
+        # register ttkstyles
+        self.style._register_ttkstyle(h_ttkstyle)
+        self.style._register_ttkstyle(v_ttkstyle)
+
+
+    def create_floodgauge_style(self, colorname=DEFAULT):
+        """Create a ttk style for the ttkbootstrap.widgets.Floodgauge
+        widget. This is a custom widget style that uses components of
+        the progressbar and label.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        HSTYLE = "Horizontal.TFloodgauge"
+        VSTYLE = "Vertical.TFloodgauge"
+        FLOOD_FONT = "-size 14"
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            h_ttkstyle = HSTYLE
+            v_ttkstyle = VSTYLE
+            background = self.colors.primary
+        else:
+            h_ttkstyle = f"{colorname}.{HSTYLE}"
+            v_ttkstyle = f"{colorname}.{VSTYLE}"
+            background = self.colors.get(colorname)
+
+        if colorname == LIGHT:
+            foreground = self.colors.fg
+            troughcolor = self.colors.bg
+        else:
+            troughcolor = Colors.update_hsv(background, sd=-0.3, vd=0.8)
+            foreground = self.colors.selectfg
+
+        # horizontal floodgauge
+        h_element = h_ttkstyle.replace(".TF", ".F")
+        self.style.element_create(f"{h_element}.trough", "from", TTK_CLAM)
+        self.style.element_create(f"{h_element}.pbar", "from", TTK_DEFAULT)
+        self.style.layout(
+            h_ttkstyle,
+            [
+                (
+                    f"{h_element}.trough",
+                    {
+                        "children": [
+                            (f"{h_element}.pbar", {"sticky": tk.NS}),
+                            ("Floodgauge.label", {"sticky": ""}),
+                        ],
+                        "sticky": tk.NSEW,
+                    },
+                )
+            ],
+        )
+        self.style._build_configure(
+            h_ttkstyle,
+            thickness=50,
+            borderwidth=1,
+            bordercolor=background,
+            lightcolor=background,
+            pbarrelief=tk.FLAT,
+            troughcolor=troughcolor,
+            background=background,
+            foreground=foreground,
+            justify=tk.CENTER,
+            anchor=tk.CENTER,
+            font=FLOOD_FONT,
+        )
+        # vertical floodgauge
+        v_element = v_ttkstyle.replace(".TF", ".F")
+        self.style.element_create(f"{v_element}.trough", "from", TTK_CLAM)
+        self.style.element_create(f"{v_element}.pbar", "from", TTK_DEFAULT)
+        self.style.layout(
+            v_ttkstyle,
+            [
+                (
+                    f"{v_element}.trough",
+                    {
+                        "children": [
+                            (f"{v_element}.pbar", {"sticky": tk.EW}),
+                            ("Floodgauge.label", {"sticky": ""}),
+                        ],
+                        "sticky": tk.NSEW,
+                    },
+                )
+            ],
+        )
+        self.style._build_configure(
+            v_ttkstyle,
+            thickness=50,
+            borderwidth=1,
+            bordercolor=background,
+            lightcolor=background,
+            pbarrelief=tk.FLAT,
+            troughcolor=troughcolor,
+            background=background,
+            foreground=foreground,
+            justify=tk.CENTER,
+            anchor=tk.CENTER,
+            font=FLOOD_FONT,
+        )
+        # register ttkstyles
+        self.style._register_ttkstyle(h_ttkstyle)
+        self.style._register_ttkstyle(v_ttkstyle)
+
+    def create_arrow_assets(self, arrowcolor, pressed, active):
+        """Create arrow assets used for various widget buttons.
+
+        !!! note
+            This method is currently not being utilized.
+
+        Parameters:
+
+            arrowcolor (str):
+                The color value to use as the arrow fill color.
+
+            pressed (str):
+                The color value to use when the arrow is pressed.
+
+            active (str):
+                The color value to use when the arrow is active or
+                hovered.
+        """
+
+        def draw_arrow(color: str):
+
+            img = Image.new("RGBA", (11, 11))
+            draw = ImageDraw.Draw(img)
+            size = self.scale_size([11, 11])
+
+            draw.line([2, 6, 2, 9], fill=color)
+            draw.line([3, 5, 3, 8], fill=color)
+            draw.line([4, 4, 4, 7], fill=color)
+            draw.line([5, 3, 5, 6], fill=color)
+            draw.line([6, 4, 6, 7], fill=color)
+            draw.line([7, 5, 7, 8], fill=color)
+            draw.line([8, 6, 8, 9], fill=color)
+
+            img = img.resize(size, Image.BICUBIC)
+
+            up_img = ImageTk.PhotoImage(img)
+            up_name = util.get_image_name(up_img)
+            self.theme_images[up_name] = up_img
+
+            down_img = ImageTk.PhotoImage(img.rotate(180))
+            down_name = util.get_image_name(down_img)
+            self.theme_images[down_name] = down_img
+
+            left_img = ImageTk.PhotoImage(img.rotate(90))
+            left_name = util.get_image_name(left_img)
+            self.theme_images[left_name] = left_img
+
+            right_img = ImageTk.PhotoImage(img.rotate(-90))
+            right_name = util.get_image_name(right_img)
+            self.theme_images[right_name] = right_img
+
+            return up_name, down_name, left_name, right_name
+
+        normal_names = draw_arrow(arrowcolor)
+        pressed_names = draw_arrow(pressed)
+        active_names = draw_arrow(active)
+
+        return normal_names, pressed_names, active_names
+
+    def create_round_scrollbar_assets(self, thumbcolor, pressed, active):
+        """Create image assets to be used when building the round
+        scrollbar style.
+
+        Parameters:
+
+            thumbcolor (str):
+                The color value of the thumb in normal state.
+
+            pressed (str):
+                The color value to use when the thumb is pressed.
+
+            active (str):
+                The color value to use when the thumb is active or
+                hovered.
+        """
+        vsize = self.scale_size([9, 28])
+        hsize = self.scale_size([28, 9])
+
+        def rounded_rect(size, fill):
+            x = size[0] * 10
+            y = size[1] * 10
+            img = Image.new("RGBA", (x, y))
+            draw = ImageDraw.Draw(img)
+            radius = min([x, y]) // 2
+            draw.rounded_rectangle([0, 0, x - 1, y - 1], radius, fill)
+            image = ImageTk.PhotoImage(img.resize(size, Image.BICUBIC))
+            name = util.get_image_name(image)
+            self.theme_images[name] = image
+            return name
+
+        # create images
+        h_normal_img = rounded_rect(hsize, thumbcolor)
+        h_pressed_img = rounded_rect(hsize, pressed)
+        h_active_img = rounded_rect(hsize, active)
+
+        v_normal_img = rounded_rect(vsize, thumbcolor)
+        v_pressed_img = rounded_rect(vsize, pressed)
+        v_active_img = rounded_rect(vsize, active)
+
+        return (
+            h_normal_img,
+            h_pressed_img,
+            h_active_img,
+            v_normal_img,
+            v_pressed_img,
+            v_active_img,
+        )
+
+    def create_round_scrollbar_style(self, colorname=DEFAULT):
+        """Create a round style for the ttk.Scrollbar widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "TScrollbar"
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            h_ttkstyle = f"Round.Horizontal.{STYLE}"
+            v_ttkstyle = f"Round.Vertical.{STYLE}"
+
+            if self.is_light_theme:
+                background = self.colors.border
+            else:
+                background = self.colors.selectbg
+
+        else:
+            h_ttkstyle = f"{colorname}.Round.Horizontal.{STYLE}"
+            v_ttkstyle = f"{colorname}.Round.Vertical.{STYLE}"
+            background = self.colors.get(colorname)
+
+        if self.is_light_theme:
+            if colorname == LIGHT:
+                troughcolor = self.colors.bg
+            else:
+                troughcolor = self.colors.light
+        else:
+            troughcolor = Colors.update_hsv(self.colors.selectbg, vd=-0.2)
+
+        pressed = Colors.update_hsv(background, vd=-0.05)
+        active = Colors.update_hsv(background, vd=0.05)
+
+        scroll_images = self.create_round_scrollbar_assets(
+            background, pressed, active
+        )
+
+        # horizontal scrollbar
+        self.style._build_configure(
+            h_ttkstyle,
+            troughcolor=troughcolor,
+            darkcolor=troughcolor,
+            bordercolor=troughcolor,
+            lightcolor=troughcolor,
+            arrowcolor=background,
+            arrowsize=self.scale_size(11),
+            background=troughcolor,
+            relief=tk.FLAT,
+            borderwidth=0,
+        )
+        self.style.element_create(
+            f"{h_ttkstyle}.thumb",
+            "image",
+            scroll_images[0],
+            ("pressed", scroll_images[1]),
+            ("active", scroll_images[2]),
+            border=self.scale_size(9),
+            padding=0,
+            sticky=tk.EW,
+        )
+        self.style.layout(
+            h_ttkstyle,
+            [
+                (
+                    "Horizontal.Scrollbar.trough",
+                    {
+                        "sticky": "we",
+                        "children": [
+                            (
+                                "Horizontal.Scrollbar.leftarrow",
+                                {"side": "left", "sticky": ""},
+                            ),
+                            (
+                                "Horizontal.Scrollbar.rightarrow",
+                                {"side": "right", "sticky": ""},
+                            ),
+                            (
+                                f"{h_ttkstyle}.thumb",
+                                {"expand": "1", "sticky": "nswe"},
+                            ),
+                        ],
+                    },
+                )
+            ],
+        )
+        self.style._build_configure(h_ttkstyle, arrowcolor=background)
+        self.style.map(
+            h_ttkstyle, arrowcolor=[("pressed", pressed), ("active", active)]
+        )
+
+        # vertical scrollbar
+        self.style._build_configure(
+            v_ttkstyle,
+            troughcolor=troughcolor,
+            darkcolor=troughcolor,
+            bordercolor=troughcolor,
+            lightcolor=troughcolor,
+            arrowcolor=background,
+            arrowsize=self.scale_size(11),
+            background=troughcolor,
+            relief=tk.FLAT,
+        )
+        self.style.element_create(
+            f"{v_ttkstyle}.thumb",
+            "image",
+            scroll_images[3],
+            ("pressed", scroll_images[4]),
+            ("active", scroll_images[5]),
+            border=self.scale_size(9),
+            padding=0,
+            sticky=tk.NS,
+        )
+        self.style.layout(
+            v_ttkstyle,
+            [
+                (
+                    "Vertical.Scrollbar.trough",
+                    {
+                        "sticky": "ns",
+                        "children": [
+                            (
+                                "Vertical.Scrollbar.uparrow",
+                                {"side": "top", "sticky": ""},
+                            ),
+                            (
+                                "Vertical.Scrollbar.downarrow",
+                                {"side": "bottom", "sticky": ""},
+                            ),
+                            (
+                                f"{v_ttkstyle}.thumb",
+                                {"expand": "1", "sticky": "nswe"},
+                            ),
+                        ],
+                    },
+                )
+            ],
+        )
+        self.style._build_configure(v_ttkstyle, arrowcolor=background)
+        self.style.map(
+            v_ttkstyle, arrowcolor=[("pressed", pressed), ("active", active)]
+        )
+
+        # register ttkstyles
+        self.style._register_ttkstyle(h_ttkstyle)
+        self.style._register_ttkstyle(v_ttkstyle)
