@@ -2842,64 +2842,103 @@ class StyleBuilderTTK:
         self.style._register_ttkstyle(ttkstyle)
 
     def create_table_treeview_style(self, colorname=DEFAULT):
-        """Create a style for the Tableview widget.
+        """Crea un estilo personalizado para widgets Treeview (tablas).
+
+        Este método configura la apariencia visual completa de widgets Treeview,
+        adaptándose automáticamente al tipo de tema actual (claro u oscuro) y
+        aplicando el esquema de colores especificado por 'colorname'. Define
+        estilos tanto para el encabezado como para el cuerpo de la tabla,
+        incluyendo efectos visuales para estados como hover, selección y
+        deshabilitado.
 
         Parameters:
-
             colorname (str):
-                The color label used to style the widget.
+                Etiqueta de color utilizada para estilizar el widget. Pueden ser:
+                - DEFAULT o "": Utiliza los colores de entrada predeterminados
+                - LIGHT: En temas claros, aplica un estilo con fondo claro
+                - Cualquier etiqueta de color definida: Aplica ese color como base
+
+        Returns:
+            None: El método no retorna valores, pero registra estilos TTK
+                  que pueden ser utilizados por widgets Treeview.
         """
+        # Identificador base para los estilos de Treeview
         STYLE = "Table.Treeview"
 
+        # Obtiene la fuente predeterminada para calcular dimensiones
         f = font.nametofont("TkDefaultFont")
+        # Calcula la altura de fila basada en el espacio de línea de la fuente
+        # Ejemplo: si linespace=20, rowheight=20 píxeles
         rowheight = f.metrics()["linespace"]
 
+        # Configura colores base según el tipo de tema (claro u oscuro)
         if self.is_light_theme:
+            # Para tema claro: colores más suaves
+            # Ejemplo: si inputbg="#FFFFFF", disabled_fg podría ser "#CCCCCC"
             disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.2)
             bordercolor = self.colors.border
+            # Ejemplo: si light="#F5F5F5", hover podría ser "#DADADA"
             hover = Colors.update_hsv(self.colors.light, vd=-0.1)
         else:
+            # Para tema oscuro: colores con mayor contraste
+            # Ejemplo: si inputbg="#303030", disabled_fg podría ser "#202020"
             disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.3)
             bordercolor = self.colors.selectbg
+            # Ejemplo: si dark="#202020", hover podría ser "#303030"
             hover = Colors.update_hsv(self.colors.dark, vd=0.1)
 
+        # Determina esquema de colores y nombres de estilo según 'colorname'
         if any([colorname == DEFAULT, colorname == ""]):
+            # Caso 1: Usa valores predeterminados
+            # Ejemplo: background="#FFFFFF", foreground="#000000"
             background = self.colors.inputbg
             foreground = self.colors.inputfg
+            # Nombres de estilo sin prefijo: "Table.Treeview", "Table.Treeview.Heading"
             body_style = STYLE
             header_style = f"{STYLE}.Heading"
         elif colorname == LIGHT and self.is_light_theme:
+            # Caso 2: Esquema claro en tema claro
+            # Ejemplo: background="#F5F5F5", foreground="#333333"
             background = self.colors.get(colorname)
             foreground = self.colors.fg
+            # Nombres con prefijo: "Light.Table.Treeview"
             body_style = f"{colorname}.{STYLE}"
             header_style = f"{colorname}.{STYLE}.Heading"
+            # Recalcula hover para este esquema
             hover = Colors.update_hsv(background, vd=-0.1)
         else:
+            # Caso 3: Cualquier otro esquema o LIGHT en tema oscuro
+            # Ejemplo si colorname=PRIMARY: background="#1E88E5", foreground="#FFFFFF"
             background = self.colors.get(colorname)
             foreground = self.colors.selectfg
+            # Nombres con prefijo del color: "Primary.Table.Treeview"
             body_style = f"{colorname}.{STYLE}"
             header_style = f"{colorname}.{STYLE}.Heading"
+            # Aclara ligeramente para hover en colores más oscuros
             hover = Colors.update_hsv(background, vd=0.1)
 
-
-        # treeview header
+        # Configura el estilo para el encabezado de la tabla
         self.style._build_configure(
             header_style,
-            background=background,
-            foreground=foreground,
-            relief=tk.RAISED,
-            borderwidth=1,
-            darkcolor=background,
-            bordercolor=bordercolor,
-            lightcolor=background,
-            padding=5,
+            background=background,  # Color de fondo base
+            foreground=foreground,  # Color de texto base
+            relief=tk.RAISED,  # Relieve 3D tipo "elevado"
+            borderwidth=1,  # Ancho del borde: 1 píxel
+            darkcolor=background,  # Color para sombra en relieve
+            bordercolor=bordercolor,  # Color específico para los bordes
+            lightcolor=background,  # Color para iluminación en relieve
+            padding=5,  # Espaciado interior: 5 píxeles
         )
+        # Define cambios de estilo para estados específicos del encabezado
         self.style.map(
             header_style,
+            # Texto gris cuando está deshabilitado
             foreground=[("disabled", disabled_fg)],
+            # Cambia el fondo al hacer hover (si está habilitado)
             background=[
                 ("active !disabled", hover),
             ],
+            # Actualiza colores de sombreado al hacer hover
             darkcolor=[
                 ("active !disabled", hover),
             ],
@@ -2907,42 +2946,55 @@ class StyleBuilderTTK:
                 ("active !disabled", hover),
             ],
         )
+
+        # Configura el estilo para el cuerpo de la tabla
         self.style._build_configure(
             body_style,
-            background=self.colors.inputbg,
-            fieldbackground=self.colors.inputbg,
-            foreground=self.colors.inputfg,
-            bordercolor=bordercolor,
-            lightcolor=self.colors.inputbg,
-            darkcolor=self.colors.inputbg,
-            borderwidth=2,
-            padding=0,
-            rowheight=rowheight,
-            relief=tk.RAISED,
+            background=self.colors.inputbg,  # Color de fondo general
+            fieldbackground=self.colors.inputbg,  # Color de fondo de celdas
+            foreground=self.colors.inputfg,  # Color de texto
+            bordercolor=bordercolor,  # Color de bordes
+            lightcolor=self.colors.inputbg,  # Color para iluminación
+            darkcolor=self.colors.inputbg,  # Color para sombra
+            borderwidth=2,  # Ancho del borde: 2 píxeles
+            padding=0,  # Sin espaciado interior
+            rowheight=rowheight,  # Altura calculada de las filas
+            relief=tk.RAISED,  # Relieve 3D tipo "elevado"
         )
+        # Define cambios de estilo para estados específicos del cuerpo
         self.style.map(
             body_style,
+            # Cambia el fondo cuando una fila está seleccionada
+            # Ejemplo: si normal es "#FFFFFF", seleccionado es "#1E88E5"
             background=[("selected", self.colors.selectbg)],
             foreground=[
+                # Texto gris cuando está deshabilitado
                 ("disabled", disabled_fg),
+                # Color de texto contrastante para filas seleccionadas
+                # Ejemplo: si normal es "#000000", seleccionado es "#FFFFFF"
                 ("selected", self.colors.selectfg),
             ],
         )
+
+        # Define la estructura visual (layout) para el widget
         self.style.layout(
             body_style,
             [
                 (
+                    # Contenedor exterior: borde tipo botón
                     "Button.border",
                     {
-                        "sticky": tk.NSEW,
-                        "border": "1",
+                        "sticky": tk.NSEW,  # Expandir en todas direcciones
+                        "border": "1",  # Ancho del borde
                         "children": [
                             (
+                                # Contenedor medio: área de padding
                                 "Treeview.padding",
                                 {
                                     "sticky": tk.NSEW,
                                     "children": [
                                         (
+                                            # Contenedor interior: área de contenido
                                             "Treeview.treearea",
                                             {"sticky": tk.NSEW},
                                         )
@@ -2954,5 +3006,6 @@ class StyleBuilderTTK:
                 )
             ],
         )
-        # register ttkstyles
+        # Registra el estilo en el sistema para hacerlo disponible
+        # Esto permite usar "colorname.Table.Treeview" en widgets
         self.style._register_ttkstyle(body_style)
