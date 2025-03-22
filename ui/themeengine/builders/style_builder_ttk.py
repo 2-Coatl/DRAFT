@@ -2347,3 +2347,339 @@ class StyleBuilderTTK:
         # Registrar los estilos TTK para evitar recreación y seguimiento
         self.style._register_ttkstyle(h_ttkstyle)
         self.style._register_ttkstyle(v_ttkstyle)
+
+    def create_scrollbar_assets(self, thumbcolor, pressed, active):
+        """Crea los activos de imagen utilizados para construir el estilo estándar de barra de desplazamiento.
+
+        Este método genera imágenes rectangulares para los thumbs (controles deslizantes) de las barras
+        de desplazamiento estándar, tanto en orientación horizontal como vertical, y en tres estados
+        diferentes: normal, presionado y activo/hover. Las imágenes generadas se almacenan en el
+        diccionario `theme_images` para su uso posterior.
+
+        La generación de imágenes utiliza una técnica de sobremuestreo (10x) y posterior redimensionado
+        para asegurar una alta calidad visual en los bordes.
+
+        Args:
+            thumbcolor (str):
+                El color primario utilizado para colorear el thumb en estado normal.
+
+            pressed (str):
+                El color a utilizar cuando el thumb está presionado.
+
+            active (str):
+                El color a utilizar cuando el thumb está activo o con el cursor encima (hover).
+
+        Returns:
+            tuple[str, str, str, str, str, str]: Una tupla con seis elementos, que son los
+            identificadores únicos de las imágenes generadas en el siguiente orden:
+            1. Thumb horizontal en estado normal
+            2. Thumb horizontal en estado presionado
+            3. Thumb horizontal en estado activo
+            4. Thumb vertical en estado normal
+            5. Thumb vertical en estado presionado
+            6. Thumb vertical en estado activo
+
+        """
+        vsize = self.scale_size([9, 28])
+        hsize = self.scale_size([28, 9])
+
+        def draw_rect(size, fill):
+            x = size[0] * 10
+            y = size[1] * 10
+            img = Image.new("RGBA", (x, y), fill)
+            image = ImageTk.PhotoImage(img.resize(size), Image.BICUBIC)
+            name = util.get_image_name(image)
+            self.theme_images[name] = image
+            return name
+
+        # create images
+        h_normal_img = draw_rect(hsize, thumbcolor)
+        h_pressed_img = draw_rect(hsize, pressed)
+        h_active_img = draw_rect(hsize, active)
+
+        v_normal_img = draw_rect(vsize, thumbcolor)
+        v_pressed_img = draw_rect(vsize, pressed)
+        v_active_img = draw_rect(vsize, active)
+
+        return (
+            h_normal_img,
+            h_pressed_img,
+            h_active_img,
+            v_normal_img,
+            v_pressed_img,
+            v_active_img,
+        )
+
+    def create_scrollbar_style(self, colorname=DEFAULT):
+        """Create a standard style for the ttk.Scrollbar widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "TScrollbar"
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            h_ttkstyle = f"Horizontal.{STYLE}"
+            v_ttkstyle = f"Vertical.{STYLE}"
+
+            if self.is_light_theme:
+                background = self.colors.border
+            else:
+                background = self.colors.selectbg
+
+        else:
+            h_ttkstyle = f"{colorname}.Horizontal.{STYLE}"
+            v_ttkstyle = f"{colorname}.Vertical.{STYLE}"
+            background = self.colors.get(colorname)
+
+        if self.is_light_theme:
+            if colorname == LIGHT:
+                troughcolor = self.colors.bg
+            else:
+                troughcolor = self.colors.light
+        else:
+            troughcolor = Colors.update_hsv(self.colors.selectbg, vd=-0.2)
+
+        pressed = Colors.update_hsv(background, vd=-0.05)
+        active = Colors.update_hsv(background, vd=0.05)
+
+        scroll_images = self.create_scrollbar_assets(
+            background, pressed, active
+        )
+
+        # horizontal scrollbar
+        self.style._build_configure(
+            h_ttkstyle,
+            troughcolor=troughcolor,
+            darkcolor=troughcolor,
+            bordercolor=troughcolor,
+            lightcolor=troughcolor,
+            arrowcolor=background,
+            arrowsize=self.scale_size(11),
+            background=troughcolor,
+            relief=tk.FLAT,
+            borderwidth=0,
+        )
+        self.style.element_create(
+            f"{h_ttkstyle}.thumb",
+            "image",
+            scroll_images[0],
+            ("pressed", scroll_images[1]),
+            ("active", scroll_images[2]),
+            border=(3, 0),
+            sticky=tk.NSEW,
+        )
+        self.style.layout(
+            h_ttkstyle,
+            [
+                (
+                    "Horizontal.Scrollbar.trough",
+                    {
+                        "sticky": "we",
+                        "children": [
+                            (
+                                "Horizontal.Scrollbar.leftarrow",
+                                {"side": "left", "sticky": ""},
+                            ),
+                            (
+                                "Horizontal.Scrollbar.rightarrow",
+                                {"side": "right", "sticky": ""},
+                            ),
+                            (
+                                f"{h_ttkstyle}.thumb",
+                                {"expand": "1", "sticky": "nswe"},
+                            ),
+                        ],
+                    },
+                )
+            ],
+        )
+        self.style._build_configure(h_ttkstyle, arrowcolor=background)
+        self.style.map(
+            h_ttkstyle, arrowcolor=[("pressed", pressed), ("active", active)]
+        )
+
+        # vertical scrollbar
+        self.style._build_configure(
+            v_ttkstyle,
+            troughcolor=troughcolor,
+            darkcolor=troughcolor,
+            bordercolor=troughcolor,
+            lightcolor=troughcolor,
+            arrowcolor=background,
+            arrowsize=self.scale_size(11),
+            background=troughcolor,
+            relief=tk.FLAT,
+            borderwidth=0,
+        )
+        self.style.element_create(
+            f"{v_ttkstyle}.thumb",
+            "image",
+            scroll_images[3],
+            ("pressed", scroll_images[4]),
+            ("active", scroll_images[5]),
+            border=(0, 3),
+            sticky=tk.NSEW,
+        )
+        self.style.layout(
+            v_ttkstyle,
+            [
+                (
+                    "Vertical.Scrollbar.trough",
+                    {
+                        "sticky": "ns",
+                        "children": [
+                            (
+                                "Vertical.Scrollbar.uparrow",
+                                {"side": "top", "sticky": ""},
+                            ),
+                            (
+                                "Vertical.Scrollbar.downarrow",
+                                {"side": "bottom", "sticky": ""},
+                            ),
+                            (
+                                f"{v_ttkstyle}.thumb",
+                                {"expand": "1", "sticky": "nswe"},
+                            ),
+                        ],
+                    },
+                )
+            ],
+        )
+        self.style._build_configure(v_ttkstyle, arrowcolor=background)
+        self.style.map(
+            v_ttkstyle, arrowcolor=[("pressed", pressed), ("active", active)]
+        )
+
+        # register ttkstyles
+        self.style._register_ttkstyle(h_ttkstyle)
+        self.style._register_ttkstyle(v_ttkstyle)
+
+    def create_spinbox_style(self, colorname=DEFAULT):
+        """Create a style for the ttk.Spinbox widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "TSpinbox"
+
+        if self.is_light_theme:
+            disabled_fg = self.colors.border
+            bordercolor = self.colors.border
+            readonly = self.colors.light
+        else:
+            disabled_fg = self.colors.selectbg
+            bordercolor = self.colors.selectbg
+            readonly = bordercolor
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            focuscolor = self.colors.primary
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+            focuscolor = self.colors.get(colorname)
+
+        if all([colorname, colorname != DEFAULT]):
+            bordercolor = focuscolor
+
+        if colorname == "light":
+            arrowfocus = self.colors.fg
+        else:
+            arrowfocus = focuscolor
+
+        element = ttkstyle.replace(".TS", ".S")
+        self.style.element_create(f"{element}.uparrow", "from", TTK_DEFAULT)
+        self.style.element_create(f"{element}.downarrow", "from", TTK_DEFAULT)
+        self.style.layout(
+            ttkstyle,
+            [
+                (
+                    f"{element}.field",
+                    {
+                        "side": tk.TOP,
+                        "sticky": tk.EW,
+                        "children": [
+                            (
+                                "null",
+                                {
+                                    "side": tk.RIGHT,
+                                    "sticky": "",
+                                    "children": [
+                                        (
+                                            f"{element}.uparrow",
+                                            {"side": tk.TOP, "sticky": tk.E},
+                                        ),
+                                        (
+                                            f"{element}.downarrow",
+                                            {
+                                                "side": tk.BOTTOM,
+                                                "sticky": tk.E,
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                            (
+                                f"{element}.padding",
+                                {
+                                    "sticky": tk.NSEW,
+                                    "children": [
+                                        (
+                                            f"{element}.textarea",
+                                            {"sticky": tk.NSEW},
+                                        )
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                )
+            ],
+        )
+        self.style._build_configure(
+            ttkstyle,
+            bordercolor=bordercolor,
+            darkcolor=self.colors.inputbg,
+            lightcolor=self.colors.inputbg,
+            fieldbackground=self.colors.inputbg,
+            foreground=self.colors.inputfg,
+            borderwidth=0,
+            background=self.colors.inputbg,
+            relief=tk.FLAT,
+            arrowcolor=self.colors.inputfg,
+            insertcolor=self.colors.inputfg,
+            arrowsize=self.scale_size(12),
+            padding=(10, 5),
+        )
+        self.style.map(
+            ttkstyle,
+            foreground=[("disabled", disabled_fg)],
+            fieldbackground=[("readonly", readonly)],
+            background=[("readonly", readonly)],
+            lightcolor=[
+                ("focus invalid", self.colors.danger),
+                ("focus !disabled", focuscolor),
+                ("readonly", readonly),
+            ],
+            darkcolor=[
+                ("focus invalid", self.colors.danger),
+                ("focus !disabled", focuscolor),
+                ("readonly", readonly),
+            ],
+            bordercolor=[
+                ("invalid", self.colors.danger),
+                ("focus !disabled", focuscolor),
+                ("hover !disabled", focuscolor),
+            ],
+            arrowcolor=[
+                ("disabled !disabled", disabled_fg),
+                ("pressed !disabled", arrowfocus),
+                ("hover !disabled", arrowfocus),
+            ],
+        )
+        # register ttkstyles
+        self.style._register_ttkstyle(ttkstyle)
