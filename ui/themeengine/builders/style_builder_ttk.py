@@ -3037,97 +3037,137 @@ class StyleBuilderTTK:
                   que pueden ser utilizados por widgets Treeview.
 
         """
+        # Identificador base para los estilos de Treeview
         STYLE = "Treeview"
 
+        # Obtiene la fuente predeterminada para calcular dimensiones apropiadas
         f = font.nametofont("TkDefaultFont")
+        # Calcula la altura de fila basada en el espacio de línea de la fuente
+        # Ejemplo: si linespace=20, rowheight=20 píxeles
         rowheight = f.metrics()["linespace"]
 
+        # Configura colores base según el tipo de tema (claro u oscuro)
         if self.is_light_theme:
+            # Para tema claro: colores más suaves
+            # Ejemplo: si inputbg="#FFFFFF", disabled_fg podría ser "#CCCCCC"
             disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.2)
-            bordercolor = self.colors.border
+            bordercolor = self.colors.border  # Ej: "#E0E0E0" (gris claro)
         else:
+            # Para tema oscuro: colores con mayor contraste
+            # Ejemplo: si inputbg="#303030", disabled_fg podría ser "#202020"
             disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.3)
-            bordercolor = self.colors.selectbg
+            bordercolor = self.colors.selectbg  # Ej: "#1E88E5" (azul)
 
+        # Determina esquema de colores y nombres de estilo según 'colorname'
         if any([colorname == DEFAULT, colorname == ""]):
-            background = self.colors.inputbg
-            foreground = self.colors.inputfg
+            # Caso DEFAULT: Usa valores predeterminados del tema
+            background = self.colors.inputbg  # Ej: "#FFFFFF" (blanco)
+            foreground = self.colors.inputfg  # Ej: "#000000" (negro)
+            # Nombres sin prefijo: "Treeview", "Treeview.Heading"
             body_style = STYLE
             header_style = f"{STYLE}.Heading"
+            # Color primario para elementos con foco, Ej: "#1976D2" (azul)
             focuscolor = self.colors.primary
         elif colorname == LIGHT and self.is_light_theme:
+            # Caso LIGHT en tema claro: Esquema muy claro
+            # Ej: background="#F5F5F5" (blanco hueso)
             background = self.colors.get(colorname)
-            foreground = self.colors.fg
+            foreground = self.colors.fg  # Ej: "#212121" (casi negro)
+            # Nombres con prefijo "Light.": "Light.Treeview"
             body_style = f"{colorname}.{STYLE}"
             header_style = f"{colorname}.{STYLE}.Heading"
+            # Usa color de fondo también para foco y bordes (coherencia visual)
             focuscolor = background
             bordercolor = focuscolor
         else:
+            # Otros casos: Usa el color específico como base
+            # Ej. para PRIMARY: background="#1976D2" (azul)
             background = self.colors.get(colorname)
+            # Asegura contraste, Ej: "#FFFFFF" (blanco)
             foreground = self.colors.selectfg
+            # Nombres con prefijo según color: "Primary.Treeview"
             body_style = f"{colorname}.{STYLE}"
             header_style = f"{colorname}.{STYLE}.Heading"
+            # Usa color base para foco y bordes (refuerza identidad visual)
             focuscolor = background
             bordercolor = focuscolor
 
-        # treeview header
+        # Configura el estilo para el encabezado del Treeview
         self.style._build_configure(
             header_style,
-            background=background,
-            foreground=foreground,
-            relief=tk.FLAT,
-            padding=5,
+            background=background,  # Color de fondo base
+            foreground=foreground,  # Color de texto base
+            relief=tk.FLAT,  # Sin efecto 3D (plano)
+            padding=5,  # Espaciado interno de 5 píxeles
         )
+        # Define cambios de estilo para estados específicos del encabezado
         self.style.map(
             header_style,
+            # Texto gris cuando está deshabilitado
             foreground=[("disabled", disabled_fg)],
+            # Borde del mismo color que el fondo cuando tiene foco
+            # Esto crea efecto de "fusión" visual
             bordercolor=[("focus !disabled", background)],
         )
-        # treeview body
+
+        # Configura el estilo para el cuerpo del Treeview
         self.style._build_configure(
             body_style,
-            background=self.colors.inputbg,
-            fieldbackground=self.colors.inputbg,
-            foreground=self.colors.inputfg,
-            bordercolor=bordercolor,
-            lightcolor=self.colors.inputbg,
-            darkcolor=self.colors.inputbg,
-            borderwidth=2,
-            padding=0,
-            rowheight=rowheight,
-            relief=tk.RAISED,
+            background=self.colors.inputbg,  # Color de fondo general
+            fieldbackground=self.colors.inputbg,  # Color de fondo de celdas
+            foreground=self.colors.inputfg,  # Color de texto
+            bordercolor=bordercolor,  # Color de bordes
+            lightcolor=self.colors.inputbg,  # Color para iluminación
+            darkcolor=self.colors.inputbg,  # Color para sombra
+            borderwidth=2,  # Ancho del borde: 2 píxeles
+            padding=0,  # Sin espaciado interior
+            rowheight=rowheight,  # Altura calculada de filas
+            relief=tk.RAISED,  # Efecto 3D elevado
         )
+        # Define cambios de estilo para estados específicos del cuerpo
         self.style.map(
             body_style,
+            # Cambia fondo cuando una fila está seleccionada
+            # Ej: si normal "#FFFFFF", seleccionado "#1E88E5"
             background=[("selected", self.colors.selectbg)],
             foreground=[
+                # Texto gris cuando está deshabilitado
                 ("disabled", disabled_fg),
+                # Color contrastante para texto en filas seleccionadas
+                # Ej: si normal "#000000", seleccionado "#FFFFFF"
                 ("selected", self.colors.selectfg),
             ],
+            # Define colores de borde para diferentes estados interactivos
             bordercolor=[
-                ("disabled", bordercolor),
-                ("focus", focuscolor),
-                ("pressed", focuscolor),
-                ("hover", focuscolor),
+                ("disabled", bordercolor),  # Estado deshabilitado
+                ("focus", focuscolor),  # Tiene foco
+                ("pressed", focuscolor),  # Está presionado
+                ("hover", focuscolor),  # Mouse encima
             ],
+            # Ajusta sombreado 3D cuando tiene foco
             lightcolor=[("focus", focuscolor)],
             darkcolor=[("focus", focuscolor)],
         )
+
+        # Define la estructura visual (layout) para el widget
         self.style.layout(
             body_style,
             [
                 (
+                    # Contenedor exterior: borde tipo botón
                     "Button.border",
                     {
-                        "sticky": tk.NSEW,
-                        "border": "1",
+                        "sticky": tk.NSEW,  # Expandir en todas direcciones
+                        "border": "1",  # Ancho del borde
                         "children": [
                             (
+                                # Contenedor medio: área de padding
                                 "Treeview.padding",
                                 {
                                     "sticky": tk.NSEW,
                                     "children": [
                                         (
+                                            # Contenedor interior: área de contenido
                                             "Treeview.treearea",
                                             {"sticky": tk.NSEW},
                                         )
@@ -3140,94 +3180,175 @@ class StyleBuilderTTK:
             ],
         )
 
+        # Intenta mejorar los indicadores de expansión/colapso del árbol
+        # utilizando elementos visuales de un tema alternativo
         try:
+            # Crea elemento personalizado tomado del tema alternativo
+            # Esto suele proporcionar triángulos de expansión más atractivos
             self.style.element_create("Treeitem.indicator", "from", TTK_ALT)
         except:
+            # Si falla (ej: tema alternativo no disponible), continúa sin error
+            # Usará los indicadores predeterminados del tema actual
             pass
 
-        # register ttkstyles
+        # Registra el estilo en el sistema para hacerlo disponible
+        # Esto permite usar identificadores como "Primary.Treeview" en widgets
         self.style._register_ttkstyle(body_style)
 
     def create_frame_style(self, colorname=DEFAULT):
-        """Create a style for the ttk.Frame widget.
+        """Crea un estilo personalizado para widgets ttk.Frame.
+
+        Este método define la apariencia básica de los widgets Frame, configurando
+        principalmente el color de fondo según el esquema de color especificado.
 
         Parameters:
-
             colorname (str):
-                The color label used to style the widget.
+                Etiqueta de color utilizada para estilizar el widget. Puede ser:
+                - DEFAULT o "": Utiliza el color de fondo predeterminado del tema
+                - Cualquier etiqueta de color definida: Aplica ese color como fondo
+
+        Returns:
+            None: El método no retorna valores, pero registra un estilo TTK
+                  que puede ser utilizado por widgets Frame.
         """
+        # Identificador base para los estilos de Frame en TTK
         STYLE = "TFrame"
 
+        # Determinar el nombre del estilo y color de fondo según colorname
         if any([colorname == DEFAULT, colorname == ""]):
-            ttkstyle = STYLE
+            # Caso DEFAULT: Usa el estilo base sin prefijo
+            ttkstyle = STYLE  # Resultado: "TFrame"
+            # Utiliza el color de fondo general del tema
+            # Ejemplo: en tema claro podría ser "#FFFFFF" (blanco)
             background = self.colors.bg
         else:
+            # Caso específico: Crea un nombre compuesto con prefijo
+            # Ejemplo: si colorname=PRIMARY, resultado="Primary.TFrame"
             ttkstyle = f"{colorname}.{STYLE}"
+            # Obtiene el color correspondiente a la etiqueta
+            # Ejemplo: si colorname=PRIMARY, podría ser "#1976D2" (azul)
             background = self.colors.get(colorname)
 
+        # Configura el estilo estableciendo solo el color de fondo
+        # No configura otras propiedades como bordes, relieves, etc.
         self.style._build_configure(ttkstyle, background=background)
 
-        # register style
+        # Registra el estilo en el sistema para que esté disponible
         self.style._register_ttkstyle(ttkstyle)
 
     def create_outline_button_style(self, colorname=DEFAULT):
-        """Create an outline style for the ttk.Button widget.
+        """Crea un estilo tipo "outline" (contorno) para widgets ttk.Button.
+
+        Este método define un estilo de botón donde el color principal se usa como
+        contorno y texto sobre un fondo neutro. Al interactuar con el botón (hover
+        o presionado), los colores se invierten: el color principal pasa a ser el
+        fondo y el texto adquiere un color contrastante.
+
+        El efecto visual es el de un botón que se "llena" con su color principal
+        al interactuar con él, similar a los botones outline de frameworks como
+        Bootstrap.
 
         Parameters:
-
             colorname (str):
-                The color label used to style the widget.
+                Etiqueta de color utilizada para estilizar el widget. Puede ser:
+                - DEFAULT o "": Utiliza el color PRIMARY del tema
+                - Cualquier etiqueta de color definida: Aplica ese color específico
+
+        Returns:
+            None: El método no retorna valores, pero registra un estilo TTK
+                  que puede ser utilizado por widgets Button.
+
         """
+        # Identificador base para estilo de botón tipo outline/contorno
         STYLE = "Outline.TButton"
 
+        # Calcula color semitransparente para estado deshabilitado
+        # Aplica 30% de transparencia al color de texto sobre fondo
+        # Ej: si fg="#000000" y bg="#FFFFFF", disabled_fg="#B3B3B3" (gris)
         disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
 
+        # Determina nombre de estilo y color a utilizar
         if any([colorname == DEFAULT, colorname == ""]):
-            ttkstyle = STYLE
-            colorname = PRIMARY
+            # Caso DEFAULT: usa estilo base sin prefijo
+            ttkstyle = STYLE  # Resultado: "Outline.TButton"
+            # Usa el color primario del tema
+            colorname = PRIMARY  # Ej: PRIMARY="primary"
         else:
+            # Caso específico: crea nombre con prefijo
+            # Ej: si colorname=SUCCESS, resultado="Success.Outline.TButton"
             ttkstyle = f"{colorname}.{STYLE}"
 
-        foreground = self.colors.get(colorname)
-        background = self.colors.get_foreground(colorname)
-        foreground_pressed = background
-        bordercolor = foreground
-        pressed = foreground
-        hover = foreground
+        # Calcula los colores para los diferentes estados del botón
 
+        # Color principal para texto y borde en estado normal
+        # Ej: para PRIMARY podría ser "#1976D2" (azul)
+        foreground = self.colors.get(colorname)
+
+        # Color contrastante para texto en estados interactivos
+        # Utiliza get_foreground que elige entre blanco/negro según contraste
+        # Ej: para azul oscuro podría ser "#FFFFFF" (blanco)
+        background = self.colors.get_foreground(colorname)
+
+        # Color de texto para estados pressed/hover (invertido del normal)
+        foreground_pressed = background  # Ej: "#FFFFFF"
+
+        # Color para el borde (igual al color principal)
+        bordercolor = foreground  # Ej: "#1976D2"
+
+        # Color de fondo para estados pressed/hover (igual al principal)
+        pressed = foreground  # Ej: "#1976D2"
+        hover = foreground  # Ej: "#1976D2"
+
+        # Configura el estilo base (estado normal del botón)
         self.style._build_configure(
             ttkstyle,
-            foreground=foreground,
-            background=self.colors.bg,
-            bordercolor=bordercolor,
-            darkcolor=self.colors.bg,
-            lightcolor=self.colors.bg,
-            relief=tk.RAISED,
-            focusthickness=0,
-            focuscolor=foreground,
-            padding=(10, 5),
-            anchor=tk.CENTER,
+            foreground=foreground,  # Color principal para el texto
+            background=self.colors.bg,  # Fondo neutral del tema
+            bordercolor=bordercolor,  # Borde del color principal
+            darkcolor=self.colors.bg,  # Evita sombreado 3D en bordes
+            lightcolor=self.colors.bg,  # Evita sombreado 3D en bordes
+            relief=tk.RAISED,  # Ligero efecto 3D elevado
+            focusthickness=0,  # Sin borde adicional de foco
+            focuscolor=foreground,  # Indicador de foco del color principal
+            padding=(10, 5),  # Espaciado interior estándar
+            anchor=tk.CENTER,  # Texto centrado en el botón
         )
+
+        # Define cambios visuales para diferentes estados del botón
         self.style.map(
             ttkstyle,
+            # Cambios en el color de texto
             foreground=[
+                # Texto semitransparente cuando está deshabilitado
                 ("disabled", disabled_fg),
+                # Texto invertido (ej: blanco) cuando está presionado
                 ("pressed !disabled", foreground_pressed),
+                # Mismo efecto al hacer hover
                 ("hover !disabled", foreground_pressed),
             ],
+            # Cambios en el color de fondo
             background=[
+                # Color principal como fondo al presionar
+                # Crea efecto de "llenado" del botón
                 ("pressed !disabled", pressed),
+                # Mismo efecto al hacer hover
                 ("hover !disabled", hover),
             ],
+            # Cambios en el color del borde
             bordercolor=[
+                # Borde semitransparente cuando deshabilitado
                 ("disabled", disabled_fg),
+                # Borde del mismo color que el fondo al presionar
                 ("pressed !disabled", pressed),
+                # Mismo efecto al hacer hover
                 ("hover !disabled", hover),
             ],
+            # Cambios en el color de foco (coherente con texto)
             focuscolor=[
                 ("pressed !disabled", foreground_pressed),
                 ("hover !disabled", foreground_pressed),
             ],
+            # Cambios en colores de sombreado (coherentes con fondo)
             darkcolor=[
                 ("pressed !disabled", pressed),
                 ("hover !disabled", hover),
@@ -3237,18 +3358,169 @@ class StyleBuilderTTK:
                 ("hover !disabled", hover),
             ],
         )
-        # register ttkstyle
+
+        # Registra el estilo para hacerlo disponible en la aplicación
         self.style._register_ttkstyle(ttkstyle)
 
-
     def create_square_toggle_assets(self, colorname=DEFAULT):
-        """Create the image assets used to build a square toggle
-        style.
+        """Crea las imágenes (assets) necesarias para construir un estilo de
+        interruptor (toggle) cuadrado.
+
+        Este método genera cuatro imágenes distintas que representan los diferentes
+        estados visuales de un interruptor tipo toggle:
+        1. OFF: Interruptor apagado - indicador a la izquierda
+        2. ON: Interruptor encendido - indicador a la derecha, colores activos
+        3. Disabled: Interruptor deshabilitado (apagado) - apariencia inactiva
+        4. ON Disabled: Interruptor encendido pero deshabilitado
+
+        Las imágenes creadas se almacenan en self.theme_images y pueden ser
+        utilizadas posteriormente para construir un estilo de interruptor visual.
+
+        Parameters:
+            colorname (str):
+                Etiqueta de color utilizada para estilizar el widget. Puede ser:
+                - DEFAULT o "": Utiliza el color PRIMARY del tema
+                - LIGHT: Usa colores claros con ajustes específicos para contraste
+                - DARK: Usa colores oscuros con ajustes específicos para contraste
+                - Cualquier otra etiqueta de color definida en el tema
+
+        Returns:
+            Tuple[str, str, str, str]:
+                Una tupla con los nombres de las cuatro imágenes creadas, en el
+                siguiente orden: (off_name, on_name, disabled_name, on_disabled_name).
+                Estos nombres son los identificadores para acceder a las imágenes
+                almacenadas en self.theme_images.
+        """
+        # Cálculo del tamaño apropiado según la escala del sistema
+        # Convierte dimensiones base [24, 15] al tamaño adecuado
+        # Ej: en escala 2x podría ser [48, 30]
+        size = self.scale_size([24, 15])
+
+        # Si no se especifica color o es DEFAULT, usa PRIMARY
+        # Ej: si PRIMARY="primary", usará ese color
+        if any([colorname == DEFAULT, colorname == ""]):
+            colorname = PRIMARY
+
+        # Definición de colores base para los diferentes componentes
+
+        # Color principal según la etiqueta especificada
+        # Ej: para PRIMARY podría ser "#1976D2" (azul)
+        prime_color = self.colors.get(colorname)
+
+        # Color para el borde en estado activo (ON)
+        on_border = prime_color
+
+        # Color para el indicador (cuadrado interior) en estado ON
+        # Normalmente color contrastante, ej: "#FFFFFF" (blanco)
+        on_indicator = self.colors.selectfg
+
+        # Color de fondo para estado ON (igual al color principal)
+        on_fill = prime_color
+
+        # Color de fondo para estado OFF (fondo del tema)
+        # Ej: en tema claro, "#FFFFFF" (blanco)
+        off_fill = self.colors.bg
+
+        # Color semitransparente para elementos deshabilitados
+        # 30% de transparencia del color de texto sobre fondo
+        # Ej: si fg="#000000" y bg="#FFFFFF", resultaría "#B3B3B3" (gris)
+        disabled_fg = Colors.make_transparent(0.3, self.colors.fg, self.colors.bg)
+
+        # Color semitransparente para borde en estado OFF
+        # 40% de transparencia, ej: "#999999" (gris más oscuro)
+        off_border = Colors.make_transparent(0.4, self.colors.fg, self.colors.bg)
+
+        # Color semitransparente para indicador en estado OFF
+        off_indicator = Colors.make_transparent(0.4, self.colors.fg, self.colors.bg)
+
+        # Ajustes específicos para colores especiales LIGHT y DARK
+        if colorname == LIGHT:
+            # Para color LIGHT (claro), usar color oscuro del tema
+            # para asegurar contraste con fondo claro
+            on_border = self.colors.dark  # Ej: "#212121" (casi negro)
+            on_indicator = on_border  # Mismo color para el indicador
+        elif colorname == DARK:
+            # Para color DARK (oscuro), usar color claro del tema
+            # para asegurar contraste con fondo oscuro
+            on_border = self.colors.light  # Ej: "#F5F5F5" (casi blanco)
+            on_indicator = on_border  # Mismo color para el indicador
+
+        # IMAGEN 1: Estado OFF (apagado)
+        # Creación de imagen base con canal alfa, tamaño grande para calidad
+        _off = Image.new("RGBA", (226, 130))
+        draw = ImageDraw.Draw(_off)
+        # Rectángulo principal: borde semitransparente, fondo del tema
+        draw.rectangle(
+            xy=[1, 1, 225, 129], outline=off_border, width=6, fill=off_fill
+        )
+        # Indicador (cuadrado) en posición izquierda
+        draw.rectangle([18, 18, 110, 110], fill=off_indicator)
+
+        # Redimensionar al tamaño calculado con algoritmo de alta calidad
+        off_img = ImageTk.PhotoImage(_off.resize(size, Image.LANCZOS))
+        # Generar nombre único para la imagen
+        off_name = util.get_image_name(off_img)
+        # Almacenar la imagen en el diccionario
+        self.theme_images[off_name] = off_img
+
+        # IMAGEN 2: Estado ON (encendido)
+        toggle_on = Image.new("RGBA", (226, 130))
+        draw = ImageDraw.Draw(toggle_on)
+        # Rectángulo principal: borde y fondo del color principal
+        draw.rectangle(
+            xy=[1, 1, 225, 129], outline=on_border, width=6, fill=on_fill
+        )
+        # Indicador inicialmente en misma posición que OFF
+        draw.rectangle([18, 18, 110, 110], fill=on_indicator)
+        # Rotación 180° para mover indicador a la derecha
+        _on = toggle_on.transpose(Image.ROTATE_180)
+        # Procesamiento y almacenamiento similar al anterior
+        on_img = ImageTk.PhotoImage(_on.resize(size, Image.LANCZOS))
+        on_name = util.get_image_name(on_img)
+        self.theme_images[on_name] = on_img
+
+        # IMAGEN 3: Estado Disabled (deshabilitado)
+        _disabled = Image.new("RGBA", (226, 130))
+        draw = ImageDraw.Draw(_disabled)
+        # Rectángulo hueco (sin fill) con borde semitransparente
+        draw.rectangle([1, 1, 225, 129], outline=disabled_fg, width=6)
+        # Indicador en posición izquierda, color semitransparente
+        draw.rectangle([18, 18, 110, 110], fill=disabled_fg)
+        # Procesamiento y almacenamiento
+        disabled_img = ImageTk.PhotoImage(
+            _disabled.resize(size, Image.LANCZOS)
+        )
+        disabled_name = util.get_image_name(disabled_img)
+        self.theme_images[disabled_name] = disabled_img
+
+        # IMAGEN 4: Estado ON Disabled (encendido pero deshabilitado)
+        toggle_on_disabled = Image.new("RGBA", (226, 130))
+        draw = ImageDraw.Draw(toggle_on_disabled)
+        # Rectángulo con borde semitransparente y fondo neutro
+        draw.rectangle(
+            xy=[1, 1, 225, 129], outline=disabled_fg, width=6, fill=off_fill
+        )
+        # Indicador inicialmente en posición izquierda
+        draw.rectangle([18, 18, 110, 110], fill=disabled_fg)
+        # Rotación 180° para mover indicador a la derecha
+        _on_disabled = toggle_on_disabled.transpose(Image.ROTATE_180)
+        # Procesamiento y almacenamiento
+        on_dis_img = ImageTk.PhotoImage(_on_disabled.resize(size, Image.LANCZOS))
+        on_disabled_name = util.get_image_name(on_dis_img)
+        self.theme_images[on_disabled_name] = on_dis_img
+
+        # Retornar los nombres de las cuatro imágenes creadas
+        # Estos nombres serán usados para acceder a las imágenes
+        # almacenadas en self.theme_images
+        return off_name, on_name, disabled_name, on_disabled_name
+
+    def create_round_toggle_assets(self, colorname=DEFAULT):
+        """Create image assets for the round toggle style.
 
         Parameters:
 
             colorname (str):
-                The color label used to style the widget.
+                The color label assigned to the colors property.
 
         Returns:
 
@@ -3256,6 +3528,7 @@ class StyleBuilderTTK:
                 A tuple of PhotoImage names.
         """
         size = self.scale_size([24, 15])
+
         if any([colorname == DEFAULT, colorname == ""]):
             colorname = PRIMARY
 
@@ -3265,6 +3538,7 @@ class StyleBuilderTTK:
         on_indicator = self.colors.selectfg
         on_fill = prime_color
         off_fill = self.colors.bg
+
         disabled_fg = Colors.make_transparent(0.3, self.colors.fg, self.colors.bg)
         off_border = Colors.make_transparent(0.4, self.colors.fg, self.colors.bg)
         off_indicator = Colors.make_transparent(0.4, self.colors.fg, self.colors.bg)
@@ -3280,49 +3554,235 @@ class StyleBuilderTTK:
         # toggle off
         _off = Image.new("RGBA", (226, 130))
         draw = ImageDraw.Draw(_off)
-        draw.rectangle(
-            xy=[1, 1, 225, 129], outline=off_border, width=6, fill=off_fill
+        draw.rounded_rectangle(
+            xy=[1, 1, 225, 129],
+            radius=(128 / 2),
+            outline=off_border,
+            width=6,
+            fill=off_fill,
         )
-        draw.rectangle([18, 18, 110, 110], fill=off_indicator)
-
+        draw.ellipse([20, 18, 112, 110], fill=off_indicator)
         off_img = ImageTk.PhotoImage(_off.resize(size, Image.LANCZOS))
         off_name = util.get_image_name(off_img)
         self.theme_images[off_name] = off_img
 
         # toggle on
-        toggle_on = Image.new("RGBA", (226, 130))
-        draw = ImageDraw.Draw(toggle_on)
-        draw.rectangle(
-            xy=[1, 1, 225, 129], outline=on_border, width=6, fill=on_fill
+        _on = Image.new("RGBA", (226, 130))
+        draw = ImageDraw.Draw(_on)
+        draw.rounded_rectangle(
+            xy=[1, 1, 225, 129],
+            radius=(128 / 2),
+            outline=on_border,
+            width=6,
+            fill=on_fill,
         )
-        draw.rectangle([18, 18, 110, 110], fill=on_indicator)
-        _on = toggle_on.transpose(Image.ROTATE_180)
+        draw.ellipse([20, 18, 112, 110], fill=on_indicator)
+        _on = _on.transpose(Image.ROTATE_180)
         on_img = ImageTk.PhotoImage(_on.resize(size, Image.LANCZOS))
         on_name = util.get_image_name(on_img)
         self.theme_images[on_name] = on_img
 
+        # toggle on / disabled
+        _on_disabled = Image.new("RGBA", (226, 130))
+        draw = ImageDraw.Draw(_on_disabled)
+        draw.rounded_rectangle(
+            xy=[1, 1, 225, 129],
+            radius=(128 / 2),
+            outline=disabled_fg,
+            width=6,
+            fill=off_fill,
+        )
+        draw.ellipse([20, 18, 112, 110], fill=disabled_fg)
+        _on_disabled = _on_disabled.transpose(Image.ROTATE_180)
+        on_dis_img = ImageTk.PhotoImage(_on_disabled.resize(size, Image.LANCZOS))
+        on_disabled_name = util.get_image_name(on_dis_img)
+        self.theme_images[on_disabled_name] = on_dis_img
+
         # toggle disabled
         _disabled = Image.new("RGBA", (226, 130))
         draw = ImageDraw.Draw(_disabled)
-        draw.rectangle([1, 1, 225, 129], outline=disabled_fg, width=6)
-        draw.rectangle([18, 18, 110, 110], fill=disabled_fg)
+        draw.rounded_rectangle(
+            xy=[1, 1, 225, 129], radius=(128 / 2), outline=disabled_fg, width=6
+        )
+        draw.ellipse([20, 18, 112, 110], fill=disabled_fg)
         disabled_img = ImageTk.PhotoImage(
             _disabled.resize(size, Image.LANCZOS)
         )
         disabled_name = util.get_image_name(disabled_img)
         self.theme_images[disabled_name] = disabled_img
 
-        # toggle on / disabled
-        toggle_on_disabled = Image.new("RGBA", (226, 130))
-        draw = ImageDraw.Draw(toggle_on_disabled)
-        draw.rectangle(
-            xy=[1, 1, 225, 129], outline=disabled_fg, width=6, fill=off_fill
-        )
-        draw.rectangle([18, 18, 110, 110], fill=disabled_fg)
-        _on_disabled = toggle_on_disabled.transpose(Image.ROTATE_180)
-        on_dis_img = ImageTk.PhotoImage(_on_disabled.resize(size, Image.LANCZOS))
-        on_disabled_name = util.get_image_name(on_dis_img)
-        self.theme_images[on_disabled_name] = on_dis_img
-
-
         return off_name, on_name, disabled_name, on_disabled_name
+
+    def create_round_toggle_style(self, colorname=DEFAULT):
+        """Create a round toggle style for the ttk.Checkbutton widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "Round.Toggle"
+
+        disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            colorname = PRIMARY
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+
+        # ( off, on, disabled )
+        images = self.create_round_toggle_assets(colorname)
+
+        try:
+            width = self.scale_size(28)
+            borderpad = self.scale_size(4)
+            self.style.element_create(
+                f"{ttkstyle}.indicator",
+                "image",
+                images[1],
+                ("disabled selected", images[3]),
+                ("disabled", images[2]),
+                ("!selected", images[0]),
+                width=width,
+                border=borderpad,
+                sticky=tk.W,
+            )
+        except:
+            """This method is used as the default Toggle style, so it
+            is neccessary to catch Tcl Errors when it tries to create
+            and element that was already created by the Toggle or
+            Round Toggle style"""
+            pass
+
+        self.style._build_configure(
+            ttkstyle,
+            relief=tk.FLAT,
+            borderwidth=0,
+            padding=0,
+            foreground=self.colors.fg,
+            background=self.colors.bg,
+        )
+        self.style.map(
+            ttkstyle,
+            foreground=[("disabled", disabled_fg)],
+            background=[("selected", self.colors.bg)],
+        )
+        self.style.layout(
+            ttkstyle,
+            [
+                (
+                    "Toolbutton.border",
+                    {
+                        "sticky": tk.NSEW,
+                        "children": [
+                            (
+                                "Toolbutton.padding",
+                                {
+                                    "sticky": tk.NSEW,
+                                    "children": [
+                                        (
+                                            f"{ttkstyle}.indicator",
+                                            {"side": tk.LEFT},
+                                        ),
+                                        (
+                                            "Toolbutton.label",
+                                            {"side": tk.LEFT},
+                                        ),
+                                    ],
+                                },
+                            )
+                        ],
+                    },
+                )
+            ],
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_square_toggle_style(self, colorname=DEFAULT):
+        """Create a square toggle style for the ttk.Checkbutton widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+
+        STYLE = "Square.Toggle"
+
+        disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+
+        # ( off, on, disabled )
+        images = self.create_square_toggle_assets(colorname)
+
+        width = self.scale_size(28)
+        borderpad = self.scale_size(4)
+
+        self.style.element_create(
+            f"{ttkstyle}.indicator",
+            "image",
+            images[1],
+            ("disabled selected", images[3]),
+            ("disabled", images[2]),
+            ("!selected", images[0]),
+            width=width,
+            border=borderpad,
+            sticky=tk.W,
+        )
+        self.style.layout(
+            ttkstyle,
+            [
+                (
+                    "Toolbutton.border",
+                    {
+                        "sticky": tk.NSEW,
+                        "children": [
+                            (
+                                "Toolbutton.padding",
+                                {
+                                    "sticky": tk.NSEW,
+                                    "children": [
+                                        (
+                                            f"{ttkstyle}.indicator",
+                                            {"side": tk.LEFT},
+                                        ),
+                                        (
+                                            "Toolbutton.label",
+                                            {"side": tk.LEFT},
+                                        ),
+                                    ],
+                                },
+                            )
+                        ],
+                    },
+                )
+            ],
+        )
+        self.style._build_configure(
+            ttkstyle, relief=tk.FLAT, borderwidth=0, foreground=self.colors.fg
+        )
+        self.style.map(
+            ttkstyle,
+            foreground=[("disabled", disabled_fg)],
+            background=[
+                ("selected", self.colors.bg),
+                ("!selected", self.colors.bg),
+            ],
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_toggle_style(self, colorname=DEFAULT):
+        """Create a round toggle style for the ttk.Checkbutton widget.
+
+        Parameters:
+
+            colorname (str):
+        """
+        self.create_round_toggle_style(colorname)
