@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import font
 from math import ceil
 from typing import Union, List, Tuple, Callable, Dict, Any
 from PIL import ImageTk, ImageDraw, Image
@@ -2380,128 +2381,215 @@ class StyleBuilderTTK:
             6. Thumb vertical en estado activo
 
         """
-        vsize = self.scale_size([9, 28])
-        hsize = self.scale_size([28, 9])
+        # Definir tamaños escalados para thumbs verticales y horizontales
+        # ajustados según la configuración DPI del sistema
+        vsize = self.scale_size([9, 28])  # Tamaño para orientación vertical (ancho x alto)
+        hsize = self.scale_size([28, 9])  # Tamaño para orientación horizontal (ancho x alto)
 
-        def draw_rect(size, fill):
+        def draw_rect(size: list[int], fill: str) -> str:
+            """Crea un rectángulo sólido y devuelve su identificador.
+
+            Args:
+                size: Dimensiones finales [ancho, alto] de la imagen.
+                fill: Color de relleno del rectángulo.
+
+            Returns:
+                Identificador único de la imagen creada.
+            """
+            # Ampliar tamaño por factor de 10 para mejor calidad
+            # Ejemplo: [28, 9] -> [280, 90]
             x = size[0] * 10
             y = size[1] * 10
-            img = Image.new("RGBA", (x, y), fill)
-            image = ImageTk.PhotoImage(img.resize(size), Image.BICUBIC)
-            name = util.get_image_name(image)
-            self.theme_images[name] = image
-            return name
 
-        # create images
+            # Crear imagen directamente con el color de relleno especificado
+            # A diferencia del método para scrollbars redondeados, aquí no necesitamos
+            # dibujar formas adicionales
+            img = Image.new("RGBA", (x, y), fill)
+
+            # Redimensionar a tamaño final y convertir a formato Tkinter
+            # Usar interpolación bicúbica para mantener bordes suaves
+            # NOTA: Hay un error sintáctico en el código original, el parámetro Image.BICUBIC
+            # debería ser parte del método resize, no un argumento separado
+            image = ImageTk.PhotoImage(img.resize(size, Image.BICUBIC))
+
+            # Generar nombre único para la imagen y almacenarla en el diccionario
+            name = util.get_image_name(image)
+            self.theme_images[name] = image  # Mantiene referencia para evitar garbage collection
+
+            return name  # Devolver el identificador único
+
+        # --- Generar imágenes para thumbs horizontales en tres estados ---
+
+        # Thumb horizontal en estado normal
         h_normal_img = draw_rect(hsize, thumbcolor)
+        # Thumb horizontal en estado presionado
         h_pressed_img = draw_rect(hsize, pressed)
+        # Thumb horizontal en estado activo/hover
         h_active_img = draw_rect(hsize, active)
 
+        # --- Generar imágenes para thumbs verticales en tres estados ---
+
+        # Thumb vertical en estado normal
         v_normal_img = draw_rect(vsize, thumbcolor)
+        # Thumb vertical en estado presionado
         v_pressed_img = draw_rect(vsize, pressed)
+        # Thumb vertical en estado activo/hover
         v_active_img = draw_rect(vsize, active)
 
+        # Retornar tupla con los seis identificadores de imágenes
+        # Orden: horizontal (normal, presionado, activo), vertical (normal, presionado, activo)
         return (
-            h_normal_img,
-            h_pressed_img,
-            h_active_img,
-            v_normal_img,
-            v_pressed_img,
-            v_active_img,
+            h_normal_img,  # Horizontal normal
+            h_pressed_img,  # Horizontal presionado
+            h_active_img,  # Horizontal activo
+            v_normal_img,  # Vertical normal
+            v_pressed_img,  # Vertical presionado
+            v_active_img,  # Vertical activo
         )
 
     def create_scrollbar_style(self, colorname=DEFAULT):
-        """Create a standard style for the ttk.Scrollbar widget.
+        """Crea un estilo estándar (rectangular) para el widget ttk.Scrollbar.
 
-        Parameters:
+        Este método configura estilos personalizados tanto para barras de desplazamiento
+        horizontales como verticales con una apariencia rectangular estándar. Genera todos los
+        recursos visuales necesarios y define la estructura y comportamiento de los widgets.
 
-            colorname (str):
-                The color label used to style the widget.
+        El estilo creado adapta automáticamente los colores según el tema actual (claro u
+        oscuro) y la etiqueta de color proporcionada, generando diferentes versiones para
+        los estados normal, presionado y activo (hover).
+
+        Args:
+            colorname (str, optional):
+                La etiqueta de color utilizada para estilizar el widget. Si es DEFAULT o
+                cadena vacía, se utiliza un estilo base sin prefijo de color.
+                Los valores posibles incluyen: 'primary', 'secondary', 'success', 'info',
+                'warning', 'danger', 'light', 'dark', etc.
+                Valor predeterminado: DEFAULT.
+
+        Returns:
+            None: Este método no retorna ningún valor, pero modifica el estado interno
+                  creando y registrando dos estilos TTK nuevos (horizontal y vertical).
+
+        Notas:
+            Para barras de desplazamiento con esquinas redondeadas, utilice
+            `create_round_scrollbar_style()` en su lugar.
         """
+        # Constante que define el sufijo base para estilos de scrollbar
         STYLE = "TScrollbar"
 
+        # --- Determinación de nombres de estilo y color base ---
+
+        # Caso 1: Sin color específico (estilo base)
         if any([colorname == DEFAULT, colorname == ""]):
-            h_ttkstyle = f"Horizontal.{STYLE}"
-            v_ttkstyle = f"Vertical.{STYLE}"
+            # Nombres de estilo sin prefijo de color
+            h_ttkstyle = f"Horizontal.{STYLE}"  # Ej: "Horizontal.TScrollbar"
+            v_ttkstyle = f"Vertical.{STYLE}"  # Ej: "Vertical.TScrollbar"
 
+            # Color de fondo adaptado al tipo de tema
             if self.is_light_theme:
-                background = self.colors.border
+                background = self.colors.border  # Color de borde en tema claro
             else:
-                background = self.colors.selectbg
+                background = self.colors.selectbg  # Color de selección en tema oscuro
 
+        # Caso 2: Color específico proporcionado
         else:
-            h_ttkstyle = f"{colorname}.Horizontal.{STYLE}"
-            v_ttkstyle = f"{colorname}.Vertical.{STYLE}"
-            background = self.colors.get(colorname)
+            # Nombres de estilo con prefijo de color
+            h_ttkstyle = f"{colorname}.Horizontal.{STYLE}"  # Ej: "primary.Horizontal.TScrollbar"
+            v_ttkstyle = f"{colorname}.Vertical.{STYLE}"  # Ej: "primary.Vertical.TScrollbar"
 
+            # Obtener color dinámicamente según la etiqueta proporcionada
+            background = self.colors.get(colorname)  # Ej: self.colors.primary, self.colors.success, etc.
+
+        # --- Cálculo de colores específicos para diferentes partes y estados ---
+
+        # Color del canal (troughcolor) adaptado al tipo de tema
         if self.is_light_theme:
             if colorname == LIGHT:
-                troughcolor = self.colors.bg
+                troughcolor = self.colors.bg  # Fondo normal para tema "light" en tema claro
             else:
-                troughcolor = self.colors.light
+                troughcolor = self.colors.light  # Color claro para otros temas en tema claro
         else:
-            troughcolor = Colors.update_hsv(self.colors.selectbg, vd=-0.2)
+            # Para tema oscuro, versión más oscura del color de selección
+            troughcolor = Colors.update_hsv(self.colors.selectbg, vd=-0.2)  # Reduce brillo en 20%
 
-        pressed = Colors.update_hsv(background, vd=-0.05)
-        active = Colors.update_hsv(background, vd=0.05)
+        # Colores para estados específicos
+        pressed = Colors.update_hsv(background, vd=-0.05)  # Versión más oscura para estado presionado
+        active = Colors.update_hsv(background, vd=0.05)  # Versión más clara para estado activo/hover
 
+        # --- Generación de imágenes para los thumbs ---
+
+        # Obtener imágenes para todos los estados y orientaciones
         scroll_images = self.create_scrollbar_assets(
             background, pressed, active
         )
+        # scroll_images contiene 6 identificadores:
+        # 0: thumb horizontal normal, 1: h-presionado, 2: h-activo,
+        # 3: thumb vertical normal, 4: v-presionado, 5: v-activo
 
-        # horizontal scrollbar
+        # === CONFIGURACIÓN DE BARRA DE DESPLAZAMIENTO HORIZONTAL ===
+
+        # 1. Configuración básica de apariencia
         self.style._build_configure(
             h_ttkstyle,
-            troughcolor=troughcolor,
-            darkcolor=troughcolor,
-            bordercolor=troughcolor,
-            lightcolor=troughcolor,
-            arrowcolor=background,
-            arrowsize=self.scale_size(11),
-            background=troughcolor,
-            relief=tk.FLAT,
-            borderwidth=0,
+            troughcolor=troughcolor,  # Color del canal
+            darkcolor=troughcolor,  # Color oscuro (sombra)
+            bordercolor=troughcolor,  # Color del borde
+            lightcolor=troughcolor,  # Color claro (iluminación)
+            arrowcolor=background,  # Color de las flechas
+            arrowsize=self.scale_size(11),  # Tamaño de flecha escalado según DPI
+            background=troughcolor,  # Color de fondo
+            relief=tk.FLAT,  # Sin relieve
+            borderwidth=0,  # Sin borde
         )
+
+        # 2. Creación del elemento thumb personalizado
         self.style.element_create(
-            f"{h_ttkstyle}.thumb",
-            "image",
-            scroll_images[0],
-            ("pressed", scroll_images[1]),
-            ("active", scroll_images[2]),
-            border=(3, 0),
-            sticky=tk.NSEW,
+            f"{h_ttkstyle}.thumb",  # Nombre único del elemento
+            "image",  # Tipo de elemento (basado en imagen)
+            scroll_images[0],  # Imagen para estado normal
+            ("pressed", scroll_images[1]),  # Imagen para estado presionado
+            ("active", scroll_images[2]),  # Imagen para estado activo/hover
+            border=(3, 0),  # Borde horizontal (3px) pero no vertical
+            sticky=tk.NSEW,  # Adherencia completa (norte-sur-este-oeste)
         )
+
+        # 3. Definición del layout (estructura jerárquica)
         self.style.layout(
             h_ttkstyle,
             [
                 (
-                    "Horizontal.Scrollbar.trough",
+                    "Horizontal.Scrollbar.trough",  # Canal principal
                     {
-                        "sticky": "we",
+                        "sticky": "we",  # Adherencia oeste-este
                         "children": [
                             (
-                                "Horizontal.Scrollbar.leftarrow",
+                                "Horizontal.Scrollbar.leftarrow",  # Flecha izquierda
                                 {"side": "left", "sticky": ""},
                             ),
                             (
-                                "Horizontal.Scrollbar.rightarrow",
+                                "Horizontal.Scrollbar.rightarrow",  # Flecha derecha
                                 {"side": "right", "sticky": ""},
                             ),
                             (
-                                f"{h_ttkstyle}.thumb",
-                                {"expand": "1", "sticky": "nswe"},
+                                f"{h_ttkstyle}.thumb",  # Thumb personalizado
+                                {"expand": "1", "sticky": "nswe"},  # Expandible, adherencia completa
                             ),
                         ],
                     },
                 )
             ],
         )
-        self.style._build_configure(h_ttkstyle, arrowcolor=background)
+
+        # 4. Configuración de colores de flecha
+        self.style._build_configure(h_ttkstyle, arrowcolor=background)  # Color base
         self.style.map(
-            h_ttkstyle, arrowcolor=[("pressed", pressed), ("active", active)]
+            h_ttkstyle,
+            arrowcolor=[("pressed", pressed), ("active", active)]  # Mapeo de estados
         )
 
-        # vertical scrollbar
+        # === CONFIGURACIÓN DE BARRA DE DESPLAZAMIENTO VERTICAL ===
+
+        # 1. Configuración básica de apariencia (similar a horizontal)
         self.style._build_configure(
             v_ttkstyle,
             troughcolor=troughcolor,
@@ -2514,33 +2602,37 @@ class StyleBuilderTTK:
             relief=tk.FLAT,
             borderwidth=0,
         )
+
+        # 2. Creación del elemento thumb personalizado
         self.style.element_create(
             f"{v_ttkstyle}.thumb",
             "image",
-            scroll_images[3],
-            ("pressed", scroll_images[4]),
-            ("active", scroll_images[5]),
-            border=(0, 3),
-            sticky=tk.NSEW,
+            scroll_images[3],  # Imagen vertical normal (#3 en la tupla)
+            ("pressed", scroll_images[4]),  # Vertical presionado (#4)
+            ("active", scroll_images[5]),  # Vertical activo (#5)
+            border=(0, 3),  # Borde vertical (3px) pero no horizontal
+            sticky=tk.NSEW,  # Adherencia completa
         )
+
+        # 3. Definición del layout
         self.style.layout(
             v_ttkstyle,
             [
                 (
-                    "Vertical.Scrollbar.trough",
+                    "Vertical.Scrollbar.trough",  # Canal vertical
                     {
-                        "sticky": "ns",
+                        "sticky": "ns",  # Adherencia norte-sur
                         "children": [
                             (
-                                "Vertical.Scrollbar.uparrow",
+                                "Vertical.Scrollbar.uparrow",  # Flecha arriba
                                 {"side": "top", "sticky": ""},
                             ),
                             (
-                                "Vertical.Scrollbar.downarrow",
+                                "Vertical.Scrollbar.downarrow",  # Flecha abajo
                                 {"side": "bottom", "sticky": ""},
                             ),
                             (
-                                f"{v_ttkstyle}.thumb",
+                                f"{v_ttkstyle}.thumb",  # Thumb personalizado
                                 {"expand": "1", "sticky": "nswe"},
                             ),
                         ],
@@ -2548,89 +2640,127 @@ class StyleBuilderTTK:
                 )
             ],
         )
+
+        # 4. Configuración de colores de flecha
         self.style._build_configure(v_ttkstyle, arrowcolor=background)
         self.style.map(
-            v_ttkstyle, arrowcolor=[("pressed", pressed), ("active", active)]
+            v_ttkstyle,
+            arrowcolor=[("pressed", pressed), ("active", active)]
         )
 
-        # register ttkstyles
+        # --- Registro de estilos creados ---
+
+        # Registrar los estilos TTK para evitar recreación y seguimiento
         self.style._register_ttkstyle(h_ttkstyle)
         self.style._register_ttkstyle(v_ttkstyle)
 
     def create_spinbox_style(self, colorname=DEFAULT):
-        """Create a style for the ttk.Spinbox widget.
+        """Crea un estilo personalizado para el widget ttk.Spinbox.
 
-        Parameters:
+        Este método configura la apariencia y comportamiento del widget Spinbox según el
+        tema actual (claro u oscuro) y el color especificado. Maneja varios estados del
+        widget, incluyendo: normal, enfocado, hover, presionado, deshabilitado, inválido
+        y solo lectura, adaptando la apariencia para cada situación.
 
-            colorname (str):
-                The color label used to style the widget.
+        El método crea elementos personalizados para las flechas arriba/abajo y define
+        un layout completo para el widget, controlando la ubicación y comportamiento
+        de cada componente.
+
+        Args:
+            colorname (str, optional):
+                La etiqueta de color utilizada para estilizar el widget. Si es DEFAULT o
+                cadena vacía, se utiliza un estilo base sin prefijo de color.
+                Los valores posibles incluyen: 'primary', 'secondary', 'success', 'info',
+                'warning', 'danger', 'light', 'dark', etc.
+                Valor predeterminado: DEFAULT.
+
+        Returns:
+            None: Este método no retorna ningún valor, pero modifica el estado interno
+                  creando y registrando un estilo TTK nuevo para el widget Spinbox.
+
         """
-        STYLE = "TSpinbox"
+        STYLE = "TSpinbox"  # Constante que define el nombre base del estilo
 
+        # --- Definir colores base según el tema actual ---
         if self.is_light_theme:
-            disabled_fg = self.colors.border
-            bordercolor = self.colors.border
-            readonly = self.colors.light
+            # En tema claro, usar colores más suaves
+            disabled_fg = self.colors.border  # Ej: "#E0E0E0" - color gris claro
+            bordercolor = self.colors.border  # Mismo color para bordes
+            readonly = self.colors.light  # Ej: "#F5F5F5" - color gris muy claro
         else:
-            disabled_fg = self.colors.selectbg
-            bordercolor = self.colors.selectbg
-            readonly = bordercolor
+            # En tema oscuro, usar colores más oscuros
+            disabled_fg = self.colors.selectbg  # Ej: "#555555" - color gris oscuro
+            bordercolor = self.colors.selectbg  # Mismo color para bordes
+            readonly = bordercolor  # Mismo color para modo readonly
 
+        # --- Determinar nombre de estilo y color de enfoque según el parámetro ---
         if any([colorname == DEFAULT, colorname == ""]):
-            ttkstyle = STYLE
-            focuscolor = self.colors.primary
+            # Sin color específico - usar estilo base
+            ttkstyle = STYLE  # Resultado: "TSpinbox"
+            focuscolor = self.colors.primary  # Ej: "#007BFF" - azul primario
         else:
-            ttkstyle = f"{colorname}.{STYLE}"
-            focuscolor = self.colors.get(colorname)
+            # Con color específico - crear estilo con prefijo
+            ttkstyle = f"{colorname}.{STYLE}"  # Resultado: "primary.TSpinbox"
+            focuscolor = self.colors.get(colorname)  # Ej: self.colors.success = "#28A745"
 
+        # Ajustar color de borde cuando se especifica un color personalizado
         if all([colorname, colorname != DEFAULT]):
-            bordercolor = focuscolor
+            bordercolor = focuscolor  # Usar el mismo color para el borde
 
+        # --- Determinar color de flecha en estados interactivos ---
         if colorname == "light":
-            arrowfocus = self.colors.fg
+            # Caso especial: tema "light" necesita mejor contraste para las flechas
+            arrowfocus = self.colors.fg  # Usar color de texto normal (más oscuro)
         else:
+            # Otros temas: usar el color de enfoque para las flechas
             arrowfocus = focuscolor
 
+        # --- Crear elementos personalizados para las flechas ---
+        # Transformar nombre de estilo para elementos (ej: "primary.TSpinbox" -> "primary.Spinbox")
         element = ttkstyle.replace(".TS", ".S")
-        self.style.element_create(f"{element}.uparrow", "from", TTK_DEFAULT)
-        self.style.element_create(f"{element}.downarrow", "from", TTK_DEFAULT)
+
+        # Crear elementos de flecha basados en el estilo predeterminado de TTK
+        self.style.element_create(f"{element}.uparrow", "from", TTK_DEFAULT)  # Flecha arriba
+        self.style.element_create(f"{element}.downarrow", "from", TTK_DEFAULT)  # Flecha abajo
+
+        # --- Definir layout (estructura jerárquica del widget) ---
         self.style.layout(
             ttkstyle,
             [
                 (
-                    f"{element}.field",
+                    f"{element}.field",  # Campo principal contenedor
                     {
                         "side": tk.TOP,
-                        "sticky": tk.EW,
+                        "sticky": tk.EW,  # Adherir a este-oeste (expandir horizontalmente)
                         "children": [
                             (
-                                "null",
+                                "null",  # Contenedor para las flechas (sin nombre específico)
                                 {
-                                    "side": tk.RIGHT,
-                                    "sticky": "",
+                                    "side": tk.RIGHT,  # Ubicar a la derecha
+                                    "sticky": "",  # Sin adherencia específica
                                     "children": [
+                                        # Flecha arriba en la parte superior del contenedor
                                         (
                                             f"{element}.uparrow",
-                                            {"side": tk.TOP, "sticky": tk.E},
+                                            {"side": tk.TOP, "sticky": tk.E},  # Adherir al este
                                         ),
+                                        # Flecha abajo en la parte inferior del contenedor
                                         (
                                             f"{element}.downarrow",
-                                            {
-                                                "side": tk.BOTTOM,
-                                                "sticky": tk.E,
-                                            },
+                                            {"side": tk.BOTTOM, "sticky": tk.E},  # Adherir al este
                                         ),
                                     ],
                                 },
                             ),
                             (
-                                f"{element}.padding",
+                                f"{element}.padding",  # Área con padding para el contenido
                                 {
-                                    "sticky": tk.NSEW,
+                                    "sticky": tk.NSEW,  # Adherir a todos los lados
                                     "children": [
+                                        # Área de texto (donde se muestra el valor)
                                         (
                                             f"{element}.textarea",
-                                            {"sticky": tk.NSEW},
+                                            {"sticky": tk.NSEW},  # Expandir en todas direcciones
                                         )
                                     ],
                                 },
@@ -2640,46 +2770,189 @@ class StyleBuilderTTK:
                 )
             ],
         )
+
+        # --- Configurar propiedades básicas del estilo ---
         self.style._build_configure(
             ttkstyle,
-            bordercolor=bordercolor,
-            darkcolor=self.colors.inputbg,
-            lightcolor=self.colors.inputbg,
-            fieldbackground=self.colors.inputbg,
-            foreground=self.colors.inputfg,
-            borderwidth=0,
-            background=self.colors.inputbg,
-            relief=tk.FLAT,
-            arrowcolor=self.colors.inputfg,
-            insertcolor=self.colors.inputfg,
-            arrowsize=self.scale_size(12),
-            padding=(10, 5),
+            # Colores del widget
+            bordercolor=bordercolor,  # Color del borde
+            darkcolor=self.colors.inputbg,  # Color para sombras/oscurecimiento
+            lightcolor=self.colors.inputbg,  # Color para iluminación/resaltado
+            fieldbackground=self.colors.inputbg,  # Color de fondo del campo de entrada
+            foreground=self.colors.inputfg,  # Color del texto
+            borderwidth=0,  # Sin borde visible (0 píxeles)
+            background=self.colors.inputbg,  # Color de fondo general
+            relief=tk.FLAT,  # Sin relieve (plano)
+            arrowcolor=self.colors.inputfg,  # Color de las flechas
+            insertcolor=self.colors.inputfg,  # Color del cursor de inserción
+            arrowsize=self.scale_size(12),  # Tamaño de flecha (12px, escalado según DPI)
+            padding=(10, 5),  # Padding horizontal y vertical
         )
+
+        # --- Configurar mapeos de estado (cómo cambia la apariencia según el estado) ---
         self.style.map(
             ttkstyle,
-            foreground=[("disabled", disabled_fg)],
-            fieldbackground=[("readonly", readonly)],
-            background=[("readonly", readonly)],
+            # Color del texto: cambia cuando está deshabilitado
+            foreground=[
+                ("disabled", disabled_fg)  # Ej: texto gris claro cuando deshabilitado
+            ],
+
+            # Color de fondo: cambia en modo solo lectura
+            fieldbackground=[
+                ("readonly", readonly)  # Ej: fondo gris claro en modo solo lectura
+            ],
+            background=[
+                ("readonly", readonly)  # Consistente con fieldbackground
+            ],
+
+            # Colores de iluminación: cambian según el estado
             lightcolor=[
+                # Color rojo cuando tiene foco y es inválido (ej: valor fuera de rango)
                 ("focus invalid", self.colors.danger),
+                # Color de énfasis cuando tiene foco (ej: azul primario)
                 ("focus !disabled", focuscolor),
+                # Color específico en modo solo lectura
                 ("readonly", readonly),
             ],
+
+            # Colores de sombreado: cambian según el estado (consistente con lightcolor)
             darkcolor=[
                 ("focus invalid", self.colors.danger),
                 ("focus !disabled", focuscolor),
                 ("readonly", readonly),
             ],
+
+            # Color del borde: cambia según estado de validez e interacción
             bordercolor=[
-                ("invalid", self.colors.danger),
-                ("focus !disabled", focuscolor),
-                ("hover !disabled", focuscolor),
+                ("invalid", self.colors.danger),  # Rojo para valores inválidos
+                ("focus !disabled", focuscolor),  # Color de énfasis cuando tiene foco
+                ("hover !disabled", focuscolor),  # Mismo color al pasar el cursor
             ],
+
+            # Color de las flechas: cambia según la interacción
             arrowcolor=[
-                ("disabled !disabled", disabled_fg),
-                ("pressed !disabled", arrowfocus),
-                ("hover !disabled", arrowfocus),
+                ("disabled !disabled", disabled_fg),  # Gris para estado deshabilitado
+                ("pressed !disabled", arrowfocus),  # Color de énfasis cuando se presiona
+                ("hover !disabled", arrowfocus),  # Mismo color al pasar el cursor
+            ],
+        )
+
+        # --- Registrar el estilo creado ---
+        # Esto evita recreación innecesaria y mantiene seguimiento de estilos disponibles
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_table_treeview_style(self, colorname=DEFAULT):
+        """Create a style for the Tableview widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "Table.Treeview"
+
+        f = font.nametofont("TkDefaultFont")
+        rowheight = f.metrics()["linespace"]
+
+        if self.is_light_theme:
+            disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.2)
+            bordercolor = self.colors.border
+            hover = Colors.update_hsv(self.colors.light, vd=-0.1)
+        else:
+            disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.3)
+            bordercolor = self.colors.selectbg
+            hover = Colors.update_hsv(self.colors.dark, vd=0.1)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            background = self.colors.inputbg
+            foreground = self.colors.inputfg
+            body_style = STYLE
+            header_style = f"{STYLE}.Heading"
+        elif colorname == LIGHT and self.is_light_theme:
+            background = self.colors.get(colorname)
+            foreground = self.colors.fg
+            body_style = f"{colorname}.{STYLE}"
+            header_style = f"{colorname}.{STYLE}.Heading"
+            hover = Colors.update_hsv(background, vd=-0.1)
+        else:
+            background = self.colors.get(colorname)
+            foreground = self.colors.selectfg
+            body_style = f"{colorname}.{STYLE}"
+            header_style = f"{colorname}.{STYLE}.Heading"
+            hover = Colors.update_hsv(background, vd=0.1)
+
+
+        # treeview header
+        self.style._build_configure(
+            header_style,
+            background=background,
+            foreground=foreground,
+            relief=tk.RAISED,
+            borderwidth=1,
+            darkcolor=background,
+            bordercolor=bordercolor,
+            lightcolor=background,
+            padding=5,
+        )
+        self.style.map(
+            header_style,
+            foreground=[("disabled", disabled_fg)],
+            background=[
+                ("active !disabled", hover),
+            ],
+            darkcolor=[
+                ("active !disabled", hover),
+            ],
+            lightcolor=[
+                ("active !disabled", hover),
+            ],
+        )
+        self.style._build_configure(
+            body_style,
+            background=self.colors.inputbg,
+            fieldbackground=self.colors.inputbg,
+            foreground=self.colors.inputfg,
+            bordercolor=bordercolor,
+            lightcolor=self.colors.inputbg,
+            darkcolor=self.colors.inputbg,
+            borderwidth=2,
+            padding=0,
+            rowheight=rowheight,
+            relief=tk.RAISED,
+        )
+        self.style.map(
+            body_style,
+            background=[("selected", self.colors.selectbg)],
+            foreground=[
+                ("disabled", disabled_fg),
+                ("selected", self.colors.selectfg),
+            ],
+        )
+        self.style.layout(
+            body_style,
+            [
+                (
+                    "Button.border",
+                    {
+                        "sticky": tk.NSEW,
+                        "border": "1",
+                        "children": [
+                            (
+                                "Treeview.padding",
+                                {
+                                    "sticky": tk.NSEW,
+                                    "children": [
+                                        (
+                                            "Treeview.treearea",
+                                            {"sticky": tk.NSEW},
+                                        )
+                                    ],
+                                },
+                            )
+                        ],
+                    },
+                )
             ],
         )
         # register ttkstyles
-        self.style._register_ttkstyle(ttkstyle)
+        self.style._register_ttkstyle(body_style)
