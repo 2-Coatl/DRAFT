@@ -953,254 +953,395 @@ class StyleBuilderTTK:
         widget.tk.call(f"{popdown}.f.sb", "configure", "-style", sb_style)
 
     def create_separator_style(self, colorname=DEFAULT):
-        """Create a style for the ttk.Separator widget.
+        """Crea estilos personalizados para los widgets ttk.Separator.
+
+        Este método genera y registra dos estilos TTK: uno para separadores horizontales y
+        otro para separadores verticales. Los estilos creados utilizan imágenes de color sólido
+        para representar visualmente los separadores, adaptándose automáticamente según el tema
+        actual sea claro u oscuro.
 
         Parameters:
-
             colorname (str):
-                The primary widget color.
+                Nombre del color a utilizar para los separadores. Debe corresponder a un color
+                definido en self.colors (como 'primary', 'secondary', etc.).
+                Si es 'default' o una cadena vacía, se utilizará automáticamente el color de
+                borde para temas claros o el color de selección para temas oscuros.
+                Valor predeterminado: 'default'
+
+        Returns:
+            None: Este método no retorna ningún valor, pero tiene los siguientes efectos:
+
+            1. Crea dos estilos TTK:
+               - Si colorname es 'default': "Horizontal.TSeparator" y "Vertical.TSeparator"
+               - Si se especifica colorname: "{colorname}.Horizontal.TSeparator" y
+                 "{colorname}.Vertical.TSeparator"
+
+            2. Genera imágenes personalizadas para representar los separadores
+
+            3. Registra los estilos creados en el sistema de estilos TTK
+
         """
-        HSTYLE = "Horizontal.TSeparator"
-        VSTYLE = "Vertical.TSeparator"
+        # Definir constantes para los nombres base de estilos y tamaños
+        HSTYLE = "Horizontal.TSeparator"  # Estilo base para separador horizontal
+        VSTYLE = "Vertical.TSeparator"  # Estilo base para separador vertical
 
-        hsize = [40, 1]
-        vsize = [1, 40]
+        # Dimensiones en píxeles para las imágenes de los separadores
+        hsize = [40, 1]  # Horizontal: 40px de ancho, 1px de alto
+        vsize = [1, 40]  # Vertical: 1px de ancho, 40px de alto
 
-        # style colors
+        # Determinar el color predeterminado según el tema actual
         if self.is_light_theme:
-            default_color = self.colors.border
+            # En temas claros, el separador destacará mejor con el color de borde
+            default_color = self.colors.border  # Ej: "#cccccc"
         else:
-            default_color = self.colors.selectbg
+            # En temas oscuros, usar el color de selección para mejor visibilidad
+            default_color = self.colors.selectbg  # Ej: "#4a6984"
 
+        # Determinar el color a utilizar y construir los nombres de estilo
         if any([colorname == DEFAULT, colorname == ""]):
+            # Usar configuración predeterminada si no se especifica un color válido
             background = default_color
-            h_ttkstyle = HSTYLE
-            v_ttkstyle = VSTYLE
+            h_ttkstyle = HSTYLE  # "Horizontal.TSeparator"
+            v_ttkstyle = VSTYLE  # "Vertical.TSeparator"
         else:
-            background = self.colors.get(colorname)
-            h_ttkstyle = f"{colorname}.{HSTYLE}"
-            v_ttkstyle = f"{colorname}.{VSTYLE}"
+            # Usar el color especificado por el parámetro colorname
+            background = self.colors.get(colorname)  # Ej: self.colors.primary
+            # Construir nombres con prefijo del color
+            h_ttkstyle = f"{colorname}.{HSTYLE}"  # Ej: "primary.Horizontal.TSeparator"
+            v_ttkstyle = f"{colorname}.{VSTYLE}"  # Ej: "primary.Vertical.TSeparator"
 
-        # horizontal separator
-        h_element = h_ttkstyle.replace(".TS", ".S")
+        # CREACIÓN DEL SEPARADOR HORIZONTAL
+        # Convertir el nombre de estilo a nombre de elemento (quitar el prefijo 'T')
+        h_element = h_ttkstyle.replace(".TS", ".S")  # Ej: "Horizontal.Separator"
+
+        # Crear una imagen RGB del tamaño y color especificados
         h_img = ImageTk.PhotoImage(Image.new("RGB", hsize, background))
-        h_name = util.get_image_name(h_img)
+
+        # Generar un nombre único para la imagen y guardarla para evitar que el GC la elimine
+        h_name = util.get_image_name(h_img)  # Ej: "pyimage42"
         self.theme_images[h_name] = h_img
 
+        # Crear un elemento visual usando la imagen generada
         self.style.element_create(f"{h_element}.separator", "image", h_name)
-        self.style.layout(
-            h_ttkstyle, [(f"{h_element}.separator", {"sticky": tk.EW})]
-        )
 
-        # vertical separator
+        # Definir el layout del estilo con expansión horizontal (East-West)
+        self.style.layout(h_ttkstyle, [(f"{h_element}.separator", {"sticky": tk.EW})])
+
+        # CREACIÓN DEL SEPARADOR VERTICAL (proceso análogo al horizontal)
         v_element = v_ttkstyle.replace(".TS", ".S")
         v_img = ImageTk.PhotoImage(Image.new("RGB", vsize, background))
         v_name = util.get_image_name(v_img)
         self.theme_images[v_name] = v_img
         self.style.element_create(f"{v_element}.separator", "image", v_name)
-        self.style.layout(
-            v_ttkstyle, [(f"{v_element}.separator", {"sticky": tk.NS})]
-        )
+
+        # Layout con expansión vertical (North-South)
+        self.style.layout(v_ttkstyle, [(f"{v_element}.separator", {"sticky": tk.NS})]) # El parámetro "sticky" con valor tk.EW (East-West) hace que el separador se expanda horizontalmente
+
+        # Registrar los estilos creados en el sistema para su posterior gestión
         self.style._register_ttkstyle(h_ttkstyle)
         self.style._register_ttkstyle(v_ttkstyle)
 
     def create_striped_progressbar_assets(self, thickness, colorname=DEFAULT):
-        """Create the striped progressbar image and return as a
-        `PhotoImage`
+        """Crea imágenes para barras de progreso con patrón rayado diagonal.
+
+        Este método genera dos imágenes:
+        1. Una horizontal con patrón rayado diagonal
+        2. Una vertical (rotación de 90° de la horizontal)
+
+        Las imágenes se crean combinando dos tonalidades del color especificado:
+        - Color base: El color principal para las rayas
+        - Color claro: Una versión más clara del color base para el fondo
+
+        El contraste entre ambos colores se ajusta automáticamente según el brillo
+        del color base para garantizar visibilidad en colores tanto oscuros como claros.
 
         Parameters:
+            thickness (int):
+                Grosor en píxeles de la barra de progreso. Define el tamaño final
+                de las imágenes generadas (thickness × thickness píxeles).
 
-            colorname (str):
-                The color label used to style the widget.
+            colorname (str, opcional):
+                Nombre del color a utilizar para la barra de progreso. Debe corresponder
+                a un color definido en self.colors (como 'primary', 'secondary', etc.).
+                Si es 'default' o una cadena vacía, se utilizará el color primario del tema.
+                Valor predeterminado: 'default'
 
         Returns:
+            Tuple[str, str]:
+                Una tupla con dos elementos:
+                - Primer elemento: Identificador (nombre) de la imagen horizontal
+                - Segundo elemento: Identificador (nombre) de la imagen vertical
 
-            Tuple[str]:
-                A list of photoimage names.
+                Estos identificadores pueden usarse posteriormente para acceder a las imágenes
+                almacenadas en self.theme_images.
         """
+        # Determinar el color base para la barra de progreso
         if any([colorname == DEFAULT, colorname == ""]):
-            barcolor = self.colors.primary
+            # Si no se especifica un color, usar el color primario del tema
+            barcolor = self.colors.primary  # Ej: "#007bff"
         else:
-            barcolor = self.colors.get(colorname)
+            # Obtener el color correspondiente al nombre especificado
+            barcolor = self.colors.get(colorname)  # Ej: self.colors.success -> "#28a745"
 
-        # calculate value of the light color
+        # Calcular la variante más clara del color base
+        # 1. Obtener el componente de brillo (Value) del color base
         brightness = Colors.rgb_to_hsv(*Colors.hex_to_rgb(barcolor))[2]
+
+        # 2. Determinar el incremento de brillo según el brillo del color base
         if brightness < 0.4:
-            value_delta = 0.3
+            # Para colores oscuros, aumentar significativamente el brillo
+            value_delta = 0.3  # Ej: para un color muy oscuro como "#212529"
         elif brightness > 0.8:
-            value_delta = 0
+            # Para colores muy brillantes, no aumentar el brillo
+            value_delta = 0  # Ej: para un color muy brillante como "#f8f9fa"
         else:
-            value_delta = 0.1
+            # Para colores de brillo medio, aumentar ligeramente el brillo
+            value_delta = 0.1  # Ej: para un color medio como "#007bff"
 
+        # 3. Crear la variante más clara: reducir saturación y ajustar brillo
         barcolor_light = Colors.update_hsv(barcolor, sd=-0.2, vd=value_delta)
+        # Ej: "#007bff" -> "#3399ff"
 
-        # horizontal progressbar
+        # Crear la imagen base con el patrón rayado (100×100 píxeles)
+        # 4. Crear una imagen con fondo del color claro
         img = Image.new("RGBA", (100, 100), barcolor_light)
+
+        # 5. Preparar objeto para dibujar en la imagen
         draw = ImageDraw.Draw(img)
+
+        # 6. Dibujar polígono grande diagonal (rayas principales)
         draw.polygon(
             xy=[(0, 0), (48, 0), (100, 52), (100, 100)],
-            fill=barcolor,
+            fill=barcolor,  # Usar el color base
         )
+
+        # 7. Dibujar polígono pequeño en esquina inferior izquierda (completar patrón)
         draw.polygon(xy=[(0, 52), (48, 100), (0, 100)], fill=barcolor)
 
+        # Redimensionar la imagen al tamaño final requerido
         _resized = img.resize((thickness, thickness), Image.LANCZOS)
-        h_img = ImageTk.PhotoImage(_resized)
-        h_name = h_img._PhotoImage__photo.name
-        v_img = ImageTk.PhotoImage(_resized.rotate(90))
-        v_name = v_img._PhotoImage__photo.name
+        # Ej: Si thickness=20, redimensiona de 100×100 a 20×20 píxeles
 
+        # Crear y almacenar la imagen horizontal
+        h_img = ImageTk.PhotoImage(_resized)
+        h_name = h_img._PhotoImage__photo.name  # Ej: "pyimage123"
+
+        # Crear y almacenar la imagen vertical (rotación de 90° de la horizontal)
+        v_img = ImageTk.PhotoImage(_resized.rotate(90))
+        v_name = v_img._PhotoImage__photo.name  # Ej: "pyimage124"
+
+        # Guardar las imágenes en el diccionario de imágenes del tema
+        # Esto previene que sean eliminadas por el recolector de basura
         self.theme_images[h_name] = h_img
         self.theme_images[v_name] = v_img
+
+        # Devolver los identificadores para su uso posterior
         return h_name, v_name
 
     def create_striped_progressbar_style(self, colorname=DEFAULT):
-        """Create a striped style for the ttk.Progressbar widget.
+        """Crea un estilo personalizado con patrón rayado para widgets ttk.Progressbar.
+
+        Este método genera estilos TTK para barras de progreso con un patrón rayado
+        diagonal. El estilo se adapta automáticamente al tema actual (claro/oscuro)
+        y puede personalizarse con diferentes colores.
+
+        NOTA: Actualmente, este método crea completamente el estilo horizontal, pero
+        solo registra el nombre del estilo vertical sin implementar su elemento ni layout.
 
         Parameters:
+            colorname (str, opcional):
+                Nombre del color a utilizar para la barra de progreso. Debe corresponder
+                a un color definido en self.colors (como 'primary', 'secondary', etc.).
+                Si es 'default' o una cadena vacía, se utilizará el estilo base sin prefijo.
+                El valor 'light' tiene un tratamiento especial para el color del canal.
+                Valor predeterminado: 'default'
 
-            colorname (str):
-                The primary widget color label.
+        Returns:
+            None: Este método no retorna ningún valor, pero tiene los siguientes efectos:
+
+            1. Crea dos estilos TTK:
+               - Si colorname es 'default': "Striped.Horizontal.TProgressbar" y
+                 "Striped.Vertical.TProgressbar"
+               - Si se especifica colorname: "{colorname}.Striped.Horizontal.TProgressbar" y
+                 "{colorname}.Striped.Vertical.TProgressbar"
+
+            2. Configura el layout y las propiedades visuales del estilo horizontal
+
+            3. Registra ambos estilos en el sistema de estilos TTK
+
         """
-        HSTYLE = "Striped.Horizontal.TProgressbar"
-        VSTYLE = "Striped.Vertical.TProgressbar"
+        # Definir constantes para los nombres base de los estilos
+        HSTYLE = "Striped.Horizontal.TProgressbar"  # Estilo base para barra horizontal
+        VSTYLE = "Striped.Vertical.TProgressbar"  # Estilo base para barra vertical
 
-        thickness = self.scale_size(12)
+        # Calcular el grosor de la barra adaptado a la densidad de la pantalla
+        thickness = self.scale_size(12)  # Escala el valor base de 12 píxeles
 
+        # Determinar los nombres completos de los estilos
         if any([colorname == DEFAULT, colorname == ""]):
-            h_ttkstyle = HSTYLE
-            v_ttkstyle = VSTYLE
+            # Si no se especifica un color válido, usar nombres base
+            h_ttkstyle = HSTYLE  # Ej: "Striped.Horizontal.TProgressbar"
+            v_ttkstyle = VSTYLE  # Ej: "Striped.Vertical.TProgressbar"
         else:
-            h_ttkstyle = f"{colorname}.{HSTYLE}"
-            v_ttkstyle = f"{colorname}.{VSTYLE}"
+            # Si se especifica un color, usar como prefijo
+            h_ttkstyle = f"{colorname}.{HSTYLE}"  # Ej: "primary.Striped.Horizontal.TProgressbar"
+            v_ttkstyle = f"{colorname}.{VSTYLE}"  # Ej: "primary.Striped.Vertical.TProgressbar"
 
+        # Configurar colores según el tema actual y el color especificado
         if self.is_light_theme:
+            # Configuración para temas claros
             if colorname == LIGHT:
-                troughcolor = self.colors.bg
-                bordercolor = self.colors.light
+                # Caso especial para el color 'light'
+                troughcolor = self.colors.bg  # Color de fondo para el canal
+                bordercolor = self.colors.light  # Color claro para el borde
             else:
-                troughcolor = self.colors.light
-                bordercolor = troughcolor
+                # Para otros colores en tema claro
+                troughcolor = self.colors.light  # Color claro para el canal
+                bordercolor = troughcolor  # Mismo color para el borde
         else:
+            # Configuración para temas oscuros
+            # Crear una versión más oscura del color de selección para el canal
             troughcolor = Colors.update_hsv(self.colors.selectbg, vd=-0.2)
-            bordercolor = troughcolor
+            bordercolor = troughcolor  # Mismo color para el borde
 
-        # ( horizontal, vertical )
+        # Obtener las imágenes rayadas para las barras de progreso
+        # Devuelve una tupla (imagen_horizontal, imagen_vertical)
         images = self.create_striped_progressbar_assets(thickness, colorname)
 
-        # horizontal progressbar
-        h_element = h_ttkstyle.replace(".TP", ".P")
+        # CREACIÓN DEL ESTILO HORIZONTAL
+        # Convertir el nombre de estilo a nombre de elemento (quitar el prefijo 'T')
+        h_element = h_ttkstyle.replace(".TP", ".P")  # Ej: "Striped.Horizontal.Progressbar"
+
+        # Crear un elemento visual personalizado para la barra de progreso
         self.style.element_create(
-            f"{h_element}.pbar",
-            "image",
-            images[0],
-            width=thickness,
-            sticky=tk.EW,
-        )
-        self.style.layout(
-            h_ttkstyle,
-            [
-                (
-                    f"{h_element}.trough",
-                    {
-                        "sticky": tk.NSEW,
-                        "children": [
-                            (
-                                f"{h_element}.pbar",
-                                {"side": tk.LEFT, "sticky": tk.NS},
-                            )
-                        ],
-                    },
-                )
-            ],
-        )
-        self.style._build_configure(
-            h_ttkstyle,
-            troughcolor=troughcolor,
-            thickness=thickness,
-            bordercolor=bordercolor,
-            borderwidth=1,
+            f"{h_element}.pbar",  # Nombre del elemento
+            "image",  # Tipo de elemento (basado en imagen)
+            images[0],  # Imagen horizontal obtenida anteriormente
+            width=thickness,  # Ancho igual al grosor calculado
+            sticky=tk.EW,  # Expansión horizontal
         )
 
-        # vertical progressbar
-        v_element = v_ttkstyle.replace(".TP", ".P")
-        self.style.element_create(
-            f"{v_element}.pbar",
-            "image",
-            images[1],
-            width=thickness,
-            sticky=tk.NS,
-        )
+        # Definir el layout del estilo horizontal
         self.style.layout(
-            v_ttkstyle,
+            h_ttkstyle,  # Nombre del estilo
             [
                 (
-                    f"{v_element}.trough",
+                    f"{h_element}.trough",  # Elemento canal (contenedor)
                     {
-                        "sticky": tk.NSEW,
+                        "sticky": tk.NSEW,  # Expandir en todas direcciones
                         "children": [
                             (
-                                f"{v_element}.pbar",
-                                {"side": tk.BOTTOM, "sticky": tk.EW},
+                                f"{h_element}.pbar",  # Elemento barra de progreso
+                                {"side": tk.LEFT, "sticky": tk.NS},  # Alineado a la izquierda, expandido verticalmente
                             )
                         ],
                     },
                 )
             ],
         )
+
+        # Configurar propiedades visuales del estilo
         self.style._build_configure(
-            v_ttkstyle,
-            troughcolor=troughcolor,
-            bordercolor=bordercolor,
-            thickness=thickness,
-            borderwidth=1,
+            h_ttkstyle,  # Nombre del estilo
+            troughcolor=troughcolor,  # Color del canal
+            thickness=thickness,  # Grosor de la barra
+            bordercolor=bordercolor,  # Color del borde
+            borderwidth=1,  # Ancho del borde (1 píxel)
         )
-        self.style._register_ttkstyle(h_ttkstyle)
-        self.style._register_ttkstyle(v_ttkstyle)
+
+        # Registrar los estilos creados en el sistema
+        self.style._register_ttkstyle(h_ttkstyle)  # Registrar estilo horizontal
+        self.style._register_ttkstyle(v_ttkstyle)  # Registrar estilo vertical
+
+        # NOTA: Falta la creación del elemento y layout para el estilo vertical
 
     def create_progressbar_style(self, colorname=DEFAULT):
-        """Create a solid ttk style for the ttk.Progressbar widget.
+        """Crea un estilo sólido para widgets ttk.Progressbar.
+
+        Este método genera estilos TTK para barras de progreso con un color sólido
+        (sin patrones). Crea tanto la versión horizontal como vertical, y se adapta
+        automáticamente al tema actual (claro/oscuro).
+
+        El método configura todas las propiedades visuales necesarias, incluyendo
+        colores, bordes, y disposición de los elementos. Utiliza elementos de los
+        temas TTK predefinidos ('clam' y 'default') como base.
 
         Parameters:
+            colorname (str, opcional):
+                Nombre del color a utilizar para la barra de progreso. Debe corresponder
+                a un color definido en self.colors (como 'primary', 'secondary', etc.).
 
-            colorname (str):
-                The primary widget color.
+                Si es 'default' o una cadena vacía, se utilizará el color primario del tema
+                y los estilos base sin prefijo.
+
+                El valor 'light' tiene un tratamiento especial para los colores de canal y borde
+                en temas claros.
+
+                Valor predeterminado: 'default'
+
+        Returns:
+            None: Este método no retorna ningún valor, pero tiene los siguientes efectos:
+
+            1. Crea dos estilos TTK:
+               - Si colorname es 'default': "Horizontal.TProgressbar" y "Vertical.TProgressbar"
+               - Si se especifica colorname: "{colorname}.Horizontal.TProgressbar" y
+                 "{colorname}.Vertical.TProgressbar"
+
+            2. Configura el layout y las propiedades visuales de ambos estilos
+
+            3. Registra los estilos en el sistema de estilos TTK
         """
-        H_STYLE = "Horizontal.TProgressbar"
-        V_STYLE = "Vertical.TProgressbar"
+        # Definir constantes para los nombres base de los estilos
+        H_STYLE = "Horizontal.TProgressbar"  # Estilo base para barra horizontal
+        V_STYLE = "Vertical.TProgressbar"  # Estilo base para barra vertical
 
-        thickness = self.scale_size(10)
+        # Calcular el grosor de la barra adaptado a la densidad de la pantalla
+        thickness = self.scale_size(10)  # Escala el valor base de 10 píxeles
 
+        # Configurar colores de canal y borde según el tema actual
         if self.is_light_theme:
+            # Configuración para temas claros
             if colorname == LIGHT:
-                troughcolor = self.colors.bg
-                bordercolor = self.colors.light
+                # Caso especial para el color 'light'
+                troughcolor = self.colors.bg  # Color de fondo para el canal
+                bordercolor = self.colors.light  # Color claro para el borde
             else:
-                troughcolor = self.colors.light
-                bordercolor = troughcolor
+                # Para otros colores en tema claro
+                troughcolor = self.colors.light  # Color claro para el canal
+                bordercolor = troughcolor  # Mismo color para el borde
         else:
+            # Configuración para temas oscuros
+            # Crear una versión más oscura del color de selección para el canal
             troughcolor = Colors.update_hsv(self.colors.selectbg, vd=-0.2)
-            bordercolor = troughcolor
+            bordercolor = troughcolor  # Mismo color para el borde
 
+        # Determinar color de fondo y nombres de estilo según el parámetro colorname
         if any([colorname == DEFAULT, colorname == ""]):
-            background = self.colors.primary
-            h_ttkstyle = H_STYLE
-            v_ttkstyle = V_STYLE
+            # Si no se especifica un color válido, usar color primario y nombres base
+            background = self.colors.primary  # Ej: "#007bff"
+            h_ttkstyle = H_STYLE  # "Horizontal.TProgressbar"
+            v_ttkstyle = V_STYLE  # "Vertical.TProgressbar"
         else:
-            background = self.colors.get(colorname)
-            h_ttkstyle = f"{colorname}.{H_STYLE}"
-            v_ttkstyle = f"{colorname}.{V_STYLE}"
+            # Si se especifica un color, usarlo y prefijar los nombres de estilo
+            background = self.colors.get(colorname)  # Ej: self.colors.success -> "#28a745"
+            h_ttkstyle = f"{colorname}.{H_STYLE}"  # Ej: "success.Horizontal.TProgressbar"
+            v_ttkstyle = f"{colorname}.{V_STYLE}"  # Ej: "success.Vertical.TProgressbar"
 
+        # Configurar propiedades iniciales para el estilo horizontal
         self.style._build_configure(
             h_ttkstyle,
-            thickness=thickness,
-            borderwidth=1,
-            bordercolor=bordercolor,
-            lightcolor=self.colors.border,
-            pbarrelief=tk.FLAT,
-            troughcolor=troughcolor,
+            thickness=thickness,  # Grosor calculado
+            borderwidth=1,  # Ancho del borde en píxeles
+            bordercolor=bordercolor,  # Color del borde determinado anteriormente
+            lightcolor=self.colors.border,  # Color claro (generalmente para efectos)
+            pbarrelief=tk.FLAT,  # Relieve plano para la barra
+            troughcolor=troughcolor,  # Color del canal determinado anteriormente
         )
+
+        # Obtener lista de elementos existentes para evitar recrearlos
         existing_elements = self.style.element_names()
 
+        # Configurar propiedades iniciales para el estilo vertical (similar al horizontal)
         self.style._build_configure(
             v_ttkstyle,
             thickness=thickness,
@@ -1210,55 +1351,81 @@ class StyleBuilderTTK:
             pbarrelief=tk.FLAT,
             troughcolor=troughcolor,
         )
+
+        # Esta línea parece redundante, ya se obtuvo la lista de elementos
         existing_elements = self.style.element_names()
 
-        # horizontal progressbar
-        h_element = h_ttkstyle.replace(".TP", ".P")
-        trough_element = f"{h_element}.trough"
-        pbar_element = f"{h_element}.pbar"
+        # CREACIÓN DEL ESTILO HORIZONTAL
+        # Generar nombres para los elementos
+        h_element = h_ttkstyle.replace(".TP", ".P")  # Ej: "Horizontal.Progressbar"
+        trough_element = f"{h_element}.trough"  # Ej: "Horizontal.Progressbar.trough"
+        pbar_element = f"{h_element}.pbar"  # Ej: "Horizontal.Progressbar.pbar"
+
+        # Crear elementos si no existen, evitando errores de duplicación
         if trough_element not in existing_elements:
+            # Crear elemento de canal basado en el tema 'clam'
             self.style.element_create(trough_element, "from", TTK_CLAM)
+            # Crear elemento de barra basado en el tema 'default'
             self.style.element_create(pbar_element, "from", TTK_DEFAULT)
 
+        # Definir el layout del estilo horizontal
         self.style.layout(
-            h_ttkstyle,
+            h_ttkstyle,  # Nombre del estilo
             [
                 (
-                    trough_element,
+                    trough_element,  # Elemento canal (contenedor)
                     {
-                        "sticky": "nswe",
+                        "sticky": "nswe",  # Expandir en todas direcciones
                         "children": [
-                            (pbar_element, {"side": "left", "sticky": "ns"})
+                            (
+                                pbar_element,  # Elemento barra de progreso
+                                {"side": "left", "sticky": "ns"},  # Alineado a la izquierda, expandido verticalmente
+                            )
                         ],
                     },
                 )
             ],
         )
+
+        # Configurar el color de fondo para el estilo horizontal
         self.style._build_configure(h_ttkstyle, background=background)
 
-        # vertical progressbar
-        v_element = v_ttkstyle.replace(".TP", ".P")
-        trough_element = f"{v_element}.trough"
-        pbar_element = f"{v_element}.pbar"
+        # CREACIÓN DEL ESTILO VERTICAL
+        # Generar nombres para los elementos
+        v_element = v_ttkstyle.replace(".TP", ".P")  # Ej: "Vertical.Progressbar"
+        trough_element = f"{v_element}.trough"  # Ej: "Vertical.Progressbar.trough"
+        pbar_element = f"{v_element}.pbar"  # Ej: "Vertical.Progressbar.pbar"
+
+        # Crear elementos si no existen, evitando errores de duplicación
         if trough_element not in existing_elements:
+            # Crear elemento de canal basado en el tema 'clam'
             self.style.element_create(trough_element, "from", TTK_CLAM)
+            # Crear elemento de barra basado en el tema 'default'
             self.style.element_create(pbar_element, "from", TTK_DEFAULT)
+            # Configurar el color de fondo para el estilo vertical
+            # NOTA: Esta configuración solo se aplica si los elementos no existían
+            # lo que parece ser un error, ya que debería aplicarse siempre
             self.style._build_configure(v_ttkstyle, background=background)
+
+        # Definir el layout del estilo vertical
         self.style.layout(
-            v_ttkstyle,
+            v_ttkstyle,  # Nombre del estilo
             [
                 (
-                    trough_element,
+                    trough_element,  # Elemento canal (contenedor)
                     {
-                        "sticky": "nswe",
+                        "sticky": "nswe",  # Expandir en todas direcciones
                         "children": [
-                            (pbar_element, {"side": "bottom", "sticky": "we"})
+                            (
+                                pbar_element,  # Elemento barra de progreso
+                                {"side": "bottom", "sticky": "we"},  # Alineado abajo, expandido horizontalmente
+                            )
                         ],
                     },
                 )
             ],
         )
 
-        # register ttkstyles
-        self.style._register_ttkstyle(h_ttkstyle)
-        self.style._register_ttkstyle(v_ttkstyle)
+        # Registrar los estilos creados en el sistema
+        self.style._register_ttkstyle(h_ttkstyle)  # Registrar estilo horizontal
+        self.style._register_ttkstyle(v_ttkstyle)  # Registrar estilo vertical
