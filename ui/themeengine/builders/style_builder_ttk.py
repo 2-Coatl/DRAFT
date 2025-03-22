@@ -709,6 +709,132 @@ class StyleBuilderTTK:
         # Esto permite su utilización posterior y evita recreación innecesaria
         self.style._register_ttkstyle(ttkstyle)
 
+    def create_outline_button_style(self, colorname=DEFAULT):
+        """Crea un estilo tipo "outline" (contorno) para widgets ttk.Button.
+
+        Este método define un estilo de botón donde el color principal se usa como
+        contorno y texto sobre un fondo neutro. Al interactuar con el botón (hover
+        o presionado), los colores se invierten: el color principal pasa a ser el
+        fondo y el texto adquiere un color contrastante.
+
+        El efecto visual es el de un botón que se "llena" con su color principal
+        al interactuar con él, similar a los botones outline de frameworks como
+        Bootstrap.
+
+        Parameters:
+            colorname (str):
+                Etiqueta de color utilizada para estilizar el widget. Puede ser:
+                - DEFAULT o "": Utiliza el color PRIMARY del tema
+                - Cualquier etiqueta de color definida: Aplica ese color específico
+
+        Returns:
+            None: El método no retorna valores, pero registra un estilo TTK
+                  que puede ser utilizado por widgets Button.
+
+        """
+        # Identificador base para estilo de botón tipo outline/contorno
+        STYLE = "Outline.TButton"
+
+        # Calcula color semitransparente para estado deshabilitado
+        # Aplica 30% de transparencia al color de texto sobre fondo
+        # Ej: si fg="#000000" y bg="#FFFFFF", disabled_fg="#B3B3B3" (gris)
+        disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
+
+        # Determina nombre de estilo y color a utilizar
+        if any([colorname == DEFAULT, colorname == ""]):
+            # Caso DEFAULT: usa estilo base sin prefijo
+            ttkstyle = STYLE  # Resultado: "Outline.TButton"
+            # Usa el color primario del tema
+            colorname = PRIMARY  # Ej: PRIMARY="primary"
+        else:
+            # Caso específico: crea nombre con prefijo
+            # Ej: si colorname=SUCCESS, resultado="Success.Outline.TButton"
+            ttkstyle = f"{colorname}.{STYLE}"
+
+        # Calcula los colores para los diferentes estados del botón
+
+        # Color principal para texto y borde en estado normal
+        # Ej: para PRIMARY podría ser "#1976D2" (azul)
+        foreground = self.colors.get(colorname)
+
+        # Color contrastante para texto en estados interactivos
+        # Utiliza get_foreground que elige entre blanco/negro según contraste
+        # Ej: para azul oscuro podría ser "#FFFFFF" (blanco)
+        background = self.colors.get_foreground(colorname)
+
+        # Color de texto para estados pressed/hover (invertido del normal)
+        foreground_pressed = background  # Ej: "#FFFFFF"
+
+        # Color para el borde (igual al color principal)
+        bordercolor = foreground  # Ej: "#1976D2"
+
+        # Color de fondo para estados pressed/hover (igual al principal)
+        pressed = foreground  # Ej: "#1976D2"
+        hover = foreground  # Ej: "#1976D2"
+
+        # Configura el estilo base (estado normal del botón)
+        self.style._build_configure(
+            ttkstyle,
+            foreground=foreground,  # Color principal para el texto
+            background=self.colors.bg,  # Fondo neutral del tema
+            bordercolor=bordercolor,  # Borde del color principal
+            darkcolor=self.colors.bg,  # Evita sombreado 3D en bordes
+            lightcolor=self.colors.bg,  # Evita sombreado 3D en bordes
+            relief=tk.RAISED,  # Ligero efecto 3D elevado
+            focusthickness=0,  # Sin borde adicional de foco
+            focuscolor=foreground,  # Indicador de foco del color principal
+            padding=(10, 5),  # Espaciado interior estándar
+            anchor=tk.CENTER,  # Texto centrado en el botón
+        )
+
+        # Define cambios visuales para diferentes estados del botón
+        self.style.map(
+            ttkstyle,
+            # Cambios en el color de texto
+            foreground=[
+                # Texto semitransparente cuando está deshabilitado
+                ("disabled", disabled_fg),
+                # Texto invertido (ej: blanco) cuando está presionado
+                ("pressed !disabled", foreground_pressed),
+                # Mismo efecto al hacer hover
+                ("hover !disabled", foreground_pressed),
+            ],
+            # Cambios en el color de fondo
+            background=[
+                # Color principal como fondo al presionar
+                # Crea efecto de "llenado" del botón
+                ("pressed !disabled", pressed),
+                # Mismo efecto al hacer hover
+                ("hover !disabled", hover),
+            ],
+            # Cambios en el color del borde
+            bordercolor=[
+                # Borde semitransparente cuando deshabilitado
+                ("disabled", disabled_fg),
+                # Borde del mismo color que el fondo al presionar
+                ("pressed !disabled", pressed),
+                # Mismo efecto al hacer hover
+                ("hover !disabled", hover),
+            ],
+            # Cambios en el color de foco (coherente con texto)
+            focuscolor=[
+                ("pressed !disabled", foreground_pressed),
+                ("hover !disabled", foreground_pressed),
+            ],
+            # Cambios en colores de sombreado (coherentes con fondo)
+            darkcolor=[
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            lightcolor=[
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+        )
+
+        # Registra el estilo para hacerlo disponible en la aplicación
+        self.style._register_ttkstyle(ttkstyle)
+
     def create_combobox_style(self, colorname: str = DEFAULT) -> None:
         """Crea un estilo personalizado para widgets Combobox de TTK.
 
@@ -3236,132 +3362,6 @@ class StyleBuilderTTK:
         # Registra el estilo en el sistema para que esté disponible
         self.style._register_ttkstyle(ttkstyle)
 
-    def create_outline_button_style(self, colorname=DEFAULT):
-        """Crea un estilo tipo "outline" (contorno) para widgets ttk.Button.
-
-        Este método define un estilo de botón donde el color principal se usa como
-        contorno y texto sobre un fondo neutro. Al interactuar con el botón (hover
-        o presionado), los colores se invierten: el color principal pasa a ser el
-        fondo y el texto adquiere un color contrastante.
-
-        El efecto visual es el de un botón que se "llena" con su color principal
-        al interactuar con él, similar a los botones outline de frameworks como
-        Bootstrap.
-
-        Parameters:
-            colorname (str):
-                Etiqueta de color utilizada para estilizar el widget. Puede ser:
-                - DEFAULT o "": Utiliza el color PRIMARY del tema
-                - Cualquier etiqueta de color definida: Aplica ese color específico
-
-        Returns:
-            None: El método no retorna valores, pero registra un estilo TTK
-                  que puede ser utilizado por widgets Button.
-
-        """
-        # Identificador base para estilo de botón tipo outline/contorno
-        STYLE = "Outline.TButton"
-
-        # Calcula color semitransparente para estado deshabilitado
-        # Aplica 30% de transparencia al color de texto sobre fondo
-        # Ej: si fg="#000000" y bg="#FFFFFF", disabled_fg="#B3B3B3" (gris)
-        disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
-
-        # Determina nombre de estilo y color a utilizar
-        if any([colorname == DEFAULT, colorname == ""]):
-            # Caso DEFAULT: usa estilo base sin prefijo
-            ttkstyle = STYLE  # Resultado: "Outline.TButton"
-            # Usa el color primario del tema
-            colorname = PRIMARY  # Ej: PRIMARY="primary"
-        else:
-            # Caso específico: crea nombre con prefijo
-            # Ej: si colorname=SUCCESS, resultado="Success.Outline.TButton"
-            ttkstyle = f"{colorname}.{STYLE}"
-
-        # Calcula los colores para los diferentes estados del botón
-
-        # Color principal para texto y borde en estado normal
-        # Ej: para PRIMARY podría ser "#1976D2" (azul)
-        foreground = self.colors.get(colorname)
-
-        # Color contrastante para texto en estados interactivos
-        # Utiliza get_foreground que elige entre blanco/negro según contraste
-        # Ej: para azul oscuro podría ser "#FFFFFF" (blanco)
-        background = self.colors.get_foreground(colorname)
-
-        # Color de texto para estados pressed/hover (invertido del normal)
-        foreground_pressed = background  # Ej: "#FFFFFF"
-
-        # Color para el borde (igual al color principal)
-        bordercolor = foreground  # Ej: "#1976D2"
-
-        # Color de fondo para estados pressed/hover (igual al principal)
-        pressed = foreground  # Ej: "#1976D2"
-        hover = foreground  # Ej: "#1976D2"
-
-        # Configura el estilo base (estado normal del botón)
-        self.style._build_configure(
-            ttkstyle,
-            foreground=foreground,  # Color principal para el texto
-            background=self.colors.bg,  # Fondo neutral del tema
-            bordercolor=bordercolor,  # Borde del color principal
-            darkcolor=self.colors.bg,  # Evita sombreado 3D en bordes
-            lightcolor=self.colors.bg,  # Evita sombreado 3D en bordes
-            relief=tk.RAISED,  # Ligero efecto 3D elevado
-            focusthickness=0,  # Sin borde adicional de foco
-            focuscolor=foreground,  # Indicador de foco del color principal
-            padding=(10, 5),  # Espaciado interior estándar
-            anchor=tk.CENTER,  # Texto centrado en el botón
-        )
-
-        # Define cambios visuales para diferentes estados del botón
-        self.style.map(
-            ttkstyle,
-            # Cambios en el color de texto
-            foreground=[
-                # Texto semitransparente cuando está deshabilitado
-                ("disabled", disabled_fg),
-                # Texto invertido (ej: blanco) cuando está presionado
-                ("pressed !disabled", foreground_pressed),
-                # Mismo efecto al hacer hover
-                ("hover !disabled", foreground_pressed),
-            ],
-            # Cambios en el color de fondo
-            background=[
-                # Color principal como fondo al presionar
-                # Crea efecto de "llenado" del botón
-                ("pressed !disabled", pressed),
-                # Mismo efecto al hacer hover
-                ("hover !disabled", hover),
-            ],
-            # Cambios en el color del borde
-            bordercolor=[
-                # Borde semitransparente cuando deshabilitado
-                ("disabled", disabled_fg),
-                # Borde del mismo color que el fondo al presionar
-                ("pressed !disabled", pressed),
-                # Mismo efecto al hacer hover
-                ("hover !disabled", hover),
-            ],
-            # Cambios en el color de foco (coherente con texto)
-            focuscolor=[
-                ("pressed !disabled", foreground_pressed),
-                ("hover !disabled", foreground_pressed),
-            ],
-            # Cambios en colores de sombreado (coherentes con fondo)
-            darkcolor=[
-                ("pressed !disabled", pressed),
-                ("hover !disabled", hover),
-            ],
-            lightcolor=[
-                ("pressed !disabled", pressed),
-                ("hover !disabled", hover),
-            ],
-        )
-
-        # Registra el estilo para hacerlo disponible en la aplicación
-        self.style._register_ttkstyle(ttkstyle)
-
     def create_square_toggle_assets(self, colorname=DEFAULT):
         """Crea las imágenes (assets) necesarias para construir un estilo de
         interruptor (toggle) cuadrado.
@@ -3967,3 +3967,360 @@ class StyleBuilderTTK:
         # Actúa como un alias o interfaz simplificada para crear un estilo de interruptor redondo
         # Pasa directamente el parámetro colorname sin realizar ninguna transformación
         self.create_round_toggle_style(colorname)
+
+    def create_toolbutton_style(self, colorname=DEFAULT):
+        """Create a solid toolbutton style for the ttk.Checkbutton
+        and ttk.Radiobutton widgets.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "Toolbutton"
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            toggle_on = self.colors.primary
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+            toggle_on = self.colors.get(colorname)
+
+        foreground = self.colors.get_foreground(colorname)
+
+        if self.is_light_theme:
+            toggle_off = self.colors.border
+        else:
+            toggle_off = self.colors.selectbg
+
+        disabled_bg = Colors.make_transparent(0.10, self.colors.fg, self.colors.bg)
+        disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
+
+        self.style._build_configure(
+            ttkstyle,
+            foreground=self.colors.selectfg,
+            background=toggle_off,
+            bordercolor=toggle_off,
+            darkcolor=toggle_off,
+            lightcolor=toggle_off,
+            relief=tk.RAISED,
+            focusthickness=0,
+            focuscolor="",
+            padding=(10, 5),
+            anchor=tk.CENTER,
+        )
+        self.style.map(
+            ttkstyle,
+            foreground=[
+                ("disabled", disabled_fg),
+                ("hover", foreground),
+                ("selected", foreground),
+            ],
+            background=[
+                ("disabled", disabled_bg),
+                ("pressed !disabled", toggle_on),
+                ("selected !disabled", toggle_on),
+                ("hover !disabled", toggle_on),
+            ],
+            bordercolor=[
+                ("disabled", disabled_bg),
+                ("pressed !disabled", toggle_on),
+                ("selected !disabled", toggle_on),
+                ("hover !disabled", toggle_on),
+            ],
+            darkcolor=[
+                ("disabled", disabled_bg),
+                ("pressed !disabled", toggle_on),
+                ("selected !disabled", toggle_on),
+                ("hover !disabled", toggle_on),
+            ],
+            lightcolor=[
+                ("disabled", disabled_bg),
+                ("pressed !disabled", toggle_on),
+                ("selected !disabled", toggle_on),
+                ("hover !disabled", toggle_on),
+            ],
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_outline_toolbutton_style(self, colorname=DEFAULT):
+        """Create an outline toolbutton style for the ttk.Checkbutton
+        and ttk.Radiobutton widgets.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "Outline.Toolbutton"
+
+        disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            colorname = PRIMARY
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+
+        foreground = self.colors.get(colorname)
+        background = self.colors.get_foreground(colorname)
+        foreground_pressed = background
+        bordercolor = foreground
+        pressed = foreground
+        hover = foreground
+
+        self.style._build_configure(
+            ttkstyle,
+            foreground=foreground,
+            background=self.colors.bg,
+            bordercolor=bordercolor,
+            darkcolor=self.colors.bg,
+            lightcolor=self.colors.bg,
+            relief=tk.RAISED,
+            focusthickness=0,
+            focuscolor=foreground,
+            padding=(10, 5),
+            anchor=tk.CENTER,
+            arrowcolor=foreground,
+            arrowpadding=(0, 0, 15, 0),
+            arrowsize=3,
+        )
+        self.style.map(
+            ttkstyle,
+            foreground=[
+                ("disabled", disabled_fg),
+                ("pressed !disabled", foreground_pressed),
+                ("selected !disabled", foreground_pressed),
+                ("hover !disabled", foreground_pressed),
+            ],
+            background=[
+                ("pressed !disabled", pressed),
+                ("selected !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            bordercolor=[
+                ("disabled", disabled_fg),
+                ("pressed !disabled", pressed),
+                ("selected !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            darkcolor=[
+                ("disabled", self.colors.bg),
+                ("pressed !disabled", pressed),
+                ("selected !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            lightcolor=[
+                ("disabled", self.colors.bg),
+                ("pressed !disabled", pressed),
+                ("selected !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_entry_style(self, colorname=DEFAULT):
+        """Create a style for the ttk.Entry widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "TEntry"
+
+        # general default colors
+        if self.is_light_theme:
+            disabled_fg = self.colors.border
+            bordercolor = self.colors.border
+            readonly = self.colors.light
+        else:
+            disabled_fg = self.colors.selectbg
+            bordercolor = self.colors.selectbg
+            readonly = bordercolor
+
+        if any([colorname == DEFAULT, not colorname]):
+            # default style
+            ttkstyle = STYLE
+            focuscolor = self.colors.primary
+        else:
+            # colored style
+            ttkstyle = f"{colorname}.{STYLE}"
+            focuscolor = self.colors.get(colorname)
+            bordercolor = focuscolor
+
+        self.style._build_configure(
+            ttkstyle,
+            bordercolor=bordercolor,
+            darkcolor=self.colors.inputbg,
+            lightcolor=self.colors.inputbg,
+            fieldbackground=self.colors.inputbg,
+            foreground=self.colors.inputfg,
+            insertcolor=self.colors.inputfg,
+            padding=5,
+        )
+        self.style.map(
+            ttkstyle,
+            foreground=[("disabled", disabled_fg)],
+            fieldbackground=[("readonly", readonly)],
+            bordercolor=[
+                ("invalid", self.colors.danger),
+                ("focus !disabled", focuscolor),
+                ("hover !disabled", focuscolor),
+            ],
+            lightcolor=[
+                ("focus invalid", self.colors.danger),
+                ("focus !disabled", focuscolor),
+                ("readonly", readonly),
+            ],
+            darkcolor=[
+                ("focus invalid", self.colors.danger),
+                ("focus !disabled", focuscolor),
+                ("readonly", readonly),
+            ],
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_radiobutton_assets(self, colorname=DEFAULT):
+        """Create the image assets used to build the radiobutton style.
+
+        Parameters:
+
+            colorname (str):
+
+        Returns:
+
+            Tuple[str]:
+                A tuple of PhotoImage names
+        """
+        prime_color = self.colors.get(colorname)
+        on_fill = prime_color
+        off_fill = self.colors.bg
+        on_indicator = self.colors.selectfg
+        size = self.scale_size([14, 14])
+        off_border = Colors.make_transparent(0.4, self.colors.fg, self.colors.bg)
+        disabled = Colors.make_transparent(0.3, self.colors.fg, self.colors.bg)
+
+        if self.is_light_theme:
+            if colorname == LIGHT:
+                on_indicator = self.colors.dark
+
+        # radio off
+        _off = Image.new("RGBA", (134, 134))
+        draw = ImageDraw.Draw(_off)
+        draw.ellipse(
+            xy=[1, 1, 133, 133], outline=off_border, width=6, fill=off_fill
+        )
+        off_img = ImageTk.PhotoImage(_off.resize(size, Image.LANCZOS))
+        off_name = util.get_image_name(off_img)
+        self.theme_images[off_name] = off_img
+
+        # radio on
+        _on = Image.new("RGBA", (134, 134))
+        draw = ImageDraw.Draw(_on)
+        if colorname == LIGHT and self.is_light_theme:
+            draw.ellipse(xy=[1, 1, 133, 133], outline=off_border, width=6)
+        else:
+            draw.ellipse(xy=[1, 1, 133, 133], fill=on_fill)
+        draw.ellipse([40, 40, 94, 94], fill=on_indicator)
+        on_img = ImageTk.PhotoImage(_on.resize(size, Image.LANCZOS))
+        on_name = util.get_image_name(on_img)
+        self.theme_images[on_name] = on_img
+
+        # radio on/disabled
+        _on_dis = Image.new("RGBA", (134, 134))
+        draw = ImageDraw.Draw(_on_dis)
+        if colorname == LIGHT and self.is_light_theme:
+            draw.ellipse(xy=[1, 1, 133, 133], outline=off_border, width=6)
+        else:
+            draw.ellipse(xy=[1, 1, 133, 133], fill=disabled)
+        draw.ellipse([40, 40, 94, 94], fill=off_fill)
+        on_dis_img = ImageTk.PhotoImage(_on_dis.resize(size, Image.LANCZOS))
+        on_disabled_name = util.get_image_name(on_dis_img)
+        self.theme_images[on_disabled_name] = on_dis_img
+
+        # radio disabled
+        _disabled = Image.new("RGBA", (134, 134))
+        draw = ImageDraw.Draw(_disabled)
+        draw.ellipse(
+            xy=[1, 1, 133, 133], outline=disabled, width=3, fill=off_fill
+        )
+        disabled_img = ImageTk.PhotoImage(
+            _disabled.resize(size, Image.LANCZOS)
+        )
+        disabled_name = util.get_image_name(disabled_img)
+        self.theme_images[disabled_name] = disabled_img
+
+        return off_name, on_name, disabled_name, on_disabled_name
+
+    def create_radiobutton_style(self, colorname=DEFAULT):
+        """Create a style for the ttk.Radiobutton widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+
+        STYLE = "TRadiobutton"
+
+        disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            colorname = PRIMARY
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+
+        # ( off, on, disabled )
+        images = self.create_radiobutton_assets(colorname)
+        width = self.scale_size(20)
+        borderpad = self.scale_size(4)
+        self.style.element_create(
+            f"{ttkstyle}.indicator",
+            "image",
+            images[1],
+            ("disabled selected", images[3]),
+            ("disabled", images[2]),
+            ("!selected", images[0]),
+            width=width,
+            border=borderpad,
+            sticky=tk.W,
+        )
+        self.style.map(ttkstyle, foreground=[("disabled", disabled_fg)])
+        self.style._build_configure(ttkstyle)
+        self.style.layout(
+            ttkstyle,
+            [
+                (
+                    "Radiobutton.padding",
+                    {
+                        "children": [
+                            (
+                                f"{ttkstyle}.indicator",
+                                {"side": tk.LEFT, "sticky": ""},
+                            ),
+                            (
+                                "Radiobutton.focus",
+                                {
+                                    "children": [
+                                        (
+                                            "Radiobutton.label",
+                                            {"sticky": tk.NSEW},
+                                        )
+                                    ],
+                                    "side": tk.LEFT,
+                                    "sticky": "",
+                                },
+                            ),
+                        ],
+                        "sticky": tk.NSEW,
+                    },
+                )
+            ],
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
