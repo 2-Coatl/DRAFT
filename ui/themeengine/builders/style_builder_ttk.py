@@ -8,7 +8,7 @@ from PIL import ImageTk, ImageDraw, Image
 from ui.themeengine.core.color import Colors
 from ui.themeengine.builders.style_builder_tk import StyleBuilderTK
 from ui.themeengine.core.theme import ThemeDefinition
-from ui.themeengine.utils.constants import LIGHT, TTK_CLAM, DEFAULT, TTK_DEFAULT, PRIMARY
+from ui.themeengine.utils.constants import LIGHT, DARK, TTK_CLAM, TTK_ALT, TTK_DEFAULT, DEFAULT, PRIMARY
 from ui.themeengine.utils import utility as util
 
 class StyleBuilderTTK:
@@ -3009,3 +3009,320 @@ class StyleBuilderTTK:
         # Registra el estilo en el sistema para hacerlo disponible
         # Esto permite usar "colorname.Table.Treeview" en widgets
         self.style._register_ttkstyle(body_style)
+
+    def create_treeview_style(self, colorname=DEFAULT):
+        """Crea un estilo personalizado para widgets ttk.Treeview estándar.
+
+        Este método configura la apariencia visual completa de widgets Treeview,
+        adaptándose al tema actual (claro u oscuro) y aplicando el esquema de
+        colores especificado por 'colorname'. Define estilos tanto para el
+        encabezado como para el cuerpo del Treeview, incluyendo comportamiento
+        visual para distintos estados (selección, hover, foco, deshabilitado).
+
+        También intenta mejorar los indicadores de expansión/colapso del árbol
+        utilizando elementos visuales de un tema alternativo.
+
+        Parameters:
+            colorname (str):
+                Etiqueta de color utilizada para estilizar el widget. Puede ser:
+                - DEFAULT o "": Utiliza los colores de entrada predeterminados
+                  con color primario para elementos de foco
+                - LIGHT: En temas claros, aplica un estilo con fondo claro y
+                  bordes sutiles
+                - Cualquier etiqueta de color definida: Aplica ese color como base
+                  para el estilo y elementos interactivos
+
+        Returns:
+            None: El método no retorna valores, pero registra estilos TTK
+                  que pueden ser utilizados por widgets Treeview.
+
+        """
+        STYLE = "Treeview"
+
+        f = font.nametofont("TkDefaultFont")
+        rowheight = f.metrics()["linespace"]
+
+        if self.is_light_theme:
+            disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.2)
+            bordercolor = self.colors.border
+        else:
+            disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.3)
+            bordercolor = self.colors.selectbg
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            background = self.colors.inputbg
+            foreground = self.colors.inputfg
+            body_style = STYLE
+            header_style = f"{STYLE}.Heading"
+            focuscolor = self.colors.primary
+        elif colorname == LIGHT and self.is_light_theme:
+            background = self.colors.get(colorname)
+            foreground = self.colors.fg
+            body_style = f"{colorname}.{STYLE}"
+            header_style = f"{colorname}.{STYLE}.Heading"
+            focuscolor = background
+            bordercolor = focuscolor
+        else:
+            background = self.colors.get(colorname)
+            foreground = self.colors.selectfg
+            body_style = f"{colorname}.{STYLE}"
+            header_style = f"{colorname}.{STYLE}.Heading"
+            focuscolor = background
+            bordercolor = focuscolor
+
+        # treeview header
+        self.style._build_configure(
+            header_style,
+            background=background,
+            foreground=foreground,
+            relief=tk.FLAT,
+            padding=5,
+        )
+        self.style.map(
+            header_style,
+            foreground=[("disabled", disabled_fg)],
+            bordercolor=[("focus !disabled", background)],
+        )
+        # treeview body
+        self.style._build_configure(
+            body_style,
+            background=self.colors.inputbg,
+            fieldbackground=self.colors.inputbg,
+            foreground=self.colors.inputfg,
+            bordercolor=bordercolor,
+            lightcolor=self.colors.inputbg,
+            darkcolor=self.colors.inputbg,
+            borderwidth=2,
+            padding=0,
+            rowheight=rowheight,
+            relief=tk.RAISED,
+        )
+        self.style.map(
+            body_style,
+            background=[("selected", self.colors.selectbg)],
+            foreground=[
+                ("disabled", disabled_fg),
+                ("selected", self.colors.selectfg),
+            ],
+            bordercolor=[
+                ("disabled", bordercolor),
+                ("focus", focuscolor),
+                ("pressed", focuscolor),
+                ("hover", focuscolor),
+            ],
+            lightcolor=[("focus", focuscolor)],
+            darkcolor=[("focus", focuscolor)],
+        )
+        self.style.layout(
+            body_style,
+            [
+                (
+                    "Button.border",
+                    {
+                        "sticky": tk.NSEW,
+                        "border": "1",
+                        "children": [
+                            (
+                                "Treeview.padding",
+                                {
+                                    "sticky": tk.NSEW,
+                                    "children": [
+                                        (
+                                            "Treeview.treearea",
+                                            {"sticky": tk.NSEW},
+                                        )
+                                    ],
+                                },
+                            )
+                        ],
+                    },
+                )
+            ],
+        )
+
+        try:
+            self.style.element_create("Treeitem.indicator", "from", TTK_ALT)
+        except:
+            pass
+
+        # register ttkstyles
+        self.style._register_ttkstyle(body_style)
+
+    def create_frame_style(self, colorname=DEFAULT):
+        """Create a style for the ttk.Frame widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "TFrame"
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            background = self.colors.bg
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+            background = self.colors.get(colorname)
+
+        self.style._build_configure(ttkstyle, background=background)
+
+        # register style
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_outline_button_style(self, colorname=DEFAULT):
+        """Create an outline style for the ttk.Button widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "Outline.TButton"
+
+        disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            colorname = PRIMARY
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+
+        foreground = self.colors.get(colorname)
+        background = self.colors.get_foreground(colorname)
+        foreground_pressed = background
+        bordercolor = foreground
+        pressed = foreground
+        hover = foreground
+
+        self.style._build_configure(
+            ttkstyle,
+            foreground=foreground,
+            background=self.colors.bg,
+            bordercolor=bordercolor,
+            darkcolor=self.colors.bg,
+            lightcolor=self.colors.bg,
+            relief=tk.RAISED,
+            focusthickness=0,
+            focuscolor=foreground,
+            padding=(10, 5),
+            anchor=tk.CENTER,
+        )
+        self.style.map(
+            ttkstyle,
+            foreground=[
+                ("disabled", disabled_fg),
+                ("pressed !disabled", foreground_pressed),
+                ("hover !disabled", foreground_pressed),
+            ],
+            background=[
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            bordercolor=[
+                ("disabled", disabled_fg),
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            focuscolor=[
+                ("pressed !disabled", foreground_pressed),
+                ("hover !disabled", foreground_pressed),
+            ],
+            darkcolor=[
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            lightcolor=[
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+
+    def create_square_toggle_assets(self, colorname=DEFAULT):
+        """Create the image assets used to build a square toggle
+        style.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+
+        Returns:
+
+            Tuple[str]:
+                A tuple of PhotoImage names.
+        """
+        size = self.scale_size([24, 15])
+        if any([colorname == DEFAULT, colorname == ""]):
+            colorname = PRIMARY
+
+        # set default style color values
+        prime_color = self.colors.get(colorname)
+        on_border = prime_color
+        on_indicator = self.colors.selectfg
+        on_fill = prime_color
+        off_fill = self.colors.bg
+        disabled_fg = Colors.make_transparent(0.3, self.colors.fg, self.colors.bg)
+        off_border = Colors.make_transparent(0.4, self.colors.fg, self.colors.bg)
+        off_indicator = Colors.make_transparent(0.4, self.colors.fg, self.colors.bg)
+
+        # override defaults for light and dark colors
+        if colorname == LIGHT:
+            on_border = self.colors.dark
+            on_indicator = on_border
+        elif colorname == DARK:
+            on_border = self.colors.light
+            on_indicator = on_border
+
+        # toggle off
+        _off = Image.new("RGBA", (226, 130))
+        draw = ImageDraw.Draw(_off)
+        draw.rectangle(
+            xy=[1, 1, 225, 129], outline=off_border, width=6, fill=off_fill
+        )
+        draw.rectangle([18, 18, 110, 110], fill=off_indicator)
+
+        off_img = ImageTk.PhotoImage(_off.resize(size, Image.LANCZOS))
+        off_name = util.get_image_name(off_img)
+        self.theme_images[off_name] = off_img
+
+        # toggle on
+        toggle_on = Image.new("RGBA", (226, 130))
+        draw = ImageDraw.Draw(toggle_on)
+        draw.rectangle(
+            xy=[1, 1, 225, 129], outline=on_border, width=6, fill=on_fill
+        )
+        draw.rectangle([18, 18, 110, 110], fill=on_indicator)
+        _on = toggle_on.transpose(Image.ROTATE_180)
+        on_img = ImageTk.PhotoImage(_on.resize(size, Image.LANCZOS))
+        on_name = util.get_image_name(on_img)
+        self.theme_images[on_name] = on_img
+
+        # toggle disabled
+        _disabled = Image.new("RGBA", (226, 130))
+        draw = ImageDraw.Draw(_disabled)
+        draw.rectangle([1, 1, 225, 129], outline=disabled_fg, width=6)
+        draw.rectangle([18, 18, 110, 110], fill=disabled_fg)
+        disabled_img = ImageTk.PhotoImage(
+            _disabled.resize(size, Image.LANCZOS)
+        )
+        disabled_name = util.get_image_name(disabled_img)
+        self.theme_images[disabled_name] = disabled_img
+
+        # toggle on / disabled
+        toggle_on_disabled = Image.new("RGBA", (226, 130))
+        draw = ImageDraw.Draw(toggle_on_disabled)
+        draw.rectangle(
+            xy=[1, 1, 225, 129], outline=disabled_fg, width=6, fill=off_fill
+        )
+        draw.rectangle([18, 18, 110, 110], fill=disabled_fg)
+        _on_disabled = toggle_on_disabled.transpose(Image.ROTATE_180)
+        on_dis_img = ImageTk.PhotoImage(_on_disabled.resize(size, Image.LANCZOS))
+        on_disabled_name = util.get_image_name(on_dis_img)
+        self.theme_images[on_disabled_name] = on_dis_img
+
+
+        return off_name, on_name, disabled_name, on_disabled_name

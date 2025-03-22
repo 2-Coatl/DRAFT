@@ -6,6 +6,7 @@ from typing import Dict
 
 TTK_CLAM = 'clam'
 TTK_DEFAULT = 'default'
+TTK_ALT = 'alt'
 DEFAULT = 'default'
 DEFAULT_THEME = 'cosmo'
 
