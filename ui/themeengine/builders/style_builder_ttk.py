@@ -3515,45 +3515,96 @@ class StyleBuilderTTK:
         return off_name, on_name, disabled_name, on_disabled_name
 
     def create_round_toggle_assets(self, colorname=DEFAULT):
-        """Create image assets for the round toggle style.
+        """Crea las imágenes (assets) necesarias para construir un estilo de
+        interruptor (toggle) redondo.
+
+        Este método genera cuatro imágenes distintas que representan los diferentes
+        estados visuales de un interruptor tipo toggle con apariencia redondeada,
+        similar a los controles de iOS o Android:
+        1. OFF: Interruptor apagado - indicador circular a la izquierda
+        2. ON: Interruptor encendido - indicador circular a la derecha, colores activos
+        3. Disabled: Interruptor deshabilitado (apagado) - apariencia inactiva
+        4. ON Disabled: Interruptor encendido pero deshabilitado
+
+        Las imágenes creadas se almacenan en self.theme_images y pueden ser
+        utilizadas posteriormente para construir un estilo de interruptor visual
+        con apariencia redondeada y moderna.
 
         Parameters:
-
             colorname (str):
-                The color label assigned to the colors property.
+                Etiqueta de color utilizada para estilizar el widget. Puede ser:
+                - DEFAULT o "": Utiliza el color PRIMARY del tema
+                - LIGHT: Usa colores claros con ajustes específicos para contraste
+                - DARK: Usa colores oscuros con ajustes específicos para contraste
+                - Cualquier otra etiqueta de color definida en el tema
 
         Returns:
-
-            Tuple[str]:
-                A tuple of PhotoImage names.
+            Tuple[str, str, str, str]:
+                Una tupla con los nombres de las cuatro imágenes creadas, en el
+                siguiente orden: (off_name, on_name, disabled_name, on_disabled_name).
+                Estos nombres son los identificadores para acceder a las imágenes
+                almacenadas en self.theme_images.
         """
+        # Cálculo del tamaño apropiado según la escala del sistema
+        # Convierte dimensiones base [24, 15] al tamaño adecuado
+        # Ej: en escala 2x podría ser [48, 30]
         size = self.scale_size([24, 15])
 
+        # Si no se especifica color o es DEFAULT, usa PRIMARY
+        # Ej: si PRIMARY="primary", usará ese color
         if any([colorname == DEFAULT, colorname == ""]):
             colorname = PRIMARY
 
-        # set default style color values
+        # Definición de colores base para los diferentes componentes
+
+        # Color principal según la etiqueta especificada
+        # Ej: para PRIMARY podría ser "#1976D2" (azul)
         prime_color = self.colors.get(colorname)
+
+        # Color para el borde en estado activo (ON)
         on_border = prime_color
+
+        # Color para el indicador (círculo interior) en estado ON
+        # Normalmente color contrastante, ej: "#FFFFFF" (blanco)
         on_indicator = self.colors.selectfg
+
+        # Color de fondo para estado ON (igual al color principal)
         on_fill = prime_color
+
+        # Color de fondo para estado OFF (fondo del tema)
+        # Ej: en tema claro, "#FFFFFF" (blanco)
         off_fill = self.colors.bg
 
+        # Color semitransparente para elementos deshabilitados
+        # 30% de transparencia del color de texto sobre fondo
+        # Ej: si fg="#000000" y bg="#FFFFFF", resultaría "#B3B3B3" (gris)
         disabled_fg = Colors.make_transparent(0.3, self.colors.fg, self.colors.bg)
+
+        # Color semitransparente para borde en estado OFF
+        # 40% de transparencia, ej: "#999999" (gris más oscuro)
         off_border = Colors.make_transparent(0.4, self.colors.fg, self.colors.bg)
+
+        # Color semitransparente para indicador en estado OFF
         off_indicator = Colors.make_transparent(0.4, self.colors.fg, self.colors.bg)
 
-        # override defaults for light and dark colors
+        # Ajustes específicos para colores especiales LIGHT y DARK
         if colorname == LIGHT:
-            on_border = self.colors.dark
-            on_indicator = on_border
+            # Para color LIGHT (claro), usar color oscuro del tema
+            # para asegurar contraste con fondo claro
+            on_border = self.colors.dark  # Ej: "#212121" (casi negro)
+            on_indicator = on_border  # Mismo color para el indicador
         elif colorname == DARK:
-            on_border = self.colors.light
-            on_indicator = on_border
+            # Para color DARK (oscuro), usar color claro del tema
+            # para asegurar contraste con fondo oscuro
+            on_border = self.colors.light  # Ej: "#F5F5F5" (casi blanco)
+            on_indicator = on_border  # Mismo color para el indicador
 
-        # toggle off
+        # IMAGEN 1: Estado OFF (apagado)
+        # Creación de imagen base con canal alfa, tamaño grande para calidad
         _off = Image.new("RGBA", (226, 130))
         draw = ImageDraw.Draw(_off)
+        # Rectángulo redondeado para el cuerpo principal
+        # Radio grande (64px) crea forma casi ovalada
         draw.rounded_rectangle(
             xy=[1, 1, 225, 129],
             radius=(128 / 2),
@@ -3561,14 +3612,20 @@ class StyleBuilderTTK:
             width=6,
             fill=off_fill,
         )
+        # Indicador circular en posición izquierda
         draw.ellipse([20, 18, 112, 110], fill=off_indicator)
+
+        # Redimensionar al tamaño calculado con algoritmo de alta calidad
         off_img = ImageTk.PhotoImage(_off.resize(size, Image.LANCZOS))
+        # Generar nombre único para la imagen
         off_name = util.get_image_name(off_img)
+        # Almacenar la imagen en el diccionario
         self.theme_images[off_name] = off_img
 
-        # toggle on
+        # IMAGEN 2: Estado ON (encendido)
         _on = Image.new("RGBA", (226, 130))
         draw = ImageDraw.Draw(_on)
+        # Rectángulo redondeado: borde y fondo del color principal
         draw.rounded_rectangle(
             xy=[1, 1, 225, 129],
             radius=(128 / 2),
@@ -3576,15 +3633,19 @@ class StyleBuilderTTK:
             width=6,
             fill=on_fill,
         )
+        # Indicador circular inicialmente en misma posición que OFF
         draw.ellipse([20, 18, 112, 110], fill=on_indicator)
+        # Rotación 180° para mover indicador a la derecha
         _on = _on.transpose(Image.ROTATE_180)
+        # Procesamiento y almacenamiento similar al anterior
         on_img = ImageTk.PhotoImage(_on.resize(size, Image.LANCZOS))
         on_name = util.get_image_name(on_img)
         self.theme_images[on_name] = on_img
 
-        # toggle on / disabled
+        # IMAGEN 3: Estado ON Disabled (encendido pero deshabilitado)
         _on_disabled = Image.new("RGBA", (226, 130))
         draw = ImageDraw.Draw(_on_disabled)
+        # Rectángulo redondeado con borde semitransparente y fondo neutro
         draw.rounded_rectangle(
             xy=[1, 1, 225, 129],
             radius=(128 / 2),
@@ -3592,102 +3653,159 @@ class StyleBuilderTTK:
             width=6,
             fill=off_fill,
         )
+        # Indicador circular inicialmente en posición izquierda
         draw.ellipse([20, 18, 112, 110], fill=disabled_fg)
+        # Rotación 180° para mover indicador a la derecha
         _on_disabled = _on_disabled.transpose(Image.ROTATE_180)
+        # Procesamiento y almacenamiento
         on_dis_img = ImageTk.PhotoImage(_on_disabled.resize(size, Image.LANCZOS))
         on_disabled_name = util.get_image_name(on_dis_img)
         self.theme_images[on_disabled_name] = on_dis_img
 
-        # toggle disabled
+        # IMAGEN 4: Estado Disabled (deshabilitado)
         _disabled = Image.new("RGBA", (226, 130))
         draw = ImageDraw.Draw(_disabled)
+        # Rectángulo redondeado hueco (sin fill) con borde semitransparente
         draw.rounded_rectangle(
             xy=[1, 1, 225, 129], radius=(128 / 2), outline=disabled_fg, width=6
         )
+        # Indicador circular en posición izquierda, color semitransparente
         draw.ellipse([20, 18, 112, 110], fill=disabled_fg)
+        # Procesamiento y almacenamiento
         disabled_img = ImageTk.PhotoImage(
             _disabled.resize(size, Image.LANCZOS)
         )
         disabled_name = util.get_image_name(disabled_img)
         self.theme_images[disabled_name] = disabled_img
 
+        # Retornar los nombres de las cuatro imágenes creadas
+        # Estos nombres serán usados para acceder a las imágenes
+        # almacenadas en self.theme_images
         return off_name, on_name, disabled_name, on_disabled_name
 
     def create_round_toggle_style(self, colorname=DEFAULT):
-        """Create a round toggle style for the ttk.Checkbutton widget.
+        """Crea un estilo de interruptor redondo para widgets ttk.Checkbutton.
+
+        Este método transforma la apariencia de un widget Checkbutton estándar
+        en un interruptor con apariencia moderna y redondeada, similar a los
+        controles de iOS o Android. Utiliza imágenes personalizadas generadas
+        por create_round_toggle_assets() para representar los diferentes estados
+        visuales (on/off/disabled).
+
+        El estilo resultante mantiene la funcionalidad del Checkbutton pero con
+        una representación visual completamente diferente: en lugar del tradicional
+        cuadro de verificación, muestra un interruptor circular que se desliza
+        entre posiciones izquierda (off) y derecha (on).
 
         Parameters:
-
             colorname (str):
-                The color label used to style the widget.
+                Etiqueta de color utilizada para estilizar el interruptor. Puede ser:
+                - DEFAULT o "": Utiliza el color PRIMARY del tema
+                - Cualquier etiqueta de color definida en el tema (ej: SUCCESS, WARNING)
+
+        Returns:
+            None: El método no retorna valores, pero registra un estilo TTK
+                  que puede ser utilizado por widgets Checkbutton.
+
         """
+        # Identificador base para este estilo
         STYLE = "Round.Toggle"
 
+        # Color semitransparente para texto en estado deshabilitado
+        # 30% de transparencia del color de texto sobre fondo
+        # Ej: si fg="#000000" y bg="#FFFFFF", resultaría "#B3B3B3" (gris)
         disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
 
+        # Determinar nombre del estilo y color a utilizar
         if any([colorname == DEFAULT, colorname == ""]):
-            ttkstyle = STYLE
+            # Caso DEFAULT: usar nombre base sin prefijo
+            ttkstyle = STYLE  # Resultado: "Round.Toggle"
+            # Usar color primario para las imágenes
             colorname = PRIMARY
         else:
+            # Caso específico: crear nombre con prefijo del color
+            # Ej: si colorname=SUCCESS, resultado="Success.Round.Toggle"
             ttkstyle = f"{colorname}.{STYLE}"
 
-        # ( off, on, disabled )
+        # Obtener las imágenes para los diferentes estados del interruptor
+        # Retorna tupla con 4 nombres: (off, on, disabled, on_disabled)
         images = self.create_round_toggle_assets(colorname)
 
+        # Intentar crear un elemento personalizado para el indicador
         try:
-            width = self.scale_size(28)
-            borderpad = self.scale_size(4)
+            # Calcular dimensiones según escala del sistema
+            # Ej: en escala 2x, width=56 y borderpad=8
+            width = self.scale_size(28)  # Ancho del indicador
+            borderpad = self.scale_size(4)  # Padding del borde
+
+            # Crear elemento de imagen personalizado para el indicador
             self.style.element_create(
-                f"{ttkstyle}.indicator",
-                "image",
+                f"{ttkstyle}.indicator",  # Nombre único del elemento
+                "image",  # Tipo: basado en imágenes
+                # Imagen predeterminada (estado ON)
                 images[1],
-                ("disabled selected", images[3]),
-                ("disabled", images[2]),
-                ("!selected", images[0]),
-                width=width,
-                border=borderpad,
-                sticky=tk.W,
+                # Mapeo de imágenes según estados:
+                ("disabled selected", images[3]),  # Deshabilitado + Seleccionado
+                ("disabled", images[2]),  # Solo deshabilitado
+                ("!selected", images[0]),  # No seleccionado (OFF)
+                # Parámetros de configuración:
+                width=width,  # Ancho del elemento
+                border=borderpad,  # Padding alrededor del elemento
+                sticky=tk.W,  # Alineación a la izquierda
             )
         except:
+            # Capturar posibles errores si el elemento ya existe
+            # Esto permite reutilizar el método sin fallos
             """This method is used as the default Toggle style, so it
             is neccessary to catch Tcl Errors when it tries to create
             and element that was already created by the Toggle or
             Round Toggle style"""
             pass
 
+        # Configurar propiedades base del estilo
         self.style._build_configure(
             ttkstyle,
-            relief=tk.FLAT,
-            borderwidth=0,
-            padding=0,
-            foreground=self.colors.fg,
-            background=self.colors.bg,
+            relief=tk.FLAT,  # Sin efecto de relieve (plano)
+            borderwidth=0,  # Sin borde visible
+            padding=0,  # Sin espaciado interno
+            foreground=self.colors.fg,  # Color de texto del tema
+            background=self.colors.bg,  # Color de fondo del tema
         )
+
+        # Definir cambios visuales para estados específicos
         self.style.map(
             ttkstyle,
+            # Texto gris cuando está deshabilitado
             foreground=[("disabled", disabled_fg)],
+            # Mantener color de fondo cuando está seleccionado
             background=[("selected", self.colors.bg)],
         )
+
+        # Definir la estructura visual (layout) del widget
         self.style.layout(
             ttkstyle,
             [
                 (
+                    # Contenedor exterior: borde de Toolbutton
                     "Toolbutton.border",
                     {
-                        "sticky": tk.NSEW,
+                        "sticky": tk.NSEW,  # Expandir en todas direcciones
                         "children": [
                             (
+                                # Contenedor medio: área de padding
                                 "Toolbutton.padding",
                                 {
                                     "sticky": tk.NSEW,
                                     "children": [
                                         (
+                                            # Indicador personalizado (interruptor)
                                             f"{ttkstyle}.indicator",
-                                            {"side": tk.LEFT},
+                                            {"side": tk.LEFT},  # Posición izquierda
                                         ),
                                         (
+                                            # Etiqueta de texto
                                             "Toolbutton.label",
-                                            {"side": tk.LEFT},
+                                            {"side": tk.LEFT},  # A la derecha del indicador
                                         ),
                                     ],
                                 },
@@ -3697,64 +3815,102 @@ class StyleBuilderTTK:
                 )
             ],
         )
-        # register ttkstyle
+
+        # Registrar el estilo para hacerlo disponible
+        # Ejemplo de uso: ttk.Checkbutton(parent, style="Primary.Round.Toggle")
         self.style._register_ttkstyle(ttkstyle)
 
     def create_square_toggle_style(self, colorname=DEFAULT):
-        """Create a square toggle style for the ttk.Checkbutton widget.
+        """Crea un estilo de interruptor cuadrado para widgets ttk.Checkbutton.
+
+        Este método transforma la apariencia de un widget Checkbutton estándar
+        en un interruptor con apariencia cuadrada moderna. Utiliza imágenes
+        personalizadas generadas por create_square_toggle_assets() para representar
+        los diferentes estados visuales (on/off/disabled).
+
+        El estilo resultante mantiene la funcionalidad del Checkbutton pero con
+        una representación visual completamente diferente: en lugar del tradicional
+        cuadro de verificación, muestra un interruptor cuadrado que se desliza
+        entre posiciones izquierda (off) y derecha (on).
 
         Parameters:
-
             colorname (str):
-                The color label used to style the widget.
-        """
+                Etiqueta de color utilizada para estilizar el interruptor. Puede ser:
+                - DEFAULT o "": Utiliza el estilo base sin prefijo
+                - Cualquier etiqueta de color definida en el tema (ej: PRIMARY, SUCCESS)
 
+        Returns:
+            None: El método no retorna valores, pero registra un estilo TTK
+                  que puede ser utilizado por widgets Checkbutton.
+        """
+        # Identificador base para este estilo
         STYLE = "Square.Toggle"
 
+        # Color semitransparente para texto en estado deshabilitado
+        # 30% de transparencia del color de texto sobre fondo
+        # Ej: si fg="#000000" y bg="#FFFFFF", resultaría "#B3B3B3" (gris)
         disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
 
+        # Determinar nombre del estilo según colorname
         if any([colorname == DEFAULT, colorname == ""]):
-            ttkstyle = STYLE
+            # Caso DEFAULT: usar nombre base sin prefijo
+            ttkstyle = STYLE  # Resultado: "Square.Toggle"
         else:
+            # Caso específico: crear nombre con prefijo del color
+            # Ej: si colorname=PRIMARY, resultado="Primary.Square.Toggle"
             ttkstyle = f"{colorname}.{STYLE}"
 
-        # ( off, on, disabled )
+        # Obtener las imágenes para los diferentes estados del interruptor
+        # Retorna tupla con 4 nombres: (off, on, disabled, on_disabled)
+        # Nota: A pesar del comentario que indica 3 imágenes, son 4
         images = self.create_square_toggle_assets(colorname)
 
-        width = self.scale_size(28)
-        borderpad = self.scale_size(4)
+        # Calcular dimensiones según escala del sistema
+        # Ej: en escala 2x, width=56 y borderpad=8
+        width = self.scale_size(28)  # Ancho del indicador
+        borderpad = self.scale_size(4)  # Padding del borde
 
+        # Crear elemento de imagen personalizado para el indicador
         self.style.element_create(
-            f"{ttkstyle}.indicator",
-            "image",
+            f"{ttkstyle}.indicator",  # Nombre único del elemento
+            "image",  # Tipo: basado en imágenes
+            # Imagen predeterminada (estado ON)
             images[1],
-            ("disabled selected", images[3]),
-            ("disabled", images[2]),
-            ("!selected", images[0]),
-            width=width,
-            border=borderpad,
-            sticky=tk.W,
+            # Mapeo de imágenes según estados:
+            ("disabled selected", images[3]),  # Deshabilitado + Seleccionado
+            ("disabled", images[2]),  # Solo deshabilitado
+            ("!selected", images[0]),  # No seleccionado (OFF)
+            # Parámetros de configuración:
+            width=width,  # Ancho del elemento
+            border=borderpad,  # Padding alrededor del elemento
+            sticky=tk.W,  # Alineación a la izquierda
         )
+
+        # Definir la estructura visual (layout) del widget
         self.style.layout(
             ttkstyle,
             [
                 (
+                    # Contenedor exterior: borde de Toolbutton
                     "Toolbutton.border",
                     {
-                        "sticky": tk.NSEW,
+                        "sticky": tk.NSEW,  # Expandir en todas direcciones
                         "children": [
                             (
+                                # Contenedor medio: área de padding
                                 "Toolbutton.padding",
                                 {
                                     "sticky": tk.NSEW,
                                     "children": [
                                         (
+                                            # Indicador personalizado (interruptor)
                                             f"{ttkstyle}.indicator",
-                                            {"side": tk.LEFT},
+                                            {"side": tk.LEFT},  # Posición izquierda
                                         ),
                                         (
+                                            # Etiqueta de texto
                                             "Toolbutton.label",
-                                            {"side": tk.LEFT},
+                                            {"side": tk.LEFT},  # A la derecha del indicador
                                         ),
                                     ],
                                 },
@@ -3764,25 +3920,50 @@ class StyleBuilderTTK:
                 )
             ],
         )
+
+        # Configurar propiedades base del estilo
         self.style._build_configure(
-            ttkstyle, relief=tk.FLAT, borderwidth=0, foreground=self.colors.fg
+            ttkstyle,
+            relief=tk.FLAT,  # Sin efecto de relieve (plano)
+            borderwidth=0,  # Sin borde visible
+            foreground=self.colors.fg,  # Color de texto del tema
         )
+
+        # Definir cambios visuales para estados específicos
         self.style.map(
             ttkstyle,
+            # Texto gris cuando está deshabilitado
             foreground=[("disabled", disabled_fg)],
+            # Mismo color de fondo para ambos estados (podría anular comportamientos predeterminados)
             background=[
                 ("selected", self.colors.bg),
                 ("!selected", self.colors.bg),
             ],
         )
-        # register ttkstyle
+
+        # Registrar el estilo para hacerlo disponible
+        # Ejemplo de uso: ttk.Checkbutton(parent, style="Primary.Square.Toggle")
         self.style._register_ttkstyle(ttkstyle)
 
     def create_toggle_style(self, colorname=DEFAULT):
-        """Create a round toggle style for the ttk.Checkbutton widget.
+        """Crea un estilo de interruptor redondo para widgets ttk.Checkbutton.
+
+        Este método es un alias para create_round_toggle_style() y está incluido
+        para proporcionar una interfaz más simple y genérica. Internamente,
+        delega toda la funcionalidad a create_round_toggle_style().
 
         Parameters:
-
             colorname (str):
+                Etiqueta de color utilizada para estilizar el interruptor. Puede ser:
+                - DEFAULT o "": Utiliza el color PRIMARY del tema
+                - Cualquier etiqueta de color definida en el tema (ej: SUCCESS, WARNING)
+
+        Returns:
+            None: El método no retorna valores, pero indirectamente registra
+                  un estilo TTK para widgets Checkbutton.
+
         """
+        # Este método simplemente delega toda la funcionalidad a create_round_toggle_style
+        # Actúa como un alias o interfaz simplificada para crear un estilo de interruptor redondo
+        # Pasa directamente el parámetro colorname sin realizar ninguna transformación
         self.create_round_toggle_style(colorname)
