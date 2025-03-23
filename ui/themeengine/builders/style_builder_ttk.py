@@ -4515,182 +4515,297 @@ class StyleBuilderTTK:
         self.style._register_ttkstyle(ttkstyle)
 
     def create_date_button_assets(self, foreground):
-        """Create the image assets used to build the date button
-        style. This button style applied to the button in the
-        ttkbootstrap.widgets.DateEntry.
+        """Crea la imagen del calendario utilizada para el botón de selección de fecha.
+
+        Este método genera una imagen esquemática de un calendario que se utiliza como ícono
+        en el botón de selección de fecha del widget ttkbootstrap.widgets.DateEntry.
+        El diseño consiste en un rectángulo redondeado con varios rectángulos internos
+        que representan las espirales de la parte superior y los días del calendario.
+
+        La imagen se crea inicialmente en un tamaño grande (210x220) y luego se redimensiona
+        al tamaño apropiado según la escala de la interfaz, utilizando un algoritmo de alta
+        calidad para mantener la nitidez visual.
 
         Parameters:
-
             foreground (str):
-                The color value used to draw the calendar image.
+                El valor de color (hexadecimal o nombre) que se utilizará para dibujar
+                todos los elementos de la imagen del calendario.
 
         Returns:
-
             str:
-                The PhotoImage name.
+                El nombre único asignado a la imagen PhotoImage. Este nombre se utiliza
+                para referenciar la imagen almacenada en self.theme_images cuando se
+                crea el estilo del botón de fecha.
         """
+        # El color que se utilizará para todos los elementos de la imagen
         fill = foreground
+
+        # Crea una imagen base con fondo transparente de 210x220 píxeles
+        # Este tamaño grande permite detalles precisos antes del redimensionamiento
         image = Image.new("RGBA", (210, 220))
         draw = ImageDraw.Draw(image)
 
+        # Dibuja el rectángulo redondeado principal que representa el cuerpo del calendario
+        # Coordenadas: [x1, y1, x2, y2] = [10, 30, 200, 210] (esquina sup. izq. a inf. der.)
+        # Sólo dibuja el contorno (sin relleno) con un ancho de 10 píxeles
         draw.rounded_rectangle(
             [10, 30, 200, 210], radius=20, outline=fill, width=10
         )
 
+        # Define las coordenadas para todos los elementos internos del calendario
+        # Cada lista contiene [x1, y1, x2, y2] para un rectángulo
         calendar_image_coordinates = [
-            # page spirals
-            [40, 10, 50, 50],
-            [100, 10, 110, 50],
-            [160, 10, 170, 50],
-            # row 1
+            # Espirales de la parte superior del calendario (3 rectángulos)
+            [40, 10, 50, 50],  # Espiral izquierda
+            [100, 10, 110, 50],  # Espiral central
+            [160, 10, 170, 50],  # Espiral derecha
+
+            # Primera fila de días/fechas (3 rectángulos)
             [70, 90, 90, 110],
             [110, 90, 130, 110],
             [150, 90, 170, 110],
-            # row 2
+
+            # Segunda fila de días/fechas (4 rectángulos)
             [30, 130, 50, 150],
             [70, 130, 90, 150],
             [110, 130, 130, 150],
             [150, 130, 170, 150],
-            # row 3
+
+            # Tercera fila de días/fechas (3 rectángulos)
             [30, 170, 50, 190],
             [70, 170, 90, 190],
             [110, 170, 130, 190],
         ]
+
+        # Dibuja cada elemento del calendario como un rectángulo sólido
         for xy in calendar_image_coordinates:
             draw.rectangle(xy=xy, fill=fill)
 
+        # Calcula el tamaño final según la escala de la interfaz
+        # Convierte de 210x220 a aproximadamente 21x22 (factor de reducción ~10x)
         size = self.scale_size([21, 22])
+
+        # Redimensiona la imagen al tamaño final y convierte a formato Tkinter
+        # Usa el algoritmo LANCZOS que proporciona la mejor calidad al reducir tamaño
         tk_img = ImageTk.PhotoImage(image.resize(size, Image.LANCZOS))
+
+        # Obtiene un nombre único para la imagen y la almacena en el diccionario
+        # Esto mantiene una referencia a la imagen para evitar que sea recolectada
+        # por el garbage collector de Python
         tk_name = util.get_image_name(tk_img)
         self.theme_images[tk_name] = tk_img
+
+        # Retorna el nombre único para ser usado al crear el estilo del botón
         return tk_name
 
     def create_date_button_style(self, colorname=DEFAULT):
-        """Create a date button style for the ttk.Button widget.
+        """Crea un estilo personalizado para el botón de fecha utilizado en el widget DateEntry.
+
+        Este método define la apariencia visual completa del botón de fecha, incluyendo el ícono
+        de calendario, colores base, y efectos visuales para diferentes estados (hover, presionado,
+        deshabilitado). El botón resultante mostrará un ícono esquemático de calendario y cambiará
+        su apariencia en respuesta a las interacciones del usuario.
 
         Parameters:
+            colorname (str, optional):
+                Etiqueta de color utilizada para estilizar el widget. Define el color de fondo
+                del botón y afecta indirectamente al ícono del calendario. Si es DEFAULT o vacío,
+                se utilizará el estilo base "Date.TButton" con el color primario del tema. Si se
+                especifica (ej: "primary", "success"), el estilo se nombrará como
+                "{colorname}.Date.TButton".
+                Default: DEFAULT
 
-            colorname (str):
-                The color label used to style widget.
+        Returns:
+            None: El método no retorna ningún valor, pero registra el estilo TTK en el sistema
+            para que esté disponible para los widgets.
+
+        Notes:
+            Este método depende de `create_date_button_assets` para generar el ícono del calendario.
+            Los colores para estados hover y presionado se derivan automáticamente del color base
+            mediante manipulación HSV.
         """
+        # Nombre base del estilo TTK para botones de fecha
         STYLE = "Date.TButton"
 
+        # Determina el color para estado deshabilitado según el tipo de tema
         if self.is_light_theme:
+            # Para temas claros, usa el color de borde (ej: "#E0E0E0")
             disabled_fg = self.colors.border
         else:
+            # Para temas oscuros, usa el color de fondo seleccionado (ej: "#444444")
             disabled_fg = self.colors.selectbg
 
+        # Obtiene el color de texto adecuado para el ícono del calendario
+        # Este color contrasta con el fondo para asegurar visibilidad
+        # Ejemplo: Para fondo azul → btn_foreground = "#FFFFFF" (blanco)
         btn_foreground = Colors.get_foreground(self.colors, colorname)
 
+        # Genera el ícono del calendario con el color de texto determinado
+        # Retorna el nombre único de la imagen generada (ej: "pyimage42")
         img_normal = self.create_date_button_assets(btn_foreground)
 
+        # Determina el nombre del estilo y los colores base según el parámetro colorname
         if any([colorname == DEFAULT, colorname == ""]):
-            ttkstyle = STYLE
-            foreground = self.colors.get_foreground(PRIMARY)
-            background = self.colors.primary
+            # Para el caso predeterminado o vacío, usa el estilo base y colores primarios
+            ttkstyle = STYLE  # "Date.TButton"
+            foreground = self.colors.get_foreground(PRIMARY)  # Color contrastante (ej: blanco)
+            background = self.colors.primary  # Color primario (ej: azul)
         else:
-            ttkstyle = f"{colorname}.{STYLE}"
-            foreground = self.colors.get_foreground(colorname)
-            background = self.colors.get(colorname)
+            # Para colores específicos, crea nombre compuesto y usa esos colores
+            ttkstyle = f"{colorname}.{STYLE}"  # Ej: "success.Date.TButton"
+            foreground = self.colors.get_foreground(colorname)  # Color contrastante
+            background = self.colors.get(colorname)  # Color específico (ej: verde)
 
-        pressed = Colors.update_hsv(background, vd=-0.1)
-        hover = Colors.update_hsv(background, vd=0.10)
+        # Calcula colores derivados para efectos visuales en diferentes estados
+        # Manipula el valor HSV del color de fondo para hacerlo más oscuro o claro
+        pressed = Colors.update_hsv(background, vd=-0.1)  # Más oscuro para estado presionado
+        hover = Colors.update_hsv(background, vd=0.10)  # Más claro para estado hover
 
+        # Configura las propiedades base del estilo
         self.style._build_configure(
             ttkstyle,
-            foreground=foreground,
-            background=background,
-            bordercolor=background,
-            darkcolor=background,
-            lightcolor=background,
-            relief=tk.RAISED,
-            focusthickness=0,
-            focuscolor=foreground,
-            padding=(2, 2),
-            anchor=tk.CENTER,
-            image=img_normal,
+            foreground=foreground,  # Color del texto (contrasta con el fondo)
+            background=background,  # Color de fondo del botón
+            bordercolor=background,  # Color del borde (igual al fondo)
+            darkcolor=background,  # Color oscuro para efectos 3D (igual al fondo)
+            lightcolor=background,  # Color claro para efectos 3D (igual al fondo)
+            relief=tk.RAISED,  # Relieve: ligeramente elevado
+            focusthickness=0,  # Sin indicador de foco visible
+            focuscolor=foreground,  # Color del foco (igual al texto)
+            padding=(2, 2),  # Espaciado interno: 2px en ambas direcciones
+            anchor=tk.CENTER,  # Alineación del contenido: centrado
+            image=img_normal,  # Ícono del calendario generado anteriormente
         )
+
+        # Define cómo cambian las propiedades visuales según el estado del widget
         self.style.map(
             ttkstyle,
-            foreground=[("disabled", disabled_fg)],
+            # Configuración del color de texto
+            foreground=[
+                ("disabled", disabled_fg),  # Texto deshabilitado: color atenuado
+            ],
+            # Configuración del color de fondo
             background=[
-                ("disabled", disabled_fg),
-                ("pressed !disabled", pressed),
-                ("hover !disabled", hover),
+                ("disabled", disabled_fg),  # Deshabilitado: color atenuado
+                ("pressed !disabled", pressed),  # Presionado: color más oscuro
+                ("hover !disabled", hover),  # Hover: color más claro
             ],
-            bordercolor=[("disabled", disabled_fg)],
+            # Configuración del color de borde
+            bordercolor=[
+                ("disabled", disabled_fg),  # Deshabilitado: color atenuado
+            ],
+            # Configuración de efectos visuales del borde (parte oscura)
             darkcolor=[
-                ("disabled", disabled_fg),
-                ("pressed !disabled", pressed),
-                ("hover !disabled", hover),
+                ("disabled", disabled_fg),  # Deshabilitado: color atenuado
+                ("pressed !disabled", pressed),  # Presionado: color más oscuro
+                ("hover !disabled", hover),  # Hover: color más claro
             ],
+            # Configuración de efectos visuales del borde (parte clara)
             lightcolor=[
-                ("disabled", disabled_fg),
-                ("pressed !disabled", pressed),
-                ("hover !disabled", hover),
+                ("disabled", disabled_fg),  # Deshabilitado: color atenuado
+                ("pressed !disabled", pressed),  # Presionado: color más oscuro
+                ("hover !disabled", hover),  # Hover: color más claro
             ],
         )
 
+        # Registra el estilo TTK en el sistema para su uso por widgets
         self.style._register_ttkstyle(ttkstyle)
 
     def create_calendar_style(self, colorname=DEFAULT):
-        """Create a style for the
-        ttkbootstrap.dialogs.DatePickerPopup widget.
+        """Crea estilos personalizados para el widget de calendario ttkbootstrap.dialogs.DatePickerPopup.
+
+        Este método define la apariencia visual del calendario emergente para selección de fechas
+        y sus botones de navegación. Configura los colores, efectos de hover, presionado y selección,
+        y el comportamiento visual en estado deshabilitado. También crea un estilo específico para
+        los botones tipo "chevron" (flechas) utilizados para navegar entre meses y años.
+
+        El método crea y registra dos estilos relacionados:
+        1. Un estilo para el calendario principal ("TCalendar" o "{colorname}.TCalendar")
+        2. Un estilo para los botones de navegación ("Chevron.TButton" o "Chevron.{colorname}.TButton")
 
         Parameters:
+            colorname (str, optional):
+                Etiqueta de color utilizada para estilizar el widget. Define principalmente el color
+                utilizado para los estados activos (hover, presionado, seleccionado). Si es DEFAULT
+                o vacío, se utilizará el estilo base con el color primario del tema. Si se especifica
+                (ej: "primary", "success"), el estilo se nombrará incluyendo ese color.
+                Default: DEFAULT
 
-            colorname (str):
-                The color label used to style the widget.
+        Returns:
+            None: El método no retorna ningún valor, pero registra dos estilos TTK en el sistema
+            para que estén disponibles para los widgets correspondientes.
+
+        Notes:
+            - El comportamiento visual se adapta automáticamente según el tema sea claro u oscuro.
+            - Para temas claros, los estados activos utilizan un color más oscuro, mientras que
+              para temas oscuros utilizan un color más claro.
+            - El estilo utiliza elementos de "Toolbutton" como base para su layout.
         """
-
+        # Nombre base del estilo TTK para el calendario
         STYLE = "TCalendar"
 
+        # Determina el color principal y los nombres de los estilos según el parámetro colorname
         if any([colorname == DEFAULT, colorname == ""]):
-            prime_color = self.colors.primary
-            ttkstyle = STYLE
-            chevron_style = "Chevron.TButton"
+            # Para el caso predeterminado, usa el color primario y nombres base
+            prime_color = self.colors.primary  # Ej: "#0078D7" (azul)
+            ttkstyle = STYLE  # "TCalendar"
+            chevron_style = "Chevron.TButton"  # Estilo para botones de navegación
         else:
-            prime_color = self.colors.get(colorname)
-            ttkstyle = f"{colorname}.{STYLE}"
-            chevron_style = f"Chevron.{colorname}.TButton"
+            # Para colores específicos, usa ese color y nombres compuestos
+            prime_color = self.colors.get(colorname)  # Ej: "#28A745" (verde) si colorname="success"
+            ttkstyle = f"{colorname}.{STYLE}"  # Ej: "success.TCalendar"
+            chevron_style = f"Chevron.{colorname}.TButton"  # Ej: "Chevron.success.TButton"
 
+        # Calcula colores derivados para diferentes estados según el tipo de tema
         if self.is_light_theme:
-            disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.2)
-            pressed = Colors.update_hsv(prime_color, vd=-0.1)
+            # Para temas claros:
+            # - Color deshabilitado: versión más oscura del fondo de entrada (HSV -0.2)
+            # - Color presionado: versión más oscura del color principal (HSV -0.1)
+            disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.2)  # Ej: "#CCCCCC"
+            pressed = Colors.update_hsv(prime_color, vd=-0.1)  # Versión más oscura
         else:
-            disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.3)
-            pressed = Colors.update_hsv(prime_color, vd=0.1)
+            # Para temas oscuros:
+            # - Color deshabilitado: versión aún más oscura del fondo de entrada (HSV -0.3)
+            # - Color presionado: versión más clara del color principal (HSV +0.1)
+            # Nota: La dirección del ajuste es opuesta para pressed en temas oscuros
+            disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.3)  # Más oscuro
+            pressed = Colors.update_hsv(prime_color, vd=0.1)  # Versión más clara
 
+        # 1. CONFIGURACIÓN DEL ESTILO BASE DEL CALENDARIO
+        # Establece las propiedades visuales iniciales
         self.style._build_configure(
             ttkstyle,
-            foreground=self.colors.fg,
-            background=self.colors.bg,
-            bordercolor=self.colors.bg,
-            darkcolor=self.colors.bg,
-            lightcolor=self.colors.bg,
-            relief=tk.RAISED,
-            focusthickness=0,
-            focuscolor="",
-            borderwidth=1,
-            padding=(10, 5),
-            anchor=tk.CENTER,
+            foreground=self.colors.fg,  # Color del texto (del tema)
+            background=self.colors.bg,  # Color de fondo (del tema)
+            bordercolor=self.colors.bg,  # Color del borde (igual al fondo)
+            darkcolor=self.colors.bg,  # Color oscuro para efectos 3D (igual al fondo)
+            lightcolor=self.colors.bg,  # Color claro para efectos 3D (igual al fondo)
+            relief=tk.RAISED,  # Relieve: ligeramente elevado
+            focusthickness=0,  # Sin indicador de foco visible
+            focuscolor="",  # Sin color específico para el foco
+            borderwidth=1,  # Ancho del borde: 1 píxel
+            padding=(10, 5),  # Espaciado interno: 10px horizontal, 5px vertical
+            anchor=tk.CENTER,  # Alineación del contenido: centrado
         )
+
+        # 2. DEFINICIÓN DEL LAYOUT DEL CALENDARIO
+        # Utiliza componentes de "Toolbutton" como base para la estructura
         self.style.layout(
             ttkstyle,
             [
                 (
-                    "Toolbutton.border",
+                    "Toolbutton.border",  # Elemento de borde exterior
                     {
-                        "sticky": tk.NSEW,
+                        "sticky": tk.NSEW,  # Se expande en todas direcciones
                         "children": [
                             (
-                                "Toolbutton.padding",
+                                "Toolbutton.padding",  # Elemento de espaciado interno
                                 {
-                                    "sticky": tk.NSEW,
+                                    "sticky": tk.NSEW,  # Se expande en todas direcciones
                                     "children": [
                                         (
-                                            "Toolbutton.label",
-                                            {"sticky": tk.NSEW},
+                                            "Toolbutton.label",  # Elemento para el contenido
+                                            {"sticky": tk.NSEW},  # Se expande en todas direcciones
                                         )
                                     ],
                                 },
@@ -4700,175 +4815,306 @@ class StyleBuilderTTK:
                 )
             ],
         )
+
+        # 3. CONFIGURACIÓN DEL MAPEO DE ESTADOS
+        # Define cómo cambian las propiedades visuales según el estado del widget
         self.style.map(
             ttkstyle,
+            # Configuración del color de texto
             foreground=[
-                ("disabled", disabled_fg),
-                ("pressed !disabled", self.colors.selectfg),
-                ("selected !disabled", self.colors.selectfg),
-                ("hover !disabled", self.colors.selectfg),
+                ("disabled", disabled_fg),  # Deshabilitado: color atenuado
+                ("pressed !disabled", self.colors.selectfg),  # Presionado: color de texto para selección
+                ("selected !disabled", self.colors.selectfg),  # Seleccionado: igual que presionado
+                ("hover !disabled", self.colors.selectfg),  # Hover: igual que presionado
             ],
+            # Configuración del color de fondo
             background=[
-                ("pressed !disabled", pressed),
-                ("selected !disabled", pressed),
-                ("hover !disabled", pressed),
+                # Nota: No hay mapeo para "disabled", usará el color base
+                ("pressed !disabled", pressed),  # Presionado: variación del color principal
+                ("selected !disabled", pressed),  # Seleccionado: igual que presionado
+                ("hover !disabled", pressed),  # Hover: igual que presionado
             ],
+            # Configuración del color de borde
             bordercolor=[
-                ("disabled", disabled_fg),
-                ("pressed !disabled", pressed),
-                ("selected !disabled", pressed),
-                ("hover !disabled", pressed),
+                ("disabled", disabled_fg),  # Deshabilitado: color atenuado
+                ("pressed !disabled", pressed),  # Presionado: variación del color principal
+                ("selected !disabled", pressed),  # Seleccionado: igual que presionado
+                ("hover !disabled", pressed),  # Hover: igual que presionado
             ],
+            # Configuración de efectos visuales del borde (parte oscura)
             darkcolor=[
-                ("pressed !disabled", pressed),
-                ("selected !disabled", pressed),
-                ("hover !disabled", pressed),
+                # Nota: No hay mapeo para "disabled", usará el color base
+                ("pressed !disabled", pressed),  # Presionado: variación del color principal
+                ("selected !disabled", pressed),  # Seleccionado: igual que presionado
+                ("hover !disabled", pressed),  # Hover: igual que presionado
             ],
+            # Configuración de efectos visuales del borde (parte clara)
             lightcolor=[
-                ("pressed !disabled", pressed),
-                ("selected !disabled", pressed),
-                ("hover !disabled", pressed),
+                # Nota: No hay mapeo para "disabled", usará el color base
+                ("pressed !disabled", pressed),  # Presionado: variación del color principal
+                ("selected !disabled", pressed),  # Seleccionado: igual que presionado
+                ("hover !disabled", pressed),  # Hover: igual que presionado
             ],
-        )
-        self.style._build_configure(
-            chevron_style, font="-size 14", focuscolor=""
         )
 
-        # register ttkstyle
-        self.style._register_ttkstyle(ttkstyle)
-        self.style._register_ttkstyle(chevron_style)
+        # 4. CONFIGURACIÓN DEL ESTILO PARA BOTONES DE NAVEGACIÓN (CHEVRON)
+        # Establece solo el tamaño de fuente y el color de foco
+        self.style._build_configure(
+            chevron_style,
+            font="-size 14",  # Tamaño de fuente para los símbolos de flecha
+            focuscolor=""  # Sin color de foco
+        )
+
+        # 5. REGISTRO DE AMBOS ESTILOS EN EL SISTEMA
+        # Hace que los estilos estén disponibles para los widgets correspondientes
+        self.style._register_ttkstyle(ttkstyle)  # Registra el estilo del calendario
+        self.style._register_ttkstyle(chevron_style)  # Registra el estilo de los botones de navegación
 
     def create_metersubtxt_label_style(self, colorname=DEFAULT):
-        """Create a subtext label style for the
-        ttkbootstrap.widgets.Meter widget.
+        """Crea un estilo para etiquetas de subtexto del widget widgets.Meter.
+
+        Este método configura y registra un estilo TTK específico para las etiquetas de subtexto
+        que se utilizan en el widget Meter. El estilo incluye la configuración
+        de colores de primer plano (texto) y fondo según el color especificado y el tipo de tema actual.
+
+        El comportamiento del método varía según el parámetro colorname:
+        - Si colorname es DEFAULT o vacío: Se crea un estilo base sin prefijo "Metersubtxt.TLabel"
+          y el color de texto se elige según el tipo de tema (secundario para tema claro,
+          light para tema oscuro)
+        - Si colorname tiene un valor específico: Se crea un estilo con prefijo
+          (ej. "primary.Metersubtxt.TLabel") y se usa el color correspondiente a ese nombre
+
+        En todos los casos, el color de fondo será el color de fondo estándar del tema actual.
 
         Parameters:
-
             colorname (str):
-                The color label used to style the widget.
+                La etiqueta de color utilizada para estilizar el widget.
+                Valores comunes incluyen "primary", "secondary", "success", "danger", etc.
+                Valor predeterminado: DEFAULT
+
+        Returns:
+            None
+
+        Ejemplos:
+            # Crear estilo por defecto (según tema)
+            style_builder.create_metersubtxt_label_style()
+
+            # Crear estilo con color específico
+            style_builder.create_metersubtxt_label_style("primary")
+            style_builder.create_metersubtxt_label_style("success")
         """
+        # Define el nombre base del estilo TTK para las etiquetas de subtexto del widget Meter
         STYLE = "Metersubtxt.TLabel"
 
+        # Determina el estilo y color según si se especificó un color personalizado
         if any([colorname == DEFAULT, colorname == ""]):
+            # Caso 1: Sin color específico, usar estilo base
             ttkstyle = STYLE
+            # Selecciona color de texto basado en el tipo de tema
             if self.is_light_theme:
+                # Para tema claro, usa color secundario (ej. "#6c757d")
                 foreground = self.colors.secondary
             else:
+                # Para tema oscuro, usa color claro (ej. "#f8f9fa")
                 foreground = self.colors.light
         else:
+            # Caso 2: Con color específico, crear estilo con prefijo (ej. "primary.Metersubtxt.TLabel")
             ttkstyle = f"{colorname}.{STYLE}"
+            # Obtiene el color correspondiente al nombre (ej. "primary" -> "#007bff")
             foreground = self.colors.get(colorname)
 
+        # Obtiene el color de fondo estándar del tema actual
         background = self.colors.bg
 
+        # Configura el estilo TTK con los colores definidos
         self.style._build_configure(
             ttkstyle, foreground=foreground, background=background
         )
-        # register ttkstyle
+        # Registra el estilo TTK en el sistema para su uso
         self.style._register_ttkstyle(ttkstyle)
 
     def create_meter_label_style(self, colorname=DEFAULT):
-        """Create a label style for the
-        ttkbootstrap.widgets.Meter widget. This style also stores some
-        metadata that is called by the Meter class to lookup relevant
-        colors for the trough and bar when the new image is drawn.
+        """Crea un estilo de etiqueta para el widget widgets.Meter.
 
-        Crea un estilo de etiqueta para el widget
-        ttkbootstrap.widgets.Meter. Este estilo también almacena algunos
-        metadatos que la clase Meter llama para buscar colores relevantes
-        para el canal y la barra cuando se dibuja la nueva imagen.
+        Este método configura y registra un estilo TTK específico para las etiquetas
+        que se utilizan en el widget Meter. Además de la configuración
+        visual, este estilo almacena metadatos de colores que la clase Meter utiliza
+        para buscar colores relevantes para el canal (trough) y la barra cuando se dibuja
+        la nueva imagen.
+
+        El comportamiento del método varía según el tipo de tema y el parámetro colorname:
+        - El color del canal (trough) se determina según el tipo de tema:
+          - Tema claro:
+            - Si colorname es LIGHT: usa el color de fondo del tema
+            - Caso contrario: usa el color light del tema
+          - Tema oscuro: usa el color de selección con brillo reducido
+
+        - El estilo y color del texto se determinan según colorname:
+          - Si colorname es DEFAULT o vacío: usa estilo base y color primario
+          - Si colorname tiene un valor específico: usa estilo con prefijo y el color correspondiente
+
+        En todos los casos, el color de fondo será el color de fondo estándar del tema actual.
+
         Parameters:
-
             colorname (str):
-                The color label used to style the widget.
-        """
+                La etiqueta de color utilizada para estilizar el widget.
+                Valores comunes incluyen "primary", "secondary", "success", "danger", etc.
+                Valor predeterminado: DEFAULT
 
+        Returns:
+            None
+
+        Nota:
+            Este método utiliza la propiedad 'space' como metadato para almacenar
+            el color del canal (trough) que será utilizado por la clase Meter.
+        """
+        # Define el nombre base del estilo TTK para las etiquetas del widget Meter
         STYLE = "Meter.TLabel"
 
+        # Los comentarios indican la correspondencia entre propiedades y usos:
         # text color = `foreground`
         # trough color = `space`
 
+        # Determina el color del canal (trough) según el tipo de tema
         if self.is_light_theme:
+            # Para tema claro, verifica si es el caso especial LIGHT
             if colorname == LIGHT:
+                # Caso especial: Para etiquetas "light" en tema claro, usa color de fondo
+                # como color del canal (ej. "#ffffff")
                 troughcolor = self.colors.bg
             else:
+                # Caso normal en tema claro: Usa color light (ej. "#f8f9fa")
                 troughcolor = self.colors.light
         else:
+            # Para tema oscuro: Usa color de selección con brillo reducido
+            # Ejemplo: Si selectbg="#0d6efd", troughcolor≈"#0a58ca" (20% más oscuro)
             troughcolor = Colors.update_hsv(self.colors.selectbg, vd=-0.2)
 
+        # Determina el estilo TTK, color de texto y fondo según colorname
         if any([colorname == DEFAULT, colorname == ""]):
-            ttkstyle = STYLE
-            background = self.colors.bg
-            textcolor = self.colors.primary
+            # Caso por defecto: Sin color específico
+            ttkstyle = STYLE  # "Meter.TLabel"
+            background = self.colors.bg  # Color de fondo del tema (ej. "#ffffff")
+            textcolor = self.colors.primary  # Color primario del tema (ej. "#007bff")
         else:
-            ttkstyle = f"{colorname}.{STYLE}"
-            textcolor = self.colors.get(colorname)
-            background = self.colors.bg
+            # Caso con color específico
+            ttkstyle = f"{colorname}.{STYLE}"  # Ej: "primary.Meter.TLabel"
+            textcolor = self.colors.get(colorname)  # Obtiene color según nombre
+            background = self.colors.bg  # Color de fondo del tema
 
+        # Configura el estilo TTK con los colores definidos
+        # La propiedad 'space' se usa como metadato para el color del canal
         self.style._build_configure(
             ttkstyle,
             foreground=textcolor,
             background=background,
             space=troughcolor,
         )
-        # register ttkstyle
+
+        # Registra el estilo TTK en el sistema para su uso
         self.style._register_ttkstyle(ttkstyle)
 
     def create_label_style(self, colorname=DEFAULT):
-        """Create a standard style for the ttk.Label widget.
+        """Crea un estilo estándar para el widget ttk.Label.
+
+        Este método configura y registra un estilo TTK para widgets de etiqueta estándar.
+        Define los colores de primer plano (texto) y fondo según el tema actual y el
+        parámetro de color proporcionado.
+
+        El comportamiento del método varía según el parámetro colorname:
+        - Si colorname es DEFAULT o vacío: Se crea un estilo base "TLabel" con los
+          colores predeterminados del tema (fg para texto, bg para fondo)
+        - Si colorname tiene un valor específico: Se crea un estilo con prefijo
+          (ej. "primary.TLabel") donde el color del texto corresponde al color solicitado
+          y el fondo sigue siendo el predeterminado del tema
 
         Parameters:
-
             colorname (str):
-                The color label used to style the widget.
+                La etiqueta de color utilizada para estilizar el widget.
+                Valores comunes incluyen "primary", "secondary", "success", "danger", etc.
+                Valor predeterminado: DEFAULT
+
+        Returns:
+            None
         """
+        # Define el identificador estándar TTK para widgets Label
         STYLE = "TLabel"
 
+        # Determina el estilo y colores según si se especificó un color personalizado
         if any([colorname == DEFAULT, colorname == ""]):
-            ttkstyle = STYLE
+            # Caso 1: Sin color específico, usar estilo base con colores predeterminados del tema
+            ttkstyle = STYLE  # "TLabel"
+            # Color de texto predeterminado del tema (ej. "#212529" o "#f8f9fa")
             foreground = self.colors.fg
+            # Color de fondo predeterminado del tema (ej. "#ffffff" o "#343a40")
             background = self.colors.bg
         else:
+            # Caso 2: Con color específico, crear estilo con prefijo (ej. "primary.TLabel")
             ttkstyle = f"{colorname}.{STYLE}"
+            # Obtiene el color correspondiente al nombre (ej. "primary" -> "#007bff")
             foreground = self.colors.get(colorname)
+            # Mantiene el color de fondo predeterminado del tema
             background = self.colors.bg
 
-        # standard label
+        # Configura el estilo TTK con los colores definidos
         self.style._build_configure(
             ttkstyle, foreground=foreground, background=background
         )
-        # register ttkstyle
+        # Registra el estilo TTK en el sistema para su uso
         self.style._register_ttkstyle(ttkstyle)
 
     def create_inverse_label_style(self, colorname=DEFAULT):
-        """Create an inverted style for the ttk.Label.
+        """Crea un estilo invertido para el widget ttk.Label.
 
-        The foreground and background are inverted versions of that
-        used in the standard label style.
+        Este método configura y registra un estilo TTK donde los colores de primer plano
+        y fondo están invertidos respecto al estilo estándar de etiquetas. Cuando se
+        utiliza el estilo invertido, el texto y el fondo intercambian sus colores.
 
-        Crea un estilo invertido para ttk.Label.
-
-        El primer plano y el fondo son versiones invertidas de las que se usan en el
-        estilo de etiqueta estándar.
+        El comportamiento del método varía según el parámetro colorname:
+        - Si colorname es DEFAULT o vacío: Se crea un estilo "Inverse.TLabel" donde
+          el color de fondo es el color de texto predeterminado del tema y el color
+          de texto es el color de fondo predeterminado del tema.
+        - Si colorname tiene un valor específico: Se crea un estilo con prefijo
+          (ej. "primary.Inverse.TLabel") donde el color de fondo es el color especificado
+          y el color de texto es un color contrastante determinado automáticamente
+          para garantizar legibilidad.
 
         Parameters:
-
             colorname (str):
-                The color label used to style the widget.
+                La etiqueta de color utilizada para estilizar el widget.
+                Valores comunes incluyen "primary", "secondary", "success", "danger", etc.
+                Valor predeterminado: DEFAULT
+
+        Returns:
+            None
+
+        Nota:
+            La diferencia clave con el estilo estándar es que en el estilo invertido,
+            el color especificado se usa como fondo en lugar de como color de texto.
         """
+        # Define el nombre base del estilo invertido para widgets Label
         STYLE_INVERSE = "Inverse.TLabel"
 
+        # Determina el estilo y colores según si se especificó un color personalizado
         if any([colorname == DEFAULT, colorname == ""]):
-            ttkstyle = STYLE_INVERSE
+            # Caso 1: Sin color específico, invertir colores predeterminados del tema
+            ttkstyle = STYLE_INVERSE  # "Inverse.TLabel"
+            # Usar el color de texto del tema como color de fondo (ej. "#212529")
             background = self.colors.fg
+            # Usar el color de fondo del tema como color de texto (ej. "#ffffff")
             foreground = self.colors.bg
         else:
+            # Caso 2: Con color específico, crear estilo con prefijo (ej. "primary.Inverse.TLabel")
             ttkstyle = f"{colorname}.{STYLE_INVERSE}"
+            # Usar el color especificado como fondo (ej. "primary" -> "#007bff")
             background = self.colors.get(colorname)
+            # Determinar automáticamente un color de texto contrastante apropiado
+            # (generalmente blanco o negro dependiendo del brillo del fondo)
             foreground = self.colors.get_foreground(colorname)
 
+        # Configura el estilo TTK con los colores definidos
         self.style._build_configure(
             ttkstyle, foreground=foreground, background=background
         )
-        # register ttkstyle
+        # Registra el estilo TTK en el sistema para su uso
         self.style._register_ttkstyle(ttkstyle)
