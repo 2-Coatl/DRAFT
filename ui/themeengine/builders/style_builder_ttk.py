@@ -4513,3 +4513,362 @@ class StyleBuilderTTK:
 
         # Registra el estilo TTK en el sistema para su uso por widgets
         self.style._register_ttkstyle(ttkstyle)
+
+    def create_date_button_assets(self, foreground):
+        """Create the image assets used to build the date button
+        style. This button style applied to the button in the
+        ttkbootstrap.widgets.DateEntry.
+
+        Parameters:
+
+            foreground (str):
+                The color value used to draw the calendar image.
+
+        Returns:
+
+            str:
+                The PhotoImage name.
+        """
+        fill = foreground
+        image = Image.new("RGBA", (210, 220))
+        draw = ImageDraw.Draw(image)
+
+        draw.rounded_rectangle(
+            [10, 30, 200, 210], radius=20, outline=fill, width=10
+        )
+
+        calendar_image_coordinates = [
+            # page spirals
+            [40, 10, 50, 50],
+            [100, 10, 110, 50],
+            [160, 10, 170, 50],
+            # row 1
+            [70, 90, 90, 110],
+            [110, 90, 130, 110],
+            [150, 90, 170, 110],
+            # row 2
+            [30, 130, 50, 150],
+            [70, 130, 90, 150],
+            [110, 130, 130, 150],
+            [150, 130, 170, 150],
+            # row 3
+            [30, 170, 50, 190],
+            [70, 170, 90, 190],
+            [110, 170, 130, 190],
+        ]
+        for xy in calendar_image_coordinates:
+            draw.rectangle(xy=xy, fill=fill)
+
+        size = self.scale_size([21, 22])
+        tk_img = ImageTk.PhotoImage(image.resize(size, Image.LANCZOS))
+        tk_name = util.get_image_name(tk_img)
+        self.theme_images[tk_name] = tk_img
+        return tk_name
+
+    def create_date_button_style(self, colorname=DEFAULT):
+        """Create a date button style for the ttk.Button widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style widget.
+        """
+        STYLE = "Date.TButton"
+
+        if self.is_light_theme:
+            disabled_fg = self.colors.border
+        else:
+            disabled_fg = self.colors.selectbg
+
+        btn_foreground = Colors.get_foreground(self.colors, colorname)
+
+        img_normal = self.create_date_button_assets(btn_foreground)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            foreground = self.colors.get_foreground(PRIMARY)
+            background = self.colors.primary
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+            foreground = self.colors.get_foreground(colorname)
+            background = self.colors.get(colorname)
+
+        pressed = Colors.update_hsv(background, vd=-0.1)
+        hover = Colors.update_hsv(background, vd=0.10)
+
+        self.style._build_configure(
+            ttkstyle,
+            foreground=foreground,
+            background=background,
+            bordercolor=background,
+            darkcolor=background,
+            lightcolor=background,
+            relief=tk.RAISED,
+            focusthickness=0,
+            focuscolor=foreground,
+            padding=(2, 2),
+            anchor=tk.CENTER,
+            image=img_normal,
+        )
+        self.style.map(
+            ttkstyle,
+            foreground=[("disabled", disabled_fg)],
+            background=[
+                ("disabled", disabled_fg),
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            bordercolor=[("disabled", disabled_fg)],
+            darkcolor=[
+                ("disabled", disabled_fg),
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            lightcolor=[
+                ("disabled", disabled_fg),
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+        )
+
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_calendar_style(self, colorname=DEFAULT):
+        """Create a style for the
+        ttkbootstrap.dialogs.DatePickerPopup widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+
+        STYLE = "TCalendar"
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            prime_color = self.colors.primary
+            ttkstyle = STYLE
+            chevron_style = "Chevron.TButton"
+        else:
+            prime_color = self.colors.get(colorname)
+            ttkstyle = f"{colorname}.{STYLE}"
+            chevron_style = f"Chevron.{colorname}.TButton"
+
+        if self.is_light_theme:
+            disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.2)
+            pressed = Colors.update_hsv(prime_color, vd=-0.1)
+        else:
+            disabled_fg = Colors.update_hsv(self.colors.inputbg, vd=-0.3)
+            pressed = Colors.update_hsv(prime_color, vd=0.1)
+
+        self.style._build_configure(
+            ttkstyle,
+            foreground=self.colors.fg,
+            background=self.colors.bg,
+            bordercolor=self.colors.bg,
+            darkcolor=self.colors.bg,
+            lightcolor=self.colors.bg,
+            relief=tk.RAISED,
+            focusthickness=0,
+            focuscolor="",
+            borderwidth=1,
+            padding=(10, 5),
+            anchor=tk.CENTER,
+        )
+        self.style.layout(
+            ttkstyle,
+            [
+                (
+                    "Toolbutton.border",
+                    {
+                        "sticky": tk.NSEW,
+                        "children": [
+                            (
+                                "Toolbutton.padding",
+                                {
+                                    "sticky": tk.NSEW,
+                                    "children": [
+                                        (
+                                            "Toolbutton.label",
+                                            {"sticky": tk.NSEW},
+                                        )
+                                    ],
+                                },
+                            )
+                        ],
+                    },
+                )
+            ],
+        )
+        self.style.map(
+            ttkstyle,
+            foreground=[
+                ("disabled", disabled_fg),
+                ("pressed !disabled", self.colors.selectfg),
+                ("selected !disabled", self.colors.selectfg),
+                ("hover !disabled", self.colors.selectfg),
+            ],
+            background=[
+                ("pressed !disabled", pressed),
+                ("selected !disabled", pressed),
+                ("hover !disabled", pressed),
+            ],
+            bordercolor=[
+                ("disabled", disabled_fg),
+                ("pressed !disabled", pressed),
+                ("selected !disabled", pressed),
+                ("hover !disabled", pressed),
+            ],
+            darkcolor=[
+                ("pressed !disabled", pressed),
+                ("selected !disabled", pressed),
+                ("hover !disabled", pressed),
+            ],
+            lightcolor=[
+                ("pressed !disabled", pressed),
+                ("selected !disabled", pressed),
+                ("hover !disabled", pressed),
+            ],
+        )
+        self.style._build_configure(
+            chevron_style, font="-size 14", focuscolor=""
+        )
+
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+        self.style._register_ttkstyle(chevron_style)
+
+    def create_metersubtxt_label_style(self, colorname=DEFAULT):
+        """Create a subtext label style for the
+        ttkbootstrap.widgets.Meter widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "Metersubtxt.TLabel"
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            if self.is_light_theme:
+                foreground = self.colors.secondary
+            else:
+                foreground = self.colors.light
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+            foreground = self.colors.get(colorname)
+
+        background = self.colors.bg
+
+        self.style._build_configure(
+            ttkstyle, foreground=foreground, background=background
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_meter_label_style(self, colorname=DEFAULT):
+        """Create a label style for the
+        ttkbootstrap.widgets.Meter widget. This style also stores some
+        metadata that is called by the Meter class to lookup relevant
+        colors for the trough and bar when the new image is drawn.
+
+        Crea un estilo de etiqueta para el widget
+        ttkbootstrap.widgets.Meter. Este estilo también almacena algunos
+        metadatos que la clase Meter llama para buscar colores relevantes
+        para el canal y la barra cuando se dibuja la nueva imagen.
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+
+        STYLE = "Meter.TLabel"
+
+        # text color = `foreground`
+        # trough color = `space`
+
+        if self.is_light_theme:
+            if colorname == LIGHT:
+                troughcolor = self.colors.bg
+            else:
+                troughcolor = self.colors.light
+        else:
+            troughcolor = Colors.update_hsv(self.colors.selectbg, vd=-0.2)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            background = self.colors.bg
+            textcolor = self.colors.primary
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+            textcolor = self.colors.get(colorname)
+            background = self.colors.bg
+
+        self.style._build_configure(
+            ttkstyle,
+            foreground=textcolor,
+            background=background,
+            space=troughcolor,
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_label_style(self, colorname=DEFAULT):
+        """Create a standard style for the ttk.Label widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "TLabel"
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            foreground = self.colors.fg
+            background = self.colors.bg
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+            foreground = self.colors.get(colorname)
+            background = self.colors.bg
+
+        # standard label
+        self.style._build_configure(
+            ttkstyle, foreground=foreground, background=background
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_inverse_label_style(self, colorname=DEFAULT):
+        """Create an inverted style for the ttk.Label.
+
+        The foreground and background are inverted versions of that
+        used in the standard label style.
+
+        Crea un estilo invertido para ttk.Label.
+
+        El primer plano y el fondo son versiones invertidas de las que se usan en el
+        estilo de etiqueta estándar.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE_INVERSE = "Inverse.TLabel"
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE_INVERSE
+            background = self.colors.fg
+            foreground = self.colors.bg
+        else:
+            ttkstyle = f"{colorname}.{STYLE_INVERSE}"
+            background = self.colors.get(colorname)
+            foreground = self.colors.get_foreground(colorname)
+
+        self.style._build_configure(
+            ttkstyle, foreground=foreground, background=background
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
