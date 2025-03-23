@@ -68,7 +68,8 @@ class Style(ttk.Style):
         Style.instance = self
         self.theme_use(theme)
 
-        # apply localization
+        # Inicializar el sistema de localización
+        # Esto configura el catálogo de mensajes y prepara la internacionalización
         from ui.themeengine import localization
         localization.initialize_localities()
 

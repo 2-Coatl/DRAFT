@@ -11,3 +11,5 @@
     https://www.tcl.tk/man/tcl/TclCmd/msgcat.html
 
 """
+from ui.themeengine.localization.helpers import initialize_localities
+from ui.themeengine.localization.message_catalog import MessageCatalog
