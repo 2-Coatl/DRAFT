@@ -1,6 +1,52 @@
 from ui.themeengine.localization.helpers import get_default_root
 
 class MessageCatalog:
+    """
+    Proporciona una interfaz para el sistema de catálogo de mensajes de Tcl/Tk (msgcat).
+
+    Esta clase estática actúa como una fachada que facilita la internacionalización de
+    aplicaciones tkinter, permitiendo traducir cadenas, cargar archivos de mensajes y
+    gestionar configuraciones regionales (locales). Todos los métodos son estáticos y
+    pueden utilizarse sin necesidad de instanciar la clase.
+
+    La clase forma parte de la capa de integración del módulo de localización y trabaja
+    con los comandos `::msgcat::*` del intérprete Tcl/Tk subyacente. Permite a los
+    desarrolladores implementar aplicaciones en un solo idioma inicialmente, facilitando
+    la adición posterior de soporte para otros idiomas.
+
+    Métodos principales:
+        translate(src): Traduce una cadena según el locale actual.
+        locale(newlocale=None): Consulta o establece el locale actual.
+        preferences(): Obtiene la lista de locales preferidos por el usuario.
+        load(dirname): Carga archivos de mensajes desde un directorio.
+        set(locale, src, translated=None): Establece una traducción específica.
+        set_many(locale, *args): Establece múltiples traducciones a la vez.
+        max(*src): Determina la longitud de la cadena traducida más larga.
+
+    Ejemplo de uso:
+        # Traducir una cadena
+        button_text = MessageCatalog.translate("Save")
+
+        # Cargar archivos de mensajes
+        MessageCatalog.load("./locales")
+
+        # Cambiar el locale
+        MessageCatalog.locale("es_ES")
+
+        # Establecer una traducción manualmente
+        MessageCatalog.set("fr_FR", "Close", "Fermer")
+
+        # Obtener el ancho necesario para botones
+        button_width = MessageCatalog.max("OK", "Cancel", "Apply")
+
+    Notas:
+        - La clase depende de una ventana raíz tkinter inicializada.
+        - Los métodos interactúan con el sistema msgcat de Tcl/Tk.
+        - Se recomienda cargar archivos de mensajes al inicio de la aplicación.
+        - Para mayor eficiencia en la definición de múltiples traducciones,
+          utilice set_many() en lugar de múltiples llamadas a set().
+    """
+
     @staticmethod
     def translate(src):
         """
