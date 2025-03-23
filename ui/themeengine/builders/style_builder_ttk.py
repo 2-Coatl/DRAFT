@@ -5825,124 +5825,218 @@ class StyleBuilderTTK:
         self.style._register_ttkstyle(ttkstyle)  # Registra el estilo principal (incluye el de pestañas)
 
     def create_panedwindow_style(self, colorname=DEFAULT):
-        """Create a standard style for the ttk.Panedwindow widget.
+        """Crea un estilo estándar para el widget ttk.Panedwindow.
+
+        Este método configura la apariencia visual de los separadores (sash) en widgets
+        PanedWindow, tanto para orientación horizontal como vertical. Adapta automáticamente
+        los colores según sea un tema claro u oscuro para garantizar visibilidad, y permite
+        personalizar el color del separador a través de una etiqueta de color.
 
         Parameters:
-
             colorname (str):
-                The color label used to style the widget.
-        """
-        H_STYLE = "Horizontal.TPanedwindow"
-        V_STYLE = "Vertical.TPanedwindow"
-
-        if self.is_light_theme:
-            default_color = self.colors.border
-        else:
-            default_color = self.colors.selectbg
-
-        if any([colorname == DEFAULT, colorname == ""]):
-            sashcolor = default_color
-            h_ttkstyle = H_STYLE
-            v_ttkstyle = V_STYLE
-        else:
-            sashcolor = self.colors.get(colorname)
-            h_ttkstyle = f"{colorname}.{H_STYLE}"
-            v_ttkstyle = f"{colorname}.{V_STYLE}"
-
-        self.style._build_configure(
-            "Sash", gripcount=0, sashthickness=self.scale_size(2)
-        )
-        self.style._build_configure(h_ttkstyle, background=sashcolor)
-        self.style._build_configure(v_ttkstyle, background=sashcolor)
-
-        # register ttkstyle
-        self.style._register_ttkstyle(h_ttkstyle)
-        self.style._register_ttkstyle(v_ttkstyle)
-
-    def create_sizegrip_assets(self, color):
-        """Create image assets used to build the sizegrip style.
-
-        Parameters:
-
-            color (str):
-                The color _value_ used to draw the image.
+                La etiqueta de color usada para estilizar el separador del widget. Si es DEFAULT
+                o una cadena vacía, se utilizará un color predeterminado según el tema actual.
+                De lo contrario, se usará el color correspondiente a la etiqueta proporcionada.
 
         Returns:
+            None: Este método no devuelve ningún valor, opera por efectos secundarios.
 
-            str:
-                The PhotoImage name.
+        Ejemplos:
+            # Crear estilo por defecto (adaptado al tema)
+            style_builder.create_panedwindow_style()
+
+            # Crear estilo con separador azul (color primario)
+            style_builder.create_panedwindow_style("primary")
+
+            # Crear estilo con separador verde (color de éxito)
+            style_builder.create_panedwindow_style("success")
         """
-        from math import ceil
+        # Nombres base de los estilos según orientación
+        H_STYLE = "Horizontal.TPanedwindow"  # Estilo base para orientación horizontal
+        V_STYLE = "Vertical.TPanedwindow"  # Estilo base para orientación vertical
 
-        box = self.scale_size(1)
-        pad = box * 2
-        chunk = box + pad  # 4
+        # Determinar color predeterminado según tipo de tema
+        if self.is_light_theme:
+            # Para temas claros: usar color de borde (generalmente sutil)
+            default_color = self.colors.border  # Ej: "#d1d1d1" (gris claro)
+        else:
+            # Para temas oscuros: usar color de selección (más visible)
+            default_color = self.colors.selectbg  # Ej: "#1976d2" (azul oscuro)
 
-        w = chunk * 3 + pad  # 14
-        h = chunk * 3 + pad  # 14
+        # Determinar color del separador y nombres de estilo según colorname
+        if any([colorname == DEFAULT, colorname == ""]):
+            # Para estilo default: usar color predeterminado según tema
+            sashcolor = default_color  # Color adaptado al tema
+            h_ttkstyle = H_STYLE  # Ej: "Horizontal.TPanedwindow" (sin prefijo)
+            v_ttkstyle = V_STYLE  # Ej: "Vertical.TPanedwindow" (sin prefijo)
+        else:
+            # Para estilo personalizado: usar color específico
+            sashcolor = self.colors.get(colorname)  # Ej: "#2962ff" para "primary"
+            h_ttkstyle = f"{colorname}.{H_STYLE}"  # Ej: "primary.Horizontal.TPanedwindow"
+            v_ttkstyle = f"{colorname}.{V_STYLE}"  # Ej: "primary.Vertical.TPanedwindow"
 
+        # Configurar el elemento separador común (Sash)
+        self.style._build_configure(
+            "Sash",
+            gripcount=0,  # Sin marcadores visuales en el separador
+            sashthickness=self.scale_size(2),  # Grosor escalado (ej: 3px con escala 1.5)
+        )
+
+        # Configurar estilo para PanedWindow horizontal
+        self.style._build_configure(
+            h_ttkstyle,
+            background=sashcolor,  # Color visual del separador
+        )
+
+        # Configurar estilo para PanedWindow vertical
+        self.style._build_configure(
+            v_ttkstyle,
+            background=sashcolor,  # Color visual del separador
+        )
+
+        # Registrar ambos estilos en el sistema TTK
+        self.style._register_ttkstyle(h_ttkstyle)  # Registra estilo horizontal
+        self.style._register_ttkstyle(v_ttkstyle)  # Registra estilo vertical
+
+    def create_sizegrip_assets(self, color):
+        """Crea los recursos de imagen utilizados para construir el estilo de sizegrip.
+
+        Este método genera una imagen que representa el indicador visual de "esquina de agarre"
+        (sizegrip) que aparece generalmente en la esquina inferior derecha de las ventanas
+        redimensionables. El indicador consiste en un patrón diagonal de rectángulos que
+        sugiere la capacidad de arrastrar para redimensionar.
+
+        La imagen se adapta automáticamente a la escala de la interfaz de usuario utilizando
+        el método scale_size.
+
+        Parameters:
+            color (str):
+                El valor de color (ej. "#1976d2", no una etiqueta) utilizado para dibujar
+                los rectángulos del patrón.
+
+        Returns:
+            str:
+                El nombre (identificador) de la imagen creada. Este nombre puede utilizarse
+                para referenciar la imagen en estilos o widgets.
+
+        Examples:
+            # Crear un asset de sizegrip en color gris
+            grip_image = style_builder.create_sizegrip_assets("#AAAAAA")
+
+            # Usar el identificador en la configuración de un estilo
+            style.configure("TSizegrip", image=grip_image)
+        """
+        # Importar ceil para posibles operaciones de redondeo
+        # from math import ceil
+
+        # Calcular dimensiones base escaladas según la UI
+        box = self.scale_size(1)  # Unidad básica (ej: 1px sin escalar, 2px con escala 2.0)
+        pad = box * 2  # Espaciado entre elementos (ej: 2px sin escalar)
+        chunk = box + pad  # Tamaño de unidad completa (ej: 3px sin escalar)
+
+        # Calcular dimensiones totales de la imagen
+        w = chunk * 3 + pad  # Ancho total (ej: 11px sin escalar)
+        h = chunk * 3 + pad  # Alto total (mismo que el ancho)
         size = [w, h]
 
+        # Crear imagen base vacía con soporte para transparencia
         im = Image.new("RGBA", size)
         draw = ImageDraw.Draw(im)
 
-        draw.rectangle((chunk * 2 + pad, pad, chunk * 3, chunk), fill=color)
+        # Dibujar el patrón de rectángulos
+        # Primera columna (derecha): 3 rectángulos verticales
+        draw.rectangle((chunk * 2 + pad, pad, chunk * 3, chunk), fill=color)  # Superior
         draw.rectangle(
-            (chunk * 2 + pad, chunk + pad, chunk * 3, chunk * 2), fill=color
+            (chunk * 2 + pad, chunk + pad, chunk * 3, chunk * 2), fill=color  # Medio
         )
         draw.rectangle(
-            (chunk * 2 + pad, chunk * 2 + pad, chunk * 3, chunk * 3),
+            (chunk * 2 + pad, chunk * 2 + pad, chunk * 3, chunk * 3),  # Inferior
             fill=color,
         )
 
+        # Segunda columna (medio): 2 rectángulos
         draw.rectangle(
-            (chunk + pad, chunk + pad, chunk * 2, chunk * 2), fill=color
+            (chunk + pad, chunk + pad, chunk * 2, chunk * 2), fill=color  # Superior
         )
         draw.rectangle(
-            (chunk + pad, chunk * 2 + pad, chunk * 2, chunk * 3), fill=color
+            (chunk + pad, chunk * 2 + pad, chunk * 2, chunk * 3), fill=color  # Inferior
         )
 
-        draw.rectangle((pad, chunk * 2 + pad, chunk, chunk * 3), fill=color)
+        # Tercera columna (izquierda): 1 rectángulo
+        draw.rectangle((pad, chunk * 2 + pad, chunk, chunk * 3), fill=color)  # Único
 
+        # Convertir a formato compatible con Tkinter
         _img = ImageTk.PhotoImage(im)
+
+        # Generar nombre único para la imagen
         _name = util.get_image_name(_img)
+
+        # Almacenar referencia para prevenir recolección de basura
         self.theme_images[_name] = _img
+
+        # Retornar el identificador de la imagen
         return _name
 
     def create_sizegrip_style(self, colorname=DEFAULT):
-        """Create a style for the ttk.Sizegrip widget.
+        """Crea un estilo para el widget ttk.Sizegrip.
+
+        Este método configura la apariencia visual del widget Sizegrip, que es un indicador
+        de redimensionamiento que generalmente aparece en la esquina inferior derecha de una
+        ventana o panel. El estilo incluye una imagen con un patrón diagonal generada
+        dinámicamente en el color especificado y un layout que posiciona el elemento en la
+        esquina correcta.
 
         Parameters:
-
             colorname (str):
-                The color label used to style the widget.
+                La etiqueta de color usada para estilizar el widget. Si es DEFAULT o una
+                cadena vacía, se utilizará un color adaptado al tema actual (border para temas
+                claros, inputbg para temas oscuros). De lo contrario, se usará el color
+                correspondiente a la etiqueta proporcionada.
+
+        Returns:
+            None: Este método no devuelve ningún valor, opera por efectos secundarios.
+
         """
-        STYLE = "TSizegrip"
+        # Nombre base del estilo para Sizegrip
+        STYLE = "TSizegrip"  # Constante que define el identificador base del estilo
 
+        # Determinar nombre de estilo y color según colorname
         if any([colorname == DEFAULT, colorname == ""]):
-            ttkstyle = STYLE
+            # Para estilo default: usar nombre base sin prefijo
+            ttkstyle = STYLE  # Ej: "TSizegrip"
 
+            # Adaptar color según el tipo de tema
             if self.is_light_theme:
-                grip_color = self.colors.border
+                # Para temas claros: usar color de borde (generalmente sutil)
+                grip_color = self.colors.border  # Ej: "#d1d1d1" (gris claro)
             else:
-                grip_color = self.colors.inputbg
+                # Para temas oscuros: usar color de fondo de inputs (más visible)
+                grip_color = self.colors.inputbg  # Ej: "#333333" (gris oscuro)
         else:
-            ttkstyle = f"{colorname}.{STYLE}"
-            grip_color = self.colors.get(colorname)
+            # Para estilo personalizado: usar nombre con prefijo y color específico
+            ttkstyle = f"{colorname}.{STYLE}"  # Ej: "primary.TSizegrip"
+            grip_color = self.colors.get(colorname)  # Ej: "#2962ff" para "primary"
 
-        image = self.create_sizegrip_assets(grip_color)
+        # Crear la imagen del patrón de sizegrip en el color determinado
+        image = self.create_sizegrip_assets(grip_color)  # Ej: "img_sizegrip_12345"
 
+        # Crear un elemento visual personalizado basado en la imagen
         self.style.element_create(
-            f"{ttkstyle}.Sizegrip.sizegrip", "image", image
+            f"{ttkstyle}.Sizegrip.sizegrip",  # Nombre único del elemento
+            "image",  # Tipo de elemento (basado en imagen)
+            image  # Identificador de la imagen creada
         )
+
+        # Definir el layout del estilo para posicionar el elemento
         self.style.layout(
-            ttkstyle,
+            ttkstyle,  # Estilo que estamos configurando
             [
                 (
-                    f"{ttkstyle}.Sizegrip.sizegrip",
-                    {"side": tk.BOTTOM, "sticky": tk.SE},
+                    f"{ttkstyle}.Sizegrip.sizegrip",  # Elemento a posicionar
+                    {"side": tk.BOTTOM, "sticky": tk.SE},  # Posición: esquina inferior derecha
                 )
             ],
         )
-        # register ttkstyle
-        self.style._register_ttkstyle(ttkstyle)
+
+        # Registrar el estilo en el sistema TTK
+        self.style._register_ttkstyle(ttkstyle)  # Hace que el estilo sea utilizable por widgets
