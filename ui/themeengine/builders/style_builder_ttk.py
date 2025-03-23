@@ -4,6 +4,7 @@ from tkinter import font
 from math import ceil
 from typing import Union, List, Tuple, Callable, Dict, Any
 from PIL import ImageTk, ImageDraw, Image
+from PIL.ImageFont import ImageFont
 
 from ui.themeengine.core.color import Colors
 from ui.themeengine.builders.style_builder_tk import StyleBuilderTK
@@ -5117,4 +5118,483 @@ class StyleBuilderTTK:
             ttkstyle, foreground=foreground, background=background
         )
         # Registra el estilo TTK en el sistema para su uso
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_labelframe_style(self, colorname=DEFAULT):
+        """Create a style for the ttk.Labelframe widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "TLabelframe"
+
+        background = self.colors.bg
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            foreground = self.colors.fg
+            ttkstyle = STYLE
+
+            if self.is_light_theme:
+                bordercolor = self.colors.border
+            else:
+                bordercolor = self.colors.selectbg
+
+        else:
+            foreground = self.colors.get(colorname)
+            bordercolor = foreground
+            ttkstyle = f"{colorname}.{STYLE}"
+
+        # create widget style
+        self.style._build_configure(
+            f"{ttkstyle}.Label",
+            foreground=foreground,
+            background=background,
+        )
+        self.style._build_configure(
+            ttkstyle,
+            relief=tk.RAISED,
+            borderwidth=1,
+            bordercolor=bordercolor,
+            lightcolor=background,
+            darkcolor=background,
+            background=background,
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_checkbutton_style(self, colorname=DEFAULT):
+        """Create a standard style for the ttk.Checkbutton widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "TCheckbutton"
+
+        disabled_fg = Colors.make_transparent(0.3, self.colors.fg, self.colors.bg)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            colorname = PRIMARY
+            ttkstyle = STYLE
+        else:
+            ttkstyle = f"{colorname}.TCheckbutton"
+
+        # ( off, on, disabled )
+        images = self.create_checkbutton_assets(colorname)
+
+        element = ttkstyle.replace(".TC", ".C")
+        width = self.scale_size(20)
+        borderpad = self.scale_size(4)
+        self.style.element_create(
+            f"{element}.indicator",
+            "image",
+            images[1],
+            ("disabled selected", images[4]),
+            ("disabled alternate", images[5]),
+            ("disabled", images[2]),
+            ("alternate", images[3]),
+            ("!selected", images[0]),
+            width=width,
+            border=borderpad,
+            sticky=tk.W,
+        )
+        self.style._build_configure(ttkstyle, foreground=self.colors.fg)
+        self.style.map(ttkstyle, foreground=[("disabled", disabled_fg)])
+        self.style.layout(
+            ttkstyle,
+            [
+                (
+                    "Checkbutton.padding",
+                    {
+                        "children": [
+                            (
+                                f"{element}.indicator",
+                                {"side": tk.LEFT, "sticky": ""},
+                            ),
+                            (
+                                "Checkbutton.focus",
+                                {
+                                    "children": [
+                                        (
+                                            "Checkbutton.label",
+                                            {"sticky": tk.NSEW},
+                                        )
+                                    ],
+                                    "side": tk.LEFT,
+                                    "sticky": "",
+                                },
+                            ),
+                        ],
+                        "sticky": tk.NSEW,
+                    },
+                )
+            ],
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_checkbutton_assets(self, colorname=DEFAULT):
+        """Create the image assets used to build the standard
+        checkbutton style.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+
+        Returns:
+
+            Tuple[str]:
+                A tuple of PhotoImage names.
+        """
+        # set platform specific checkfont
+        winsys = self.style.tk.call("tk", "windowingsystem")
+        indicator = "✓"
+        if winsys == "win32":
+            # Windows font
+            fnt = ImageFont.truetype("seguisym.ttf", 120)
+            font_offset = -20
+            # TODO consider using ImageFont.getsize for offsets
+        elif winsys == "x11":
+            # Linux fonts
+            try:
+                # this should be available on most Linux distros
+                fnt = ImageFont.truetype("FreeSerif.ttf", 130)
+                font_offset = 10
+            except:
+                try:
+                    # this should be available as a backup on Linux
+                    # distros that don't have the FreeSerif.ttf file
+                    fnt = ImageFont.truetype("DejaVuSans.ttf", 160)
+                    font_offset = -15
+                except:
+                    # If all else fails, use the default ImageFont
+                    # this won't actually show anything in practice
+                    # because of how I'm scaling the image, but it
+                    # will prevent the program from crashing. I need
+                    # a better solution for a missing font
+                    fnt = ImageFont.load_default()
+                    font_offset = 0
+                    indicator = "x"
+        else:
+            # Mac OS font
+            fnt = ImageFont.truetype("LucidaGrande.ttc", 120)
+            font_offset = -10
+
+        prime_color = self.colors.get(colorname)
+        on_border = prime_color
+        on_fill = prime_color
+        off_fill = self.colors.bg
+        off_border = self.colors.selectbg
+        off_border = Colors.make_transparent(0.4, self.colors.fg, self.colors.bg)
+        disabled_fg = Colors.make_transparent(0.3, self.colors.fg, self.colors.bg)
+
+        if colorname == LIGHT:
+            check_color = self.colors.dark
+            on_border = check_color
+        elif colorname == DARK:
+            check_color = self.colors.light
+            on_border = check_color
+        else:
+            check_color = self.colors.selectfg
+
+        size = self.scale_size([14, 14])
+
+        # checkbutton off
+        checkbutton_off = Image.new("RGBA", (134, 134))
+        draw = ImageDraw.Draw(checkbutton_off)
+        draw.rounded_rectangle(
+            [2, 2, 132, 132],
+            radius=16,
+            outline=off_border,
+            width=6,
+            fill=off_fill,
+        )
+        off_img = ImageTk.PhotoImage(
+            checkbutton_off.resize(size, Image.LANCZOS)
+        )
+        off_name = util.get_image_name(off_img)
+        self.theme_images[off_name] = off_img
+
+        # checkbutton on
+        checkbutton_on = Image.new("RGBA", (134, 134))
+        draw = ImageDraw.Draw(checkbutton_on)
+        draw.rounded_rectangle(
+            [2, 2, 132, 132],
+            radius=16,
+            fill=on_fill,
+            outline=on_border,
+            width=3,
+        )
+
+        draw.text((20, font_offset), indicator, font=fnt, fill=check_color)
+        on_img = ImageTk.PhotoImage(checkbutton_on.resize(size, Image.LANCZOS))
+        on_name = util.get_image_name(on_img)
+        self.theme_images[on_name] = on_img
+
+       # checkbutton on/disabled
+        checkbutton_on_disabled = Image.new("RGBA", (134, 134))
+        draw = ImageDraw.Draw(checkbutton_on_disabled)
+        draw.rounded_rectangle(
+            [2, 2, 132, 132],
+            radius=16,
+            fill=disabled_fg,
+            outline=disabled_fg,
+            width=3,
+        )
+
+        draw.text((20, font_offset), indicator, font=fnt, fill=off_fill)
+        on_dis_img = ImageTk.PhotoImage(checkbutton_on_disabled.resize(size, Image.LANCZOS))
+        on_dis_name = util.get_image_name(on_dis_img)
+        self.theme_images[on_dis_name] = on_dis_img
+
+        # checkbutton alt
+        checkbutton_alt = Image.new("RGBA", (134, 134))
+        draw = ImageDraw.Draw(checkbutton_alt)
+        draw.rounded_rectangle(
+            [2, 2, 132, 132],
+            radius=16,
+            fill=on_fill,
+            outline=on_border,
+            width=3,
+        )
+        draw.line([36, 67, 100, 67], fill=check_color, width=12)
+        alt_img = ImageTk.PhotoImage(
+            checkbutton_alt.resize(size, Image.LANCZOS)
+        )
+        alt_name = util.get_image_name(alt_img)
+        self.theme_images[alt_name] = alt_img
+
+        # checkbutton alt/disabled
+        checkbutton_alt_disabled = Image.new("RGBA", (134, 134))
+        draw = ImageDraw.Draw(checkbutton_alt_disabled)
+        draw.rounded_rectangle(
+            [2, 2, 132, 132],
+            radius=16,
+            fill=disabled_fg,
+            outline=disabled_fg,
+            width=3,
+        )
+        draw.line([36, 67, 100, 67], fill=off_fill, width=12)
+        alt_dis_img = ImageTk.PhotoImage(
+            checkbutton_alt_disabled.resize(size, Image.LANCZOS)
+        )
+        alt_dis_name = util.get_image_name(alt_dis_img)
+        self.theme_images[alt_dis_name] = alt_dis_img
+
+        # checkbutton disabled
+        checkbutton_disabled = Image.new("RGBA", (134, 134))
+        draw = ImageDraw.Draw(checkbutton_disabled)
+        draw.rounded_rectangle(
+            [2, 2, 132, 132], radius=16, outline=disabled_fg, width=3
+        )
+        disabled_img = ImageTk.PhotoImage(
+            checkbutton_disabled.resize(size, Image.LANCZOS)
+        )
+        disabled_name = util.get_image_name(disabled_img)
+        self.theme_images[disabled_name] = disabled_img
+
+        return off_name, on_name, disabled_name, alt_name, on_dis_name, alt_dis_name
+
+    def create_menubutton_style(self, colorname=DEFAULT):
+        """Create a solid style for the ttk.Menubutton widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "TMenubutton"
+
+        foreground = self.colors.get_foreground(colorname)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            background = self.colors.primary
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+            background = self.colors.get(colorname)
+
+        disabled_bg = Colors.make_transparent(0.10, self.colors.fg, self.colors.bg)
+        disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
+        pressed = Colors.make_transparent(0.80, background, self.colors.bg)
+        hover = Colors.make_transparent(0.90, background, self.colors.bg)
+
+        self.style._build_configure(
+            ttkstyle,
+            foreground=foreground,
+            background=background,
+            bordercolor=background,
+            darkcolor=background,
+            lightcolor=background,
+            arrowsize=self.scale_size(4),
+            arrowcolor=foreground,
+            arrowpadding=(0, 0, 15, 0),
+            relief=tk.RAISED,
+            focusthickness=0,
+            focuscolor=self.colors.selectfg,
+            padding=(10, 5),
+        )
+        self.style.map(
+            ttkstyle,
+            arrowcolor=[("disabled", disabled_fg)],
+            foreground=[("disabled", disabled_fg)],
+            background=[
+                ("disabled", disabled_bg),
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            bordercolor=[
+                ("disabled", disabled_bg),
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            darkcolor=[
+                ("disabled", disabled_bg),
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            lightcolor=[
+                ("disabled", disabled_bg),
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_outline_menubutton_style(self, colorname=DEFAULT):
+        """Create an outline button style for the ttk.Menubutton widget
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "Outline.TMenubutton"
+
+        disabled_fg = Colors.make_transparent(0.30, self.colors.fg, self.colors.bg)
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+            colorname = PRIMARY
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+
+        foreground = self.colors.get(colorname)
+        background = self.colors.get_foreground(colorname)
+        foreground_pressed = background
+        bordercolor = foreground
+        pressed = foreground
+        hover = foreground
+
+        self.style._build_configure(
+            ttkstyle,
+            foreground=foreground,
+            background=self.colors.bg,
+            bordercolor=bordercolor,
+            darkcolor=self.colors.bg,
+            lightcolor=self.colors.bg,
+            relief=tk.RAISED,
+            focusthickness=0,
+            focuscolor=foreground,
+            padding=(10, 5),
+            arrowcolor=foreground,
+            arrowpadding=(0, 0, 15, 0),
+            arrowsize=self.scale_size(4),
+        )
+        self.style.map(
+            ttkstyle,
+            foreground=[
+                ("disabled", disabled_fg),
+                ("pressed !disabled", foreground_pressed),
+                ("hover !disabled", foreground_pressed),
+            ],
+            background=[
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            bordercolor=[
+                ("disabled", disabled_fg),
+                ("pressed", pressed),
+                ("hover", hover),
+            ],
+            darkcolor=[
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            lightcolor=[
+                ("pressed !disabled", pressed),
+                ("hover !disabled", hover),
+            ],
+            arrowcolor=[
+                ("disabled", disabled_fg),
+                ("pressed", foreground_pressed),
+                ("hover", foreground_pressed),
+            ],
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
+
+    def create_notebook_style(self, colorname=DEFAULT):
+        """Create a standard style for the ttk.Notebook widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "TNotebook"
+
+        if self.is_light_theme:
+            bordercolor = self.colors.border
+            foreground = self.colors.inputfg
+        else:
+            bordercolor = self.colors.selectbg
+            foreground = self.colors.selectfg
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            background = self.colors.inputbg
+            selectfg = self.colors.fg
+            ttkstyle = STYLE
+        else:
+            selectfg = self.colors.get_foreground(colorname)
+            background = self.colors.get(colorname)
+            ttkstyle = f"{colorname}.{STYLE}"
+
+        ttkstyle_tab = f"{ttkstyle}.Tab"
+
+        # create widget style
+        self.style._build_configure(
+            ttkstyle,
+            background=self.colors.bg,
+            bordercolor=bordercolor,
+            lightcolor=self.colors.bg,
+            darkcolor=self.colors.bg,
+            tabmargins=(0, 1, 1, 0),
+        )
+        self.style._build_configure(
+            ttkstyle_tab, focuscolor="", foreground=foreground, padding=(6, 5)
+        )
+        self.style.map(
+            ttkstyle_tab,
+            background=[
+                ("selected", self.colors.bg),
+                ("!selected", background),
+            ],
+            lightcolor=[
+                ("selected", self.colors.bg),
+                ("!selected", background),
+            ],
+            bordercolor=[
+                ("selected", bordercolor),
+                ("!selected", bordercolor),
+            ],
+            padding=[("selected", (6, 5)), ("!selected", (6, 5))],
+            foreground=[("selected", foreground), ("!selected", selectfg)],
+        )
+        # register ttkstyle
         self.style._register_ttkstyle(ttkstyle)
