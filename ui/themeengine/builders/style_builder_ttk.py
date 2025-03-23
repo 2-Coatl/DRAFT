@@ -5823,3 +5823,126 @@ class StyleBuilderTTK:
 
         # Registrar el estilo en el sistema
         self.style._register_ttkstyle(ttkstyle)  # Registra el estilo principal (incluye el de pestañas)
+
+    def create_panedwindow_style(self, colorname=DEFAULT):
+        """Create a standard style for the ttk.Panedwindow widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        H_STYLE = "Horizontal.TPanedwindow"
+        V_STYLE = "Vertical.TPanedwindow"
+
+        if self.is_light_theme:
+            default_color = self.colors.border
+        else:
+            default_color = self.colors.selectbg
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            sashcolor = default_color
+            h_ttkstyle = H_STYLE
+            v_ttkstyle = V_STYLE
+        else:
+            sashcolor = self.colors.get(colorname)
+            h_ttkstyle = f"{colorname}.{H_STYLE}"
+            v_ttkstyle = f"{colorname}.{V_STYLE}"
+
+        self.style._build_configure(
+            "Sash", gripcount=0, sashthickness=self.scale_size(2)
+        )
+        self.style._build_configure(h_ttkstyle, background=sashcolor)
+        self.style._build_configure(v_ttkstyle, background=sashcolor)
+
+        # register ttkstyle
+        self.style._register_ttkstyle(h_ttkstyle)
+        self.style._register_ttkstyle(v_ttkstyle)
+
+    def create_sizegrip_assets(self, color):
+        """Create image assets used to build the sizegrip style.
+
+        Parameters:
+
+            color (str):
+                The color _value_ used to draw the image.
+
+        Returns:
+
+            str:
+                The PhotoImage name.
+        """
+        from math import ceil
+
+        box = self.scale_size(1)
+        pad = box * 2
+        chunk = box + pad  # 4
+
+        w = chunk * 3 + pad  # 14
+        h = chunk * 3 + pad  # 14
+
+        size = [w, h]
+
+        im = Image.new("RGBA", size)
+        draw = ImageDraw.Draw(im)
+
+        draw.rectangle((chunk * 2 + pad, pad, chunk * 3, chunk), fill=color)
+        draw.rectangle(
+            (chunk * 2 + pad, chunk + pad, chunk * 3, chunk * 2), fill=color
+        )
+        draw.rectangle(
+            (chunk * 2 + pad, chunk * 2 + pad, chunk * 3, chunk * 3),
+            fill=color,
+        )
+
+        draw.rectangle(
+            (chunk + pad, chunk + pad, chunk * 2, chunk * 2), fill=color
+        )
+        draw.rectangle(
+            (chunk + pad, chunk * 2 + pad, chunk * 2, chunk * 3), fill=color
+        )
+
+        draw.rectangle((pad, chunk * 2 + pad, chunk, chunk * 3), fill=color)
+
+        _img = ImageTk.PhotoImage(im)
+        _name = util.get_image_name(_img)
+        self.theme_images[_name] = _img
+        return _name
+
+    def create_sizegrip_style(self, colorname=DEFAULT):
+        """Create a style for the ttk.Sizegrip widget.
+
+        Parameters:
+
+            colorname (str):
+                The color label used to style the widget.
+        """
+        STYLE = "TSizegrip"
+
+        if any([colorname == DEFAULT, colorname == ""]):
+            ttkstyle = STYLE
+
+            if self.is_light_theme:
+                grip_color = self.colors.border
+            else:
+                grip_color = self.colors.inputbg
+        else:
+            ttkstyle = f"{colorname}.{STYLE}"
+            grip_color = self.colors.get(colorname)
+
+        image = self.create_sizegrip_assets(grip_color)
+
+        self.style.element_create(
+            f"{ttkstyle}.Sizegrip.sizegrip", "image", image
+        )
+        self.style.layout(
+            ttkstyle,
+            [
+                (
+                    f"{ttkstyle}.Sizegrip.sizegrip",
+                    {"side": tk.BOTTOM, "sticky": tk.SE},
+                )
+            ],
+        )
+        # register ttkstyle
+        self.style._register_ttkstyle(ttkstyle)
