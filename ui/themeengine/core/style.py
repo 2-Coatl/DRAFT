@@ -68,6 +68,10 @@ class Style(ttk.Style):
         Style.instance = self
         self.theme_use(theme)
 
+        # apply localization
+        from ui.themeengine import localization
+        localization.initialize_localities()
+
     @staticmethod
     def get_instance() -> 'Style':
         """Retorna una instancia de la clase Style.
