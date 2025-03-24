@@ -311,7 +311,7 @@ class Dialog(BaseWidget):
             self._toplevel = ttk.Toplevel(
                 transient=self.master,  # Hace que el diálogo sea transitorio respecto a su maestro
                 title=self._title,  # Establece el título configurado en __init__
-                resizable=(0, 0),  # No permite redimensionar (ni horizontal ni verticalmente)
+                resizable=(False, False),  # No permite redimensionar (ni horizontal ni verticalmente) -- Usando booleanos explícitos en lugar de (0, 0)
                 minsize=(250, 15),  # Establece un tamaño mínimo específico para Windows
                 iconify=True,  # Inicialmente iconificado (será revertido después)
             )
@@ -320,7 +320,7 @@ class Dialog(BaseWidget):
             self._toplevel = ttk.Toplevel(
                 transient=self.master,  # Hace que el diálogo sea transitorio respecto a su maestro
                 title=self._title,  # Establece el título configurado en __init__
-                resizable=(0, 0),  # No permite redimensionar (ni horizontal ni verticalmente)
+                resizable=(False, False),  # No permite redimensionar (ni horizontal ni verticalmente) -- Usando booleanos explícitos en lugar de (0, 0)
                 windowtype="dialog",  # Específica de sistemas no-Windows, marca como ventana de diálogo
                 iconify=True,  # Inicialmente iconificado (será revertido después)
             )

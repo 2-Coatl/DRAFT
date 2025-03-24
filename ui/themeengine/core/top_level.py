@@ -28,7 +28,7 @@ class Toplevel(tkinter.Toplevel):
             minsize: Optional[Tuple[int, int]] = None,
             maxsize: Optional[Tuple[int, int]] = None,
             resizable: Optional[Tuple[bool, bool]] = None,
-            transient: Optional[Union[tkinter.Tk, tkinter.Widget]] = None,
+            transient: Optional[tkinter.Misc] = None,
             overrideredirect: bool = False,
             windowtype: Optional[str] = None,
             topmost: bool = False,
@@ -75,10 +75,12 @@ class Toplevel(tkinter.Toplevel):
                 Esto puede ajustarse después de crear la ventana usando
                 el método `Toplevel.resizable`.
 
-            transient (Union[Tk, Widget]):
+            transient (tkinter.Misc):
                 Indica al gestor de ventanas que este widget es
-                transitorio con respecto al widget maestro. Internamente,
-                esto se pasa al método `Toplevel.transient`.
+                transitorio con respecto al widget maestro. El método `Toplevel.transient()`
+                puede aceptar cualquier objeto que sea un widget de Tkinter o ventana principal,
+                 y todos estos objetos heredan de `Misc`. Internamente, esto se pasa al
+                método `Toplevel.transient`.
 
             overrideredirect (bool):
                 Indica al gestor de ventanas que ignore este widget si
