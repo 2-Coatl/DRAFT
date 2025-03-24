@@ -13,3 +13,5 @@
       - Gestión de eventos y respuestas del usuario
 
 """
+from ui.themeengine.dialogs.base import Dialog
+from ui.themeengine.dialogs.message_dialog import MessageDialog
