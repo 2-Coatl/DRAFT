@@ -662,8 +662,8 @@ class Bootstyle:
         """
 
         # Importar las listas de widgets a modificar
-        from ui.themeengine.utils.constants import TTK_WIDGETS  # Widgets de ttk (Button, Entry, etc.) 19
-        from ui.themeengine.utils.constants import TK_WIDGETS  # Widgets de tk estándar (Label, Frame, etc.) 17
+        from ui.themeengine.widgets.constants import TTK_WIDGETS  # Widgets de ttk (Button, Entry, etc.) 19
+        from ui.themeengine.widgets.constants import TK_WIDGETS  # Widgets de tk estándar (Label, Frame, etc.) 17
 
         # === MODIFICACIÓN DE WIDGETS TTK ===
         for widget in TTK_WIDGETS:
