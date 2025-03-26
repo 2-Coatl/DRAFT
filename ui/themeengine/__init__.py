@@ -5,7 +5,7 @@ from ui.themeengine.core.window import Window
 from ui.themeengine.core.style import Style
 from ui.themeengine.utils.bootstyle import Bootstyle
 
-# 2. Importar widgets de ttk
+# 2. Importar widgets
 from ui.themeengine.widgets import *
 
 # 3. Configurar el sistema de temas

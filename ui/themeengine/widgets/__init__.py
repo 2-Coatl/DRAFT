@@ -1,38 +1,51 @@
 """Módulo de widgets"""
-import tkinter as tk
-from tkinter import ttk
+# Importar componentes de ttk
+from tkinter.ttk import Button, Checkbutton, Combobox
+from tkinter.ttk import Entry, Frame, Label
+from tkinter.ttk import Labelframe, LabelFrame, Menubutton
+from tkinter.ttk import Notebook, OptionMenu, PanedWindow
+from tkinter.ttk import Panedwindow, Progressbar, Radiobutton
+from tkinter.ttk import Scale, Scrollbar, Separator
+from tkinter.ttk import Sizegrip, Spinbox, Treeview
 
-# Re-exportar widgets de ttk
-Button = ttk.Button
-Checkbutton = ttk.Checkbutton
-Combobox = ttk.Combobox
-Entry = ttk.Entry
-Frame = ttk.Frame
-Label = ttk.Label
-Labelframe = ttk.Labelframe
-LabelFrame = ttk.Labelframe
-Menubutton = ttk.Menubutton
-Notebook = ttk.Notebook
-OptionMenu = ttk.OptionMenu
-PanedWindow = ttk.Panedwindow
-Panedwindow = ttk.Panedwindow
-Progressbar = ttk.Progressbar
-Radiobutton = ttk.Radiobutton
-Scale = ttk.Scale
-Scrollbar = ttk.Scrollbar
-Separator = ttk.Separator
-Sizegrip = ttk.Sizegrip
-Spinbox = ttk.Spinbox
-Treeview =ttk.Treeview
+# Importar componentes de tkinter
+from tkinter import font
+from tkinter import Variable, StringVar, IntVar, BooleanVar, DoubleVar
+from tkinter import Canvas, Menu, Text, PhotoImage
 
-# Re-exportar widgets de tkinter
-font = tk.font
-Variable = tk.Variable
-StringVar = tk.StringVar
-IntVar = tk.IntVar
-BooleanVar = tk.BooleanVar
-DoubleVar = tk.DoubleVar
-Canvas =tk.Canvas
-Menu = tk.Menu
-Text = tk.Text
-PhotoImage = tk.PhotoImage
+
+# Re-exportar widgets de ttk / tkinter
+__all__ = [
+    'Button',
+    'Checkbutton',
+    'Combobox',
+    'Entry',
+    'Frame',
+    'Label',
+    'Labelframe',
+    'LabelFrame',
+    'Menubutton',
+    'Notebook',
+    'OptionMenu',
+    'PanedWindow',
+    'Panedwindow',
+    'Progressbar',
+    'Radiobutton',
+    'Scale',
+    'Scrollbar',
+    'Separator',
+    'Sizegrip',
+    'Spinbox',
+    'Treeview',
+    'font',
+    'Variable',
+    'StringVar',
+    'IntVar',
+    'BooleanVar',
+    'DoubleVar',
+    'Canvas',
+    'Menu',
+    'Text',
+    'PhotoImage',
+]
+
