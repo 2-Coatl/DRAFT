@@ -8,7 +8,7 @@ from ui.themeengine.utils.bootstyle import Bootstyle
 # 2. Importar widgets básicos de ttk
 from ui.themeengine.widgets import *
 
-# 3. Importar componentes estándar de tkinter
+# 3. Importar componentes, estándar de tkinter
 from tkinter import font
 from tkinter import Variable, StringVar, IntVar, BooleanVar, DoubleVar
 from tkinter import Canvas, Menu, Text, PhotoImage
