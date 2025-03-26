@@ -96,7 +96,7 @@ class Style(ttk.Style):
         """
         # Paso 1: Manejo rápido de consultas directas
         # Si existe query_opt, retorna inmediatamente la configuración
-        print("\n--- Dentro de configure ---")
+        # print("\n--- Dentro de configure ---")
         if query_opt:
             return super().configure(style, query_opt=query_opt, **kw)
 
@@ -326,7 +326,7 @@ class Style(ttk.Style):
             None
         """
         # Si existen temas de usuario, se añaden a los estándar
-        print("\n--- Cargando temas ---")
+        # print("\n--- Cargando temas ---")
         if USER_THEMES:
             STANDARD_THEMES.update(USER_THEMES)
 
@@ -375,7 +375,7 @@ class Style(ttk.Style):
         Returns:
             StyleBuilderTTK: El objeto constructor de estilos para el tema actual.
         """
-        print("\n--- Cargando _get_builder ---")
+        # print("\n--- Cargando _get_builder ---")
         style: Style = Style.get_instance()
         #print(f"style: {style}")
         theme_name = style.theme.name

@@ -5,19 +5,13 @@ from ui.themeengine.core.window import Window
 from ui.themeengine.core.style import Style
 from ui.themeengine.utils.bootstyle import Bootstyle
 
-# 2. Importar widgets básicos de ttk
+# 2. Importar widgets de ttk
 from ui.themeengine.widgets import *
 
-# 3. Importar componentes, estándar de tkinter
-from tkinter import font
-from tkinter import Variable, StringVar, IntVar, BooleanVar, DoubleVar
-from tkinter import Canvas, Menu, Text, PhotoImage
-
-# 4. Configurar el sistema de temas
-
+# 3. Configurar el sistema de temas
 Bootstyle.setup_ttktheming_api()
 
-# 5. Importar widgets personalizados
+# 4. Importar widgets personalizados
 from ui.themeengine.widgets.scrolled.scrolled_frame import ScrolledFrame
 from ui.themeengine.widgets.scrolled.scrolled_text import ScrolledText
 from ui.themeengine.dialogs.base import Dialog
