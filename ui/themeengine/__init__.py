@@ -1,17 +1,17 @@
 """Módulo de gestión de estilos y temas"""
-# 1. Importar componentes principales del núcleo
+# Importar componentes principales del núcleo
 from ui.themeengine.core.top_level import Toplevel
 from ui.themeengine.core.window import Window
 from ui.themeengine.core.style import Style
 from ui.themeengine.utils.bootstyle import Bootstyle
 
-# 2. Importar widgets
+#  Importar widgets
 from ui.themeengine.widgets import *
 
-# 3. Configurar el sistema de temas
+# Configurar el sistema de temas
 Bootstyle.setup_ttktheming_api()
 
-# 4. Importar widgets personalizados
+#  Importar widgets personalizados
 from ui.themeengine.widgets.scrolled.scrolled_frame import ScrolledFrame
 from ui.themeengine.widgets.scrolled.scrolled_text import ScrolledText
 from ui.themeengine.dialogs.base import Dialog
