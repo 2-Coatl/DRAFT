@@ -12,7 +12,7 @@ from tkinter.ttk import Sizegrip, Spinbox, Treeview
 from tkinter import font
 from tkinter import Variable, StringVar, IntVar, BooleanVar, DoubleVar
 from tkinter import Canvas, Menu, Text, PhotoImage
-
+from tkinter import END
 
 # Re-exportar widgets de ttk / tkinter
 __all__ = [
@@ -47,5 +47,6 @@ __all__ = [
     'Menu',
     'Text',
     'PhotoImage',
+    'END'
 ]
 
