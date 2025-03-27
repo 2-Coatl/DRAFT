@@ -1,5 +1,4 @@
 import ui.themeengine as ttk
-import ui.themeengine as tk
 from ui.themeengine import Bootstyle
 from ui.themeengine.core.color import Colors
 from ui.themeengine.utils.constants import *
@@ -11,38 +10,37 @@ import math
 # meter imports
 from PIL import Image, ImageTk, ImageDraw
 
-M = 3  # meter image scale, higher number increases resolution
 
+# Valor para multiplicar la resolución de la imagen para suavizar el dibujo
+M = 3  # Esta constante podría estar en otro lugar del framework, ajústala según sea necesario
 
 class Meter(ttk.Frame):
-    """A radial meter that can be used to show progress of long
-    running operations or the amount of work completed; can also be
-    used as a dial when set to `interactive=True`.
+    """Un medidor radial que puede usarse para mostrar el progreso de operaciones
+    de larga duración o la cantidad de trabajo completado; también puede usarse
+    como un dial cuando se configura como `interactive=True`.
 
-    This widget is very flexible. There are two primary meter types
-    which can be set with the `metertype` parameter: 'full' and
-    'semi', which shows the arc of the meter in a full or
-    semi-circle. You can also customize the arc of the circle with
-    the `arcrange` and `arcoffset` parameters.
+    Este widget es muy flexible. Hay dos tipos principales de medidores
+    que pueden establecerse con el parámetro `metertype`: 'full' y
+    'semi', que muestran el arco del medidor en un círculo completo o
+    semicírculo. También puede personalizar el arco del círculo con
+    los parámetros `arcrange` y `arcoffset`.
 
-    The meter indicator can be displayed as a solid color or with
-    stripes using the `stripethickness` parameter. By default, the
-    `stripethickness` is 0, which results in a solid meter
-    indicator. A higher `stripethickness` results in larger wedges
-    around the arc of the meter.
+    El indicador del medidor puede mostrarse como un color sólido o con
+    rayas usando el parámetro `stripethickness`. Por defecto, el
+    `stripethickness` es 0, lo que resulta en un indicador de medidor sólido.
+    Un `stripethickness` mayor resulta en cuñas más grandes
+    alrededor del arco del medidor.
 
-    Various text and label options exist. The center text and
-    meter indicator is formatted with the `meterstyle` parameter.
-    You can set text on the left and right of this center label
-    using the `textleft` and `textright` parameters. This is most
-    commonly used for '$', '%', or other such symbols.
+    Existen varias opciones de texto y etiqueta. El texto central y
+    el indicador del medidor se formatean con el parámetro `meterstyle`.
+    Puede establecer texto a la izquierda y derecha de esta etiqueta central
+    usando los parámetros `textleft` y `textright`. Esto se usa más
+    comúnmente para '$', '%', u otros símbolos similares.
 
-    If you need access to the variables that update the meter, you
-    you can access these via the `amountusedvar`, `amounttotalvar`,
-    and the `labelvar`. The value of these properties can also be
-    retrieved via the `configure` method.
-
-
+    Si necesita acceso a las variables que actualizan el medidor,
+    puede acceder a ellas a través de `amountusedvar`, `amounttotalvar`,
+    y el `labelvar`. El valor de estas propiedades también puede
+    recuperarse a través del método `configure`.
     """
 
     def __init__(
@@ -70,96 +68,96 @@ class Meter(ttk.Frame):
         **kwargs,
     ):
         """
-        Parameters:
+        Parámetros:
 
             master (Widget):
-                The parent widget.
+                El widget padre.
 
             arcrange (int):
-                The range of the arc if degrees from start to end.
+                El rango del arco en grados desde el inicio hasta el final.
 
             arcoffset (int):
-                The amount to offset the arc's starting position in degrees.
-                0 is at 3 o'clock.
+                La cantidad para desplazar la posición inicial del arco en grados.
+                0 está en las 3 en punto.
 
             amounttotal (int):
-                The maximum value of the meter.
+                El valor máximo del medidor.
 
             amountused (int):
-                The current value of the meter; displayed in a center label
-                if the `showtext` property is set to True.
+                El valor actual del medidor; mostrado en una etiqueta central
+                si la propiedad `showtext` está configurada como True.
 
             wedgesize (int):
-                Sets the length of the indicator wedge around the arc. If
-                greater than 0, this wedge is set as an indicator centered
-                on the current meter value.
+                Establece la longitud de la cuña indicadora alrededor del arco. Si
+                es mayor que 0, esta cuña se establece como un indicador centrado
+                en el valor actual del medidor.
 
             metersize (int):
-                The meter is square. This represents the size of one side
-                if the square as measured in screen units.
+                El medidor es cuadrado. Esto representa el tamaño de un lado
+                del cuadrado medido en unidades de pantalla.
 
             bootstyle (str):
-                Sets the indicator and center text color. One of primary,
+                Establece el color del indicador y del texto central. Uno de primary,
                 secondary, success, info, warning, danger, light, dark.
 
             metertype ('full', 'semi'):
-                Displays the meter as a full circle or semi-circle.
+                Muestra el medidor como un círculo completo o semicírculo.
 
             meterthickness (int):
-                The thickness of the indicator.
+                El grosor del indicador.
 
             showtext (bool):
-                Indicates whether to show the left, center, and right text
-                labels on the meter.
+                Indica si mostrar las etiquetas de texto izquierda, central y derecha
+                en el medidor.
 
             interactive (bool):
-                Indicates that the user may adjust the meter value with
-                mouse interaction.
+                Indica que el usuario puede ajustar el valor del medidor con
+                interacción del ratón.
 
             stripethickness (int):
-                The indicator can be displayed as a solid band or as
-                striped wedges around the arc. If the value is greater than
-                0, the indicator changes from a solid to striped, where the
-                value is the thickness of the stripes (or wedges).
+                El indicador puede mostrarse como una banda sólida o como
+                cuñas rayadas alrededor del arco. Si el valor es mayor que
+                0, el indicador cambia de sólido a rayado, donde el
+                valor es el grosor de las rayas (o cuñas).
 
             textleft (str):
-                A short string inserted to the left of the center text.
+                Una cadena corta insertada a la izquierda del texto central.
 
             textright (str):
-                A short string inserted to the right of the center text.
+                Una cadena corta insertada a la derecha del texto central.
 
             textfont (Union[str, Font]):
-                The font used to render the center text.
+                La fuente utilizada para renderizar el texto central.
 
             subtext (str):
-                Supplemental text that appears below the center text.
+                Texto suplementario que aparece debajo del texto central.
 
             subtextstyle (str):
-                The bootstyle color of the subtext. One of primary,
+                El color de bootstyle del subtexto. Uno de primary,
                 secondary, success, info, warning, danger, light, dark.
-                The default color is Theme specific and is a lighter
-                shade based on whether it is a 'light' or 'dark' theme.
+                El color predeterminado es específico del tema y es un tono más claro
+                basado en si es un tema 'light' o 'dark'.
 
             subtextfont (Union[str, Font]):
-                The font used to render the subtext.
+                La fuente utilizada para renderizar el subtexto.
 
             stepsize (int):
-                Sets the amount by which to change the meter indicator
-                when incremented by mouse interaction.
+                Establece la cantidad en la que cambiar el indicador del medidor
+                cuando se incrementa mediante interacción del ratón.
 
             **kwargs:
-                Other keyword arguments that are passed directly to the
-                `Frame` widget that contains the meter components.
+                Otros argumentos de palabras clave que se pasan directamente al
+                widget `Frame` que contiene los componentes del medidor.
         """
         super().__init__(master=master, **kwargs)
 
-        # widget variables
-        self.amountusedvar = tk.IntVar(value=amountused)
+        # variables del widget
+        self.amountusedvar = ttk.IntVar(value=amountused)
         self.amountusedvar.trace_add("write", self._draw_meter)
-        self.amounttotalvar = tk.IntVar(value=amounttotal)
-        self.labelvar = tk.StringVar(value=subtext)
+        self.amounttotalvar = ttk.IntVar(value=amounttotal)
+        self.labelvar = ttk.StringVar(value=subtext)
 
-        # misc settings
+        # configuraciones varias
         self._set_arc_offset_range(metertype, arcoffset, arcrange)
         self._towardsmaximum = True
         self._metersize = utility.scale_size(self, metersize)
@@ -191,7 +189,7 @@ class Meter(ttk.Frame):
             text=self._textleft,
             font=self._subtextfont,
             bootstyle=(self._subtextstyle, "metersubtxt"),
-            anchor=tk.S,
+            anchor=S,
             padding=(0, 5),
         )
         self.textcenter = ttk.Label(
@@ -205,7 +203,7 @@ class Meter(ttk.Frame):
             text=self._textright,
             font=self._subtextfont,
             bootstyle=(self._subtextstyle, "metersubtxt"),
-            anchor=tk.S,
+            anchor=S,
             padding=(0, 5),
         )
         self.subtext = ttk.Label(
@@ -221,7 +219,7 @@ class Meter(ttk.Frame):
         self._draw_base_image()
         self._draw_meter()
 
-        # set widget geometery
+        # establecer geometría del widget
         self.indicator.place(x=0, y=0)
         self.meterframe.pack()
         self._set_show_text()
@@ -237,16 +235,16 @@ class Meter(ttk.Frame):
         self._metertrough = troughcolor
 
     def _set_meter_text(self):
-        """Setup and pack the widget labels in the appropriate order"""
+        """Configurar y empaquetar las etiquetas del widget en el orden apropiado"""
         self._set_show_text()
         self._set_subtext()
 
     def _set_subtext(self):
         if self._subtextfont:
             if self._showtext:
-                self.subtext.place(relx=0.5, rely=0.6, anchor=tk.CENTER)
+                self.subtext.place(relx=0.5, rely=0.6, anchor=CENTER)
             else:
-                self.subtext.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+                self.subtext.place(relx=0.5, rely=0.5, anchor=CENTER)
 
     def _set_show_text(self):
         self.textframe.pack_forget()
@@ -257,9 +255,9 @@ class Meter(ttk.Frame):
 
         if self._showtext:
             if self._subtext:
-                self.textframe.place(relx=0.5, rely=0.45, anchor=tk.CENTER)
+                self.textframe.place(relx=0.5, rely=0.45, anchor=CENTER)
             else:
-                self.textframe.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+                self.textframe.place(relx=0.5, rely=0.5, anchor=CENTER)
 
         self._set_text_left()
         self._set_text_center()
@@ -268,16 +266,16 @@ class Meter(ttk.Frame):
 
     def _set_text_left(self):
         if self._showtext and self._textleft:
-            self.textleft.pack(side=tk.LEFT, fill=tk.Y)
+            self.textleft.pack(side=LEFT, fill=Y)
 
     def _set_text_center(self):
         if self._showtext:
-            self.textcenter.pack(side=tk.LEFT, fill=tk.Y)
+            self.textcenter.pack(side=LEFT, fill=Y)
 
     def _set_text_right(self):
         self.textright.configure(text=self._textright)
         if self._showtext and self._textright:
-            self.textright.pack(side=tk.RIGHT, fill=tk.Y)
+            self.textright.pack(side=RIGHT, fill=Y)
 
     def _set_interactive_bind(self):
         seq1 = "<B1-Motion>"
@@ -307,7 +305,7 @@ class Meter(ttk.Frame):
         self._metertype = metertype
 
     def _draw_meter(self, *_):
-        """Draw a meter"""
+        """Dibujar un medidor"""
         img = self._base_image.copy()
         draw = ImageDraw.Draw(img)
         if self._stripethickness > 0:
@@ -321,7 +319,7 @@ class Meter(ttk.Frame):
         self.indicator.configure(image=self._meterimage)
 
     def _draw_base_image(self):
-        """Draw base image to be used for subsequent updates"""
+        """Dibujar imagen base para ser usada en actualizaciones posteriores"""
         self._set_widget_colors()
         self._base_image = Image.new(
             mode="RGBA", size=(self._metersize * M, self._metersize * M)
@@ -330,7 +328,7 @@ class Meter(ttk.Frame):
 
         x1 = y1 = self._metersize * M - 20
         width = self._meterthickness * M
-        # striped meter
+        # medidor rayado
         if self._stripethickness > 0:
             _from = self._arcoffset
             _to = self._arcrange + self._arcoffset
@@ -343,7 +341,7 @@ class Meter(ttk.Frame):
                     fill=self._metertrough,
                     width=width,
                 )
-        # solid meter
+        # medidor sólido
         else:
             draw.arc(
                 xy=(0, 0, x1, y1),
@@ -354,7 +352,7 @@ class Meter(ttk.Frame):
             )
 
     def _draw_solid_meter(self, draw: ImageDraw.Draw):
-        """Draw a solid meter"""
+        """Dibujar un medidor sólido"""
         x1 = y1 = self._metersize * M - 20
         width = self._meterthickness * M
 
@@ -377,7 +375,7 @@ class Meter(ttk.Frame):
             )
 
     def _draw_striped_meter(self, draw: ImageDraw.Draw):
-        """Draw a striped meter"""
+        """Dibujar un medidor rayado"""
         meter_value = self._meter_value()
         x1 = y1 = self._metersize * M - 20
         width = self._meterthickness * M
@@ -404,8 +402,8 @@ class Meter(ttk.Frame):
                 )
 
     def _meter_value(self) -> int:
-        """Calculate the value to be used to draw the arc length of the
-        progress meter."""
+        """Calcular el valor a utilizar para dibujar la longitud del arco del
+        medidor de progreso."""
         value = int(
             (self["amountused"] / self["amounttotal"]) * self._arcrange
             + self._arcoffset
@@ -416,8 +414,8 @@ class Meter(ttk.Frame):
         self._draw_base_image()
         self._draw_meter()
 
-    def _on_dial_interact(self, e: tk.Event):
-        """Callback for mouse drag motion on meter indicator"""
+    def _on_dial_interact(self, e):
+        """Callback para el movimiento de arrastre del ratón en el indicador del medidor"""
         dx = e.x - self._metersize // 2
         dy = e.y - self._metersize // 2
         rads = math.atan2(dy, dx)
@@ -428,20 +426,20 @@ class Meter(ttk.Frame):
         else:
             factor = 360 + degs - self._arcoffset
 
-        # clamp the value between 0 and `amounttotal`
+        # limitar el valor entre 0 y `amounttotal`
         amounttotal = self.amounttotalvar.get()
         lastused = self.amountusedvar.get()
         amountused = (amounttotal / self._arcrange * factor)
 
-        # calculate amount used given stepsize
-        if amountused > self._stepsize//2:
+        # calcular la cantidad utilizada dado el tamaño de paso
+        if amountused > self._stepsize // 2:
             amountused = amountused // self._stepsize * self._stepsize + self._stepsize
         else:
             amountused = 0
-        # if the number is the name, then do not redraw
+        # si el número es el mismo, entonces no redibujar
         if lastused == amountused:
             return
-        # set the amount used variable
+        # establecer la variable de cantidad utilizada
         if amountused < 0:
             self.amountusedvar.set(0)
         elif amountused > amounttotal:
@@ -450,14 +448,14 @@ class Meter(ttk.Frame):
             self.amountusedvar.set(amountused)
 
     def _lookup_style_option(self, style: str, option: str):
-        """Wrapper around the tcl style lookup command"""
+        """Envoltorio alrededor del comando de búsqueda de estilo tcl"""
         value = self.tk.call(
             "ttk::style", "lookup", style, "-%s" % option, None, None
         )
         return value
 
     def _configure_get(self, cnf):
-        """Override the configuration get method"""
+        """Sobreescribe el método de obtención de configuración"""
         if cnf == "arcrange":
             return self._arcrange
         elif cnf == "arcoffset":
@@ -500,7 +498,7 @@ class Meter(ttk.Frame):
             return super(ttk.Frame, self).configure(cnf)
 
     def _configure_set(self, **kwargs):
-        """Override the configuration set method"""
+        """Sobreescribe el método de configuración"""
         meter_text_changed = False
 
         if "arcrange" in kwargs:
@@ -577,7 +575,7 @@ class Meter(ttk.Frame):
         self._draw_base_image()
         self._draw_meter()
 
-        # pass remaining configurations to `ttk.Frame.configure`
+        # pasar configuraciones restantes a `ttk.Frame.configure`
         super(ttk.Frame, self).configure(**kwargs)
 
     def __getitem__(self, key: str):
@@ -587,13 +585,13 @@ class Meter(ttk.Frame):
         self._configure_set(**{key: value})
 
     def configure(self, cnf=None, **kwargs):
-        """Configure the options for this widget.
+        """Configurar las opciones para este widget.
 
-        Parameters:
-            cnf (Dict[str, Any], optional):
-                A dictionary of configuration options.
+        Parámetros:
+            cnf (Dict[str, Any], opcional):
+                Un diccionario de opciones de configuración.
 
-            **kwargs: Optional keyword arguments.
+            **kwargs: Argumentos de palabras clave opcionales.
         """
         if cnf is not None:
             return self._configure_get(cnf)
@@ -601,15 +599,15 @@ class Meter(ttk.Frame):
             self._configure_set(**kwargs)
 
     def step(self, delta=1):
-        """Increase the indicator value by `delta`
+        """Aumentar el valor del indicador en `delta`
 
-        The indicator will reverse direction and count down once it
-        reaches the maximum value.
+        El indicador invertirá la dirección y contará hacia abajo una vez que
+        alcance el valor máximo.
 
-        Parameters:
+        Parámetros:
 
             delta (int):
-                The amount to change the indicator.
+                La cantidad a cambiar el indicador.
         """
         amountused = self.amountusedvar.get()
         amounttotal = self.amounttotalvar.get()

@@ -47,6 +47,6 @@ __all__ = [
     'Menu',
     'Text',
     'PhotoImage',
-    'END'
+    'END',
 ]
 
