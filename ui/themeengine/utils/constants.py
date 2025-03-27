@@ -18,6 +18,11 @@ DARK = 'dark'
 # state constants
 READONLY = 'readonly'
 
+# progressbar constant
+DETERMINATE = 'determinate'
+INDETERMINATE = 'indeterminate'
+
+
 STANDARD_THEMES = {
     'cosmo': {
         'type': 'light',
