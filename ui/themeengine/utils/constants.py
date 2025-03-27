@@ -19,6 +19,10 @@ INFO = 'info'
 LIGHT = 'light'
 DARK = 'dark'
 
+# meter constants
+FULL = 'full'
+SEMI = 'semi'
+
 # state constants
 READONLY = 'readonly'
 
