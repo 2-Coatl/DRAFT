@@ -17,3 +17,4 @@ from ui.themeengine.widgets.scrolled.scrolled_text import ScrolledText
 from ui.themeengine.dialogs.base import Dialog
 from ui.themeengine.dialogs.message_dialog import MessageDialog
 from ui.themeengine.widgets.floodgauge import Floodgauge
+from ui.themeengine.widgets.meter import Meter
