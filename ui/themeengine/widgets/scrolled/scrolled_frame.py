@@ -2,6 +2,7 @@ import ui.themeengine as ttk
 from ui.themeengine.utils.constants import *
 from tkinter import Pack, Place, Grid
 
+
 class ScrolledFrame(ttk.Frame):
     """Un contenedor widget con barra de desplazamiento vertical.
 
@@ -66,17 +67,16 @@ class ScrolledFrame(ttk.Frame):
         ```
     """
 
-
     def __init__(
-        self,
-        master=None,
-        padding=2,
-        bootstyle=DEFAULT,
-        autohide=False,
-        height=200,
-        width=300,
-        scrollheight=None,
-        **kwargs,
+            self,
+            master=None,
+            padding=2,
+            bootstyle=DEFAULT,
+            autohide=False,
+            height=200,
+            width=300,
+            scrollheight=None,
+            **kwargs,
     ):
         """
         Inicializa un widget ScrolledFrame con capacidad de desplazamiento vertical.
@@ -140,7 +140,6 @@ class ScrolledFrame(ttk.Frame):
         # Desactiva el redimensionamiento automático según el contenido
         self.container.propagate(0)  # Equivalente a propagate(False)
 
-
         # Inicializa y posiciona el marco de contenido del ScrolledFrame.
         # Este fragmento inicializa el marco principal heredando de ttk.Frame y luego
         # lo posiciona dentro del contenedor. Este marco servirá como el área desplazable
@@ -201,7 +200,6 @@ class ScrolledFrame(ttk.Frame):
         # Evento personalizado para cuando un hijo se mapea al contenido
         self.bind("<<MapChild>>", self._on_map_child, "+")  # Hijo mapeado -> Actualizar vista
 
-
         # Delega los métodos de gestión de geometría del marco de contenido al contenedor externo.
         # Este fragmento implementa un mecanismo avanzado de delegación que permite que los métodos
         # de posicionamiento (pack, grid, place) del ScrolledFrame afecten al contenedor completo
@@ -217,6 +215,15 @@ class ScrolledFrame(ttk.Frame):
                 setattr(self, f"content_{method}", getattr(self, method))
                 # Sobrescribir con el método equivalente del contenedor
                 setattr(self, method, getattr(self.container, method))
+
+        # Inicializar caché para optimizaciones
+        self._measures_cache = None
+        self._bound_widgets = set()
+        self._last_wheel_time = 0
+        self._wheel_delay = 30  # ms entre eventos
+
+        # Habilitar desplazamiento inicialmente
+        self.enable_scrolling()
 
     def yview(self, *args):
         """
@@ -248,6 +255,15 @@ class ScrolledFrame(ttk.Frame):
             # Retroceder una página
             self.yview("scroll", -1, "pages")
         """
+        # Evitar actualizaciones cuando el widget no está visible
+        if not args and not self.container.winfo_ismapped():
+            return
+
+        # Evitar actualizaciones cuando no hay contenido que desplazar
+        base, thumb = self._measures()
+        if thumb >= 1.0 and not args:
+            return  # No hay necesidad de desplazamiento
+
         # Caso 1: Sin argumentos - Actualizar a la posición actual
         if not args:
             # Obtener la posición actual del inicio de la vista (0.0 a 1.0)
@@ -393,28 +409,35 @@ class ScrolledFrame(ttk.Frame):
             - Verifica vinculaciones existentes para evitar duplicados.
             - Todos los eventos de rueda se vinculan al método self._on_mousewheel.
         """
+        # Almacenar widgets ya vinculados para evitar duplicados
+        if not hasattr(self, '_bound_widgets'):
+            self._bound_widgets = set()
+
         # Obtener todos los widgets hijos directos del widget padre
         children = parent.winfo_children()
 
         # Iterar por el padre y todos sus hijos
         for widget in [parent, *children]:
-            # Obtener vinculaciones actuales del widget
-            bindings = widget.bind()
+            # Verificar si ya está vinculado
+            widget_id = str(widget)
+            if widget_id in self._bound_widgets:
+                continue
+
+            # Marcar como vinculado
+            self._bound_widgets.add(widget_id)
 
             # Diferente manejo según el sistema de ventanas
             if self.winsys.lower() == "x11":  # Linux/Unix
-                # Verificar si ya existen vinculaciones para evitar duplicados
-                if "<Button-4>" in bindings or "<Button-5>" in bindings:
-                    continue  # Omitir este widget si ya tiene vinculaciones
-                else:
-                    # Añadir vinculaciones para rueda arriba (<Button-4>) y abajo (<Button-5>)
-                    widget.bind("<Button-4>", self._on_mousewheel, "+")  # Rueda hacia arriba
-                    widget.bind("<Button-5>", self._on_mousewheel, "+")  # Rueda hacia abajo
+                # Añadir vinculaciones para rueda arriba (<Button-4>) y abajo (<Button-5>)
+                widget.bind("<Button-4>", self._on_mousewheel, "+")  # Rueda hacia arriba
+                widget.bind("<Button-5>", self._on_mousewheel, "+")  # Rueda hacia abajo
             else:  # Windows/macOS
-                # Verificar si ya existe vinculación para evitar duplicados
-                if "<MouseWheel>" not in bindings:
-                    # Añadir vinculación genérica para evento de rueda
-                    widget.bind("<MouseWheel>", self._on_mousewheel, "+")
+                # Añadir vinculación genérica para evento de rueda
+                widget.bind("<MouseWheel>", self._on_mousewheel, "+")
+
+            # Vinculación para detectar cuando el widget se destruye
+            widget.bind("<Destroy>",
+                        lambda e, w=widget_id: self._bound_widgets.discard(w), "+")
 
             # Recursión: continuar con los widgets hijos (que no sean el padre original)
             # Esto evita recursión infinita mientras procesa toda la jerarquía
@@ -444,6 +467,10 @@ class ScrolledFrame(ttk.Frame):
             # Eliminar vinculaciones solo de un widget específico y sus hijos
             self._del_scroll_binding(self.specific_widget)
         """
+        # Limpiar el conjunto de widgets vinculados
+        if hasattr(self, '_bound_widgets'):
+            self._bound_widgets.clear()
+
         # Obtener todos los widgets hijos directos del widget padre
         children = parent.winfo_children()
 
@@ -605,6 +632,12 @@ class ScrolledFrame(ttk.Frame):
         # Invierte el valor actual de autohide (True → False, False → True)
         self.autohide = not self.autohide
 
+        # Actualizar estado visual según el nuevo valor
+        if self.autohide:
+            self.hide_scrollbars()
+        else:
+            self.show_scrollbars()
+
     def _measures(self):
         """Calcula las proporciones necesarias para el sistema de desplazamiento vertical.
 
@@ -631,13 +664,23 @@ class ScrolledFrame(ttk.Frame):
             - base = 2.0 (contenido dos veces más grande)
             - thumb = 0.5 (el pulgar ocupa la mitad de la barra)
         """
+        # Verificar si podemos usar valores en caché
+        current_height = self.container.winfo_height()
+        content_height = self.winfo_height()
+
+        if (hasattr(self, '_measures_cache') and
+                self._measures_cache and
+                self._measures_cache['outer'] == current_height and
+                self._measures_cache['inner'] == content_height):
+            return self._measures_cache['base'], self._measures_cache['thumb']
+
         # Obtener la altura en píxeles del contenedor visible
-        outer = self.container.winfo_height()
+        outer = current_height
 
         # Determinar la altura del contenido interno
         # Usamos max() para asegurar que inner nunca sea menor que outer,
         # lo que garantiza cálculos válidos
-        inner = max([self.winfo_height(), outer])
+        inner = max([content_height, outer])
 
         # Calcular la relación entre el contenido y el área visible
         # Esta relación indica cuántas veces más grande es el contenido
@@ -652,6 +695,14 @@ class ScrolledFrame(ttk.Frame):
             # El pulgar debe ocupar una proporción de la barra basada en la
             # relación entre el área visible y el contenido total
             thumb = outer / inner  # Siempre < 1.0 cuando se necesita desplazamiento
+
+        # Guardar en caché para futuras llamadas
+        self._measures_cache = {
+            'outer': current_height,
+            'inner': content_height,
+            'base': base,
+            'thumb': thumb
+        }
 
         # Devolver ambos valores para ser utilizados por los métodos yview
         return base, thumb
@@ -784,6 +835,10 @@ class ScrolledFrame(ttk.Frame):
             Este método es privado y está destinado a ser vinculado como callback para
             el evento <Configure> del widget. No debe ser llamado directamente por el usuario.
         """
+        # Limpiar caché de medidas ya que el tamaño ha cambiado
+        if hasattr(self, '_measures_cache'):
+            self._measures_cache = None
+
         # Actualizar la vista de desplazamiento para reflejar la nueva configuración
         self.yview()
 
@@ -850,6 +905,16 @@ class ScrolledFrame(ttk.Frame):
             Este método es privado y está destinado a ser vinculado como callback para
             eventos de rueda del ratón. La constante UNITS debe estar definida o importada.
         """
+        # Obtener tiempo actual para throttling
+        current_time = self.tk.call('clock', 'milliseconds')
+
+        # Verificar si ha pasado suficiente tiempo desde el último evento
+        if current_time - getattr(self, '_last_wheel_time', 0) < getattr(self, '_wheel_delay', 30):
+            return
+
+        # Actualizar timestamp
+        self._last_wheel_time = current_time
+
         # Determinar el valor de desplazamiento (delta) según el sistema operativo
         if self.winsys.lower() == "win32":  # Windows
             # En Windows, event.delta es un múltiplo de 120
@@ -867,6 +932,10 @@ class ScrolledFrame(ttk.Frame):
         elif event.num == 5:  # X11/Linux - desplazamiento hacia abajo
             # Para Button-5 (rueda hacia abajo), usamos un delta fijo de 10
             delta = 10
+
+        else:
+            # Evento desconocido, no hacer nada
+            return
 
         # Aplicar el desplazamiento utilizando el delta calculado
         # UNITS indica que el desplazamiento es en unidades, no en páginas
