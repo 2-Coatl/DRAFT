@@ -3,7 +3,7 @@ import ui.themeengine as tk
 from ui.themeengine.utils.constants import *
 
 
-class Floodgauge(ttk.Progressbar):
+class FloodGauge(ttk.Progressbar):
     """
     Widget que muestra el estado de una operación de larga duración
     con un indicador de texto opcional.
@@ -37,7 +37,7 @@ class Floodgauge(ttk.Progressbar):
         Use `indeterminate` si no puede medir con precisión el progreso
         relativo del proceso subyacente. En este modo, un rectángulo
         rebota entre los extremos del widget una vez que se utiliza el
-        método `Floodgauge.start()`. En caso contrario, use `determinate`
+        método `FloodGauge.start()`. En caso contrario, use `determinate`
         si el progreso relativo puede calcularse por adelantado.
 
     orient : ['horizontal', 'vertical']
@@ -52,8 +52,8 @@ class Floodgauge(ttk.Progressbar):
         Para añadir el widget a la navegación de foco, use `takefocus=True`.
 
     text : str, opcional
-        Cadena de texto para mostrar en la etiqueta de Floodgauge.
-        Se asigna al atributo `Floodgauge.textvariable`.
+        Cadena de texto para mostrar en la etiqueta de FloodGauge.
+        Se asigna al atributo `FloodGauge.textvariable`.
 
     value : float, opcional
         Valor actual de la barra de progreso. En modo `determinate`,
@@ -63,9 +63,9 @@ class Floodgauge(ttk.Progressbar):
 
     mask : str, opcional
         Cadena de formato que puede usarse para actualizar la etiqueta
-        de Floodgauge cada vez que se actualiza el valor. Por ejemplo,
+        de FloodGauge cada vez que se actualiza el valor. Por ejemplo,
         la cadena "{}% Almacenamiento Usado" con un valor de widget de 45
-        mostraría "45% Almacenamiento Usado" en la etiqueta de Floodgauge.
+        mostraría "45% Almacenamiento Usado" en la etiqueta de FloodGauge.
         Si se establece una máscara, se ignora la opción `text`.
 
     font : Union[Font, str], opcional
@@ -93,7 +93,7 @@ class Floodgauge(ttk.Progressbar):
 
     app = ttk.Window(size=(500, 500))
 
-    gauge = ttk.Floodgauge(
+    gauge = ttk.FloodGauge(
         bootstyle=INFO,
         font=(None, 24, 'bold'),
         mask='Memoria Usada {}%',
@@ -132,7 +132,7 @@ class Floodgauge(ttk.Progressbar):
         **kwargs,
     ):
         """
-        Inicializa una instancia del widget Floodgauge.
+        Inicializa una instancia del widget FloodGauge.
 
         Este constructor configura una barra de progreso mejorada que puede mostrar texto.
         El widget puede operar en modo determinado (mostrando progreso específico) o
@@ -171,14 +171,14 @@ class Floodgauge(ttk.Progressbar):
                 Use `indeterminate` if you cannot accurately measure the
                 relative progress of the underlying process. In this mode,
                 a rectangle bounces back and forth between the ends of the
-                widget once you use the `Floodgauge.start()` method.
+                widget once you use the `FloodGauge.start()` method.
                 Otherwise, use `determinate` if the relative progress can be
                 calculated in advance.
 
                 Use `indeterminate` si no puede medir con precisión el progreso
                 relativo del proceso subyacente. En este modo, un rectángulo
                 rebota entre los extremos del widget una vez que use el método
-                `Floodgauge.start()`. De lo contrario, use `determinate` si el
+                `FloodGauge.start()`. De lo contrario, use `determinate` si el
                 progreso relativo puede calcularse por adelantado.
 
             orient ('horizontal', 'vertical'):
@@ -202,11 +202,11 @@ class Floodgauge(ttk.Progressbar):
                 Para añadir el widget a la navegación de foco, use `takefocus=True`.
 
             text (str, optional):
-                A string of text to be displayed in the Floodgauge label.
-                This is assigned to the attribute `Floodgauge.textvariable`
+                A string of text to be displayed in the FloodGauge label.
+                This is assigned to the attribute `FloodGauge.textvariable`
 
-                Cadena de texto para mostrar en la etiqueta de Floodgauge.
-                Se asigna al atributo `Floodgauge.textvariable`.
+                Cadena de texto para mostrar en la etiqueta de FloodGauge.
+                Se asigna al atributo `FloodGauge.textvariable`.
                 Ejemplo: "Cargando datos..."
 
             value (float, optional):
@@ -223,14 +223,14 @@ class Floodgauge(ttk.Progressbar):
                 Predeterminado: 0
 
             mask (str, optional):
-                A string format that can be used to update the Floodgauge
+                A string format that can be used to update the FloodGauge
                 label every time the value is updated. For example, the
                 string "{}% Storage Used" with a widget value of 45 would
-                show "45% Storage Used" on the Floodgauge label. If a
+                show "45% Storage Used" on the FloodGauge label. If a
                 mask is set, then the `text` option is ignored.
 
                 Cadena de formato que se puede usar para actualizar la etiqueta
-                de Floodgauge cada vez que se actualiza el valor. Por ejemplo,
+                de FloodGauge cada vez que se actualiza el valor. Por ejemplo,
                 la cadena "{}% Almacenamiento Usado" con un valor de widget de 45
                 mostraría "45% Almacenamiento Usado" en la etiqueta. Si se
                 establece una máscara, se ignora la opción `text`.
@@ -243,7 +243,7 @@ class Floodgauge(ttk.Progressbar):
 
         Ejemplos:
             # Barra de progreso básica con texto
-            gauge = Floodgauge(
+            gauge = FloodGauge(
                 master=frame,
                 value=25,
                 text="Cargando...",
@@ -251,7 +251,7 @@ class Floodgauge(ttk.Progressbar):
             )
 
             # Barra con actualización automática de texto
-            gauge = Floodgauge(
+            gauge = FloodGauge(
                 value=50,
                 maximum=200,
                 mask="Progreso: {}/200",
@@ -259,7 +259,7 @@ class Floodgauge(ttk.Progressbar):
             )
 
             # Barra vertical en modo indeterminado
-            gauge = Floodgauge(
+            gauge = FloodGauge(
                 mode=INDETERMINATE,
                 orient=VERTICAL,
                 length=300,
@@ -268,7 +268,7 @@ class Floodgauge(ttk.Progressbar):
         """
 
         # Este bloque configura las variables internas y atributos que controlarán el comportamiento
-        # y apariencia del widget Floodgauge.
+        # y apariencia del widget FloodGauge.
 
         # Establece variables tkinter para el valor numérico y el texto del widget,
         # permitiendo tanto usar variables externas proporcionadas por el usuario como
@@ -306,11 +306,11 @@ class Floodgauge(ttk.Progressbar):
 
         # Este bloque de código inicializa la clase base ttk.Progressbar, configurando
         # todos los parámetros necesarios para el funcionamiento de la barra de progreso
-        # subyacente al widget Floodgauge.
+        # subyacente al widget FloodGauge.
 
         # Delegar a la clase padre la inicialización de la funcionalidad base de la barra
         # de progreso, asegurando que todos los parámetros se configuren correctamente y
-        # estableciendo la clase de estilo "Floodgauge" para permitir personalización
+        # estableciendo la clase de estilo "FloodGauge" para permitir personalización
         # visual específica para este tipo de widget.
 
         # Invocamos el constructor de la clase padre (ttk.Progressbar)
@@ -320,8 +320,8 @@ class Floodgauge(ttk.Progressbar):
             master=master,  # Ej: master=root -> se coloca dentro de root
 
             # Identificador para el sistema de estilos ttk
-            # Este valor siempre es "Floodgauge" para este widget
-            class_="Floodgauge",
+            # Este valor siempre es "FloodGauge" para este widget
+            class_="FloodGauge",
 
             # Tipo de cursor cuando el ratón está sobre el widget
             cursor=cursor,  # Ej: cursor="hand2" -> muestra cursor tipo mano
@@ -352,7 +352,7 @@ class Floodgauge(ttk.Progressbar):
             # En este punto, kwargs no debe contener 'variable' ni 'textvariable'
             **kwargs,  # Ej: padding=10, borderwidth=2, etc.
         )
-        # Bloque de Configuración de Texto y Eventos en Floodgauge
+        # Bloque de Configuración de Texto y Eventos en FloodGauge
         #
         # Este bloque establece el texto inicial del widget y configura las vinculaciones de eventos
         # necesarias para mantener la consistencia visual del texto cuando cambia el tema o la
@@ -375,7 +375,7 @@ class Floodgauge(ttk.Progressbar):
         # el texto se mantenga correctamente visualizado.
         self.bind("<<Configure>>", self._on_theme_change)
 
-        # Configuración Condicional del Sistema de Máscara en Floodgauge
+        # Configuración Condicional del Sistema de Máscara en FloodGauge
         #
         # Este bloque determina si se debe activar el sistema de formateo dinámico de texto
         # basado en el valor del widget. Si se ha proporcionado una máscara de formato,
@@ -397,7 +397,7 @@ class Floodgauge(ttk.Progressbar):
 
     def _set_widget_text(self, *_):
         """
-        Actualiza el texto mostrado en el widget Floodgauge.
+        Actualiza el texto mostrado en el widget FloodGauge.
 
         Este método configura el texto que se mostrará visualmente en el widget,
         utilizando el sistema de estilos ttk. Determina el texto a mostrar basándose
@@ -411,7 +411,7 @@ class Floodgauge(ttk.Progressbar):
 
         Parámetros:
         ----------
-        self : Floodgauge
+        self : FloodGauge
             La instancia del widget
         *_ : cualquier
             Parámetros adicionales que se ignoran (permite usar el método como callback)
@@ -437,7 +437,7 @@ class Floodgauge(ttk.Progressbar):
         self._variable.set(30)  # Llamará a _set_widget_text automáticamente
         """
         # Obtiene el nombre del estilo ttk asignado al widget
-        # Ej: "Floodgauge.Horizontal.TProgressbar"
+        # Ej: "FloodGauge.Horizontal.TProgressbar"
         ttkstyle = self.cget("style")
 
         # Decide cómo obtener el texto basado en la existencia de una máscara
@@ -453,11 +453,11 @@ class Floodgauge(ttk.Progressbar):
 
         # Configura el texto en el estilo ttk del widget
         # Esto usa la interfaz Tcl/Tk directamente para modificar el estilo
-        # Ej: ttk::style configure Floodgauge.Horizontal.TProgressbar -text "75%"
+        # Ej: ttk::style configure FloodGauge.Horizontal.TProgressbar -text "75%"
         self.tk.call("ttk::style", "configure", ttkstyle, "-text", text)
 
         # Configura la fuente para el texto
-        # Ej: ttk::style configure Floodgauge.Horizontal.TProgressbar -font "helvetica 10"
+        # Ej: ttk::style configure FloodGauge.Horizontal.TProgressbar -font "helvetica 10"
         self.tk.call("ttk::style", "configure", ttkstyle, "-font", self._font)
 
     def _set_mask(self):
@@ -475,7 +475,7 @@ class Floodgauge(ttk.Progressbar):
 
         Parámetros:
         ----------
-        self : Floodgauge
+        self : FloodGauge
             La instancia del widget
 
         Retorno:
@@ -528,7 +528,7 @@ class Floodgauge(ttk.Progressbar):
 
         Parámetros:
         ----------
-        self : Floodgauge
+        self : FloodGauge
             La instancia del widget
 
         Retorno:
@@ -564,7 +564,7 @@ class Floodgauge(ttk.Progressbar):
 
     def _on_theme_change(self, *_):
         """
-        Maneja eventos de cambio de tema o configuración en el widget Floodgauge.
+        Maneja eventos de cambio de tema o configuración en el widget FloodGauge.
 
         Este método se activa cuando ocurre un evento de cambio de tema o de configuración
         del widget. Su propósito es asegurar que el texto se mantenga correctamente visualizado
@@ -575,7 +575,7 @@ class Floodgauge(ttk.Progressbar):
 
         Parámetros:
         ----------
-        self : Floodgauge
+        self : FloodGauge
             La instancia del widget
         *_ : cualquier
             Parámetros adicionales que se ignoran (permite usar el método como callback de eventos)
@@ -614,7 +614,7 @@ class Floodgauge(ttk.Progressbar):
         Obtiene el valor actual de una opción de configuración específica del widget.
 
         Este método implementa el mecanismo interno que permite recuperar los valores
-        de las opciones de configuración, tanto las personalizadas de Floodgauge como
+        de las opciones de configuración, tanto las personalizadas de FloodGauge como
         las estándar heredadas de ttk.Progressbar. Es parte del sistema que soporta
         los métodos públicos `cget` y `configure` para consultar opciones.
 
@@ -650,7 +650,7 @@ class Floodgauge(ttk.Progressbar):
         # se invoca este método con cnf="text"
         # Devuelve el texto actual, por ejemplo: "Cargando datos..."
         """
-        # Opciones personalizadas de Floodgauge
+        # Opciones personalizadas de FloodGauge
 
         # Valor numérico de la barra de progreso
         if cnf == "value":
@@ -679,10 +679,10 @@ class Floodgauge(ttk.Progressbar):
 
     def _configure_set(self, **kwargs):
         """
-        Configura las opciones del widget Floodgauge basándose en los parámetros proporcionados.
+        Configura las opciones del widget FloodGauge basándose en los parámetros proporcionados.
 
         Este método implementa el mecanismo interno que permite modificar las opciones de
-        configuración, tanto las personalizadas de Floodgauge como las estándar heredadas
+        configuración, tanto las personalizadas de FloodGauge como las estándar heredadas
         de ttk.Progressbar. Es parte del sistema que soporta el método público `configure`
         para establecer opciones.
 
@@ -839,7 +839,7 @@ class Floodgauge(ttk.Progressbar):
 
     def configure(self, cnf=None, **kwargs):
         """
-        Consulta o configura las opciones del widget Floodgauge.
+        Consulta o configura las opciones del widget FloodGauge.
 
         Este método proporciona una interfaz estándar de tkinter para obtener o establecer
         las opciones de configuración del widget. Su comportamiento depende de los parámetros:

@@ -1896,9 +1896,9 @@ class StyleBuilderTTK:
         self.style._register_ttkstyle(v_ttkstyle)  # Registrar estilo vertical
 
     def create_floodgauge_style(self, colorname=DEFAULT):
-        """Crea un estilo TTK para el widget Floodgauge.
+        """Crea un estilo TTK para el widget FloodGauge.
 
-        Este método genera estilos para un widget personalizado llamado Floodgauge,
+        Este método genera estilos para un widget personalizado llamado FloodGauge,
         que combina elementos de barra de progreso (progressbar) y etiqueta (label).
         El resultado es una barra de progreso con texto superpuesto que puede mostrar
         información mientras se llena.
@@ -1933,8 +1933,8 @@ class StyleBuilderTTK:
 
         """
         # Definir constantes para nombres de estilo y fuente
-        HSTYLE = "Horizontal.TFloodgauge"  # Estilo base para Floodgauge horizontal
-        VSTYLE = "Vertical.TFloodgauge"  # Estilo base para Floodgauge vertical
+        HSTYLE = "Horizontal.TFloodgauge"  # Estilo base para FloodGauge horizontal
+        VSTYLE = "Vertical.TFloodgauge"  # Estilo base para FloodGauge vertical
         FLOOD_FONT = "-size 14"  # Especificación de fuente tamaño 14
 
         # Determinar nombres de estilo y color de fondo según el parámetro colorname
@@ -1963,7 +1963,7 @@ class StyleBuilderTTK:
 
         # ---- CREACIÓN DEL ESTILO HORIZONTAL ----
         # Convertir el nombre de estilo a nombre de elemento (quitar el prefijo 'T')
-        h_element = h_ttkstyle.replace(".TF", ".F")  # Ej: "Horizontal.Floodgauge"
+        h_element = h_ttkstyle.replace(".TF", ".F")  # Ej: "Horizontal.FloodGauge"
 
         # Crear elementos reutilizando componentes de temas existentes
         # Elemento canal basado en tema Clam
@@ -1982,7 +1982,7 @@ class StyleBuilderTTK:
                             # Barra de progreso expandida verticalmente
                             (f"{h_element}.pbar", {"sticky": tk.NS}),
                             # Etiqueta para mostrar texto sobre la barra
-                            ("Floodgauge.label", {"sticky": ""}),
+                            ("FloodGauge.label", {"sticky": ""}),
                         ],
                         "sticky": tk.NSEW,  # Canal expandido en todas direcciones
                     },
@@ -2008,7 +2008,7 @@ class StyleBuilderTTK:
 
         # ---- CREACIÓN DEL ESTILO VERTICAL ----
         # Convertir el nombre de estilo a nombre de elemento (quitar el prefijo 'T')
-        v_element = v_ttkstyle.replace(".TF", ".F")  # Ej: "Vertical.Floodgauge"
+        v_element = v_ttkstyle.replace(".TF", ".F")  # Ej: "Vertical.FloodGauge"
 
         # Crear elementos reutilizando componentes de temas existentes
         # Elemento canal basado en tema Clam
@@ -2027,7 +2027,7 @@ class StyleBuilderTTK:
                             # Barra de progreso expandida horizontalmente (diferencia con horizontal)
                             (f"{v_element}.pbar", {"sticky": tk.EW}),
                             # Etiqueta para mostrar texto sobre la barra
-                            ("Floodgauge.label", {"sticky": ""}),
+                            ("FloodGauge.label", {"sticky": ""}),
                         ],
                         "sticky": tk.NSEW,  # Canal expandido en todas direcciones
                     },

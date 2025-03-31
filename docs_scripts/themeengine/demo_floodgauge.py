@@ -5,7 +5,7 @@ import time
 
 def main():
     # Crear la ventana principal
-    app = ttk.Window(title="Demostración de Floodgauge", size=(600, 500))
+    app = ttk.Window(title="Demostración de FloodGauge", size=(600, 500))
 
     # Frame para controles
     control_frame = ttk.Frame(app)
@@ -17,7 +17,7 @@ def main():
     gauge_frame1 = ttk.Labelframe(app, text="Modo Determinado con Máscara")
     gauge_frame1.pack(fill=X, expand=YES, padx=10, pady=(0, 10))
 
-    gauge1 = ttk.Floodgauge(
+    gauge1 = ttk.FloodGauge(
         master=gauge_frame1,
         bootstyle=INFO,
         font=(None, 15, 'bold'),
@@ -58,7 +58,7 @@ def main():
     gauge_frame2 = ttk.Labelframe(app, text="Modo Indeterminado con Animación")
     gauge_frame2.pack(fill=X, expand=YES, padx=10, pady=(0, 10))
 
-    gauge2 = ttk.Floodgauge(
+    gauge2 = ttk.FloodGauge(
         master=gauge_frame2,
         bootstyle=WARNING,
         text="Procesando datos...",
@@ -98,7 +98,7 @@ def main():
     gauge_frame3 = ttk.Labelframe(app, text="Gauge Vertical")
     gauge_frame3.pack(side=LEFT, fill=Y, expand=YES, padx=(10, 5), pady=(0, 10))
 
-    gauge3 = ttk.Floodgauge(
+    gauge3 = ttk.FloodGauge(
         master=gauge_frame3,
         bootstyle=SUCCESS,
         length=200,
@@ -136,7 +136,7 @@ def main():
     total_seconds = 30  # 30 segundos
     start_time = None
 
-    timer_gauge = ttk.Floodgauge(
+    timer_gauge = ttk.FloodGauge(
         master=gauge_frame4,
         mask="Tiempo: {} seg",
         bootstyle=DANGER,

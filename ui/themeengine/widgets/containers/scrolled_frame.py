@@ -41,14 +41,14 @@ class ScrolledFrame(ttk.Frame):
         ```python
         import ui.themeengine as ttk
         from ui.themeengine.utils.constants import *
-        from ui.themeengine.widgets.scrolled import ScrolledFrame
+        from ui.themeengine.widgets.containers import ScrolledFrame
 
         app = ttk.Window()
 
         sf = ScrolledFrame(app, autohide=True)
         sf.pack(fill=BOTH, expand=YES, padx=10, pady=10)
 
-        # add a large number of checkbuttons into the scrolled frame
+        # add a large number of checkbuttons into the containers frame
         for x in range(20):
             ttk.Checkbutton(sf, text=f"Checkbutton {x}").pack(anchor=W)
 

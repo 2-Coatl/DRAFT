@@ -1,5 +1,5 @@
 #import ui.themeengine as ttk
-from ui.themeengine.widgets.dialogs.base import Dialog
+from ui.themeengine.dialogs.base import Dialog
 #from ui.themeengine.localization import MessageCatalog
 
 

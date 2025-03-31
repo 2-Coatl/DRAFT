@@ -1,6 +1,6 @@
 import ui.themeengine as ttk
 from ui.themeengine.utils.constants import *
-from ui.themeengine.widgets.scrolled.scrolled_frame import ScrolledFrame
+from ui.themeengine.widgets.containers.scrolled_frame import ScrolledFrame
 
 
 def main():

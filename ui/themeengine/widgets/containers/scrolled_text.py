@@ -33,7 +33,7 @@ class ScrolledText(ttk.Frame):
         ```python
         import ui.themeengine as ttk
         from ui.themeengine.utils.constants import *
-        from ui.themeengine.widgets.scrolled import ScrolledText
+        from ui.themeengine.widgets.containers import ScrolledText
 
         app = ttk.Window()
 
