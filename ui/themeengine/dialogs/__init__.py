@@ -17,11 +17,6 @@ Categorías de diálogos:
 # Importar la clase base de diálogos
 from ui.themeengine.dialogs.base import Dialog
 
-# Importar y re-exportar desde el subpaquete 'alert'
-from ui.themeengine.dialogs.alert import (
-    MessageDialog,
-    #MessageBox,
-)
 
 
 # Definir la API pública completa de diálogos
@@ -30,8 +25,14 @@ __all__ = [
     'Dialog',
 
     # Diálogos de alerta
-    'MessageDialog',
+    #'MessageDialog',
 
     # Diálogos de entrada
 
 ]
+
+# Importar y re-exportar desde el subpaquete 'alert'
+# from ui.themeengine.dialogs.alert import (
+#     MessageDialog,
+#     #MessageBox,
+# )
