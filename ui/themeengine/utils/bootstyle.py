@@ -693,26 +693,28 @@ class Bootstyle:
                 # Paso 4: Definir nuevas implementaciones para acceso por índice
                 def __setitem(self, key, val):
                     # Caso especial: si la clave es 'bootstyle' o 'style', usar configure
+                    print(f"__setitem llamado en {type(self).__name__} con clave: {key}")
                     if key in ("bootstyle", "style"):
                         # Ejemplo: button["bootstyle"] = "primary"
                         return _configure(self, **{key: val})
+                    print(f"Delegando a __setitem_getitem: {_orig_getitem}")
                     # Para otras claves, comportamiento normal
                     return _orig_setitem(key, val)
 
                 def __getitem(self, key):
                     # Caso especial: si la clave es 'bootstyle' o 'style', obtener del configure
-                    # print(f"__getitem llamado en {type(self).__name__} con clave: {key}")
+                    print(f"__getitem llamado en {type(self).__name__} con clave: {key}")
                     if key in ("bootstyle", "style"):
                         # Ejemplo: style_value = button["bootstyle"]
                         return _configure(self, cnf=key)
-                    # print(f"Delegando a _orig_getitem: {_orig_getitem}")
+                    print(f"Delegando a _orig_getitem: {_orig_getitem}")
                     # Para otras claves, comportamiento normal
                     return _orig_getitem(key)
 
                 # Paso 5: Aplicar las nuevas implementaciones, excepto para OptionMenu
                 # OptionMenu tiene su propia implementación específica en otra parte
                 if widget.__name__ != "OptionMenu":
-                    # print(f"Aplicando overrides a {widget.__name__}")
+                    print(f"Aplicando overrides a {widget.__name__}")
                     widget.__setitem__ = __setitem
                     widget.__getitem__ = __getitem
                 else:

@@ -8,6 +8,10 @@ class FormDialog(Dialog):
     """
     Diálogo con un formulario de entrada de datos complejo.
 
+    Implementa un diálogo modal siguiendo el patrón Template Method heredado
+    de Dialog, proporcionando una interfaz de usuario para recolectar información
+    completa del usuario a través de diversos controles.
+
     Nota: Esta implementación utiliza alternativas para algunos widgets
     que podrían causar conflictos (Combobox, Spinbox, Meter, Radiobutton)
     """
@@ -16,10 +20,15 @@ class FormDialog(Dialog):
         """
         Inicializa un diálogo de formulario.
 
+        Configura las variables de control para cada campo del formulario,
+        inicializando con valores predeterminados o con datos proporcionados.
+
         Parameters:
             parent (Widget, optional): Widget padre del diálogo.
             title (str, optional): Título del diálogo.
             data (dict, optional): Datos iniciales para el formulario.
+                Puede contener las claves: 'name', 'email', 'age', 'gender',
+                'subscription', 'notifications', 'comments'.
             alert (bool, optional): Si se debe emitir un sonido al mostrar.
         """
         self._data = data or {}
@@ -151,7 +160,6 @@ class FormDialog(Dialog):
             width=15
         )
         gender_entry.pack(side=LEFT)
-
 
         # Menú desplegable manual como alternativa
         gender_menu = ttk.Menubutton(
@@ -299,6 +307,9 @@ class FormDialog(Dialog):
     def _on_save(self):
         """
         Manejador para el botón de guardar.
+
+        Valida los campos obligatorios y, si son válidos, recopila todos
+        los datos del formulario en el atributo _result y cierra el diálogo.
         """
         # Validar campos obligatorios
         if not self._vars["name"].get():
@@ -327,6 +338,10 @@ class FormDialog(Dialog):
     def _on_cancel(self):
         """
         Manejador para el botón de cancelar.
+
+        Establece el resultado como None y cierra el diálogo, siguiendo
+        el patrón establecido en la clase base Dialog para gestionar
+        los resultados de interacción del usuario.
         """
         self._result = None
         if self._toplevel:
@@ -362,12 +377,15 @@ class FormDialog(Dialog):
         )
         error_dialog.show()
 
+
 def main():
     """
     Función principal que muestra una demostración del diálogo de formulario.
 
     Esta función crea una ventana principal con un botón para mostrar
-    el diálogo de formulario implementado en la clase FormDialog.
+    el diálogo de formulario implementado en la clase FormDialog. El diálogo
+    aprovecha el comportamiento modal de la clase base Dialog, bloqueando
+    la interacción con la ventana principal hasta que se complete o cancele.
     """
     # Crear ventana principal
     app = ttk.Window()
@@ -390,8 +408,9 @@ def main():
     desc_label = ttk.Label(
         main_frame,
         text="Este ejemplo muestra cómo implementar un formulario complejo " +
-             "utilizando alternativas a widgets que podrían causar conflictos " +
-             "en el entorno específico de themeengine.",
+             "utilizando la clase base Dialog y alternativas a widgets que " +
+             "podrían causar conflictos en el entorno específico de themeengine. " +
+             "El diálogo es modal y devuelve el resultado a través de la propiedad result.",
         wraplength=450
     )
     desc_label.pack(pady=(0, 20))
