@@ -6,15 +6,41 @@ from ui.themeengine.localization import MessageCatalog
 
 
 class MessageDialog(Dialog):
-    """A simple modal dialog class that can be used to build simple
-    message dialogs.
+    """
+    Diálogo modal simple para mostrar mensajes con botones interactivos.
 
-    Displays a message and a set of buttons. Each of the buttons in the
-    message window is identified by a unique symbolic name. After the
-    message window is popped up, the message box awaits for the user to
-    select one of the buttons. Then it returns the symbolic name of the
-    selected button. Use a `Toplevel` widget for more advanced modal
-    dialog designs.
+    Esta clase permite crear ventanas emergentes que muestran un mensaje al usuario
+    junto con un conjunto configurable de botones. El diálogo bloquea la interacción
+    con otras ventanas hasta que el usuario selecciona uno de los botones, devolviendo
+    el texto del botón seleccionado como resultado.
+
+    Características principales:
+    - Muestra un mensaje con formato y ajuste automático de texto
+    - Permite incluir un icono junto al mensaje
+    - Soporta botones personalizables con diferentes estilos visuales
+    - Ofrece traducción automática de textos mediante MessageCatalog
+    - Permite ejecutar comandos asociados a la interacción del usuario
+
+    La clase implementa el patrón Template Method a través de su herencia de Dialog,
+    proporcionando implementaciones específicas para los métodos abstractos
+    create_body() y create_buttonbox().
+
+    Ejemplos:
+        # Diálogo básico con botones predeterminados
+        dialog = MessageDialog("¿Desea guardar los cambios?")
+        result = dialog.show()
+        if result == "OK":
+            # Realizar acción de guardado
+
+        # Diálogo personalizado con botones específicos
+        dialog = MessageDialog(
+            message="El archivo contiene cambios sin guardar.",
+            title="Advertencia",
+            buttons=["No guardar:danger", "Cancelar:secondary", "Guardar:success"],
+            default="Guardar",
+            icon="warning.png"
+        )
+        result = dialog.show()
     """
 
     def __init__(
