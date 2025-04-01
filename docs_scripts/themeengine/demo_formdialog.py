@@ -1,303 +1,7 @@
 import ui.themeengine as ttk
 from ui.themeengine.utils.constants import *
-from ui.themeengine.dialogs.base import Dialog
-import random
-
-
-class LoginDialog(Dialog):
-    """
-    Diálogo de inicio de sesión que solicita nombre de usuario y contraseña.
-
-    Esta clase extiende la clase base Dialog e implementa los métodos abstractos
-    create_body y create_buttonbox para crear un diálogo de inicio de sesión
-    funcional.
-    """
-
-    def __init__(self, parent=None, title="Inicio de Sesión", alert=False):
-        """
-        Inicializa un diálogo de inicio de sesión.
-
-        Parameters:
-            parent (Widget, optional): Widget padre del diálogo.
-            title (str, optional): Título del diálogo.
-            alert (bool, optional): Si se debe emitir un sonido al mostrar.
-        """
-        super().__init__(parent, title, alert)
-
-        # Variables para almacenar los valores ingresados
-        self.username_var = ttk.StringVar()
-        self.password_var = ttk.StringVar()
-        self.remember_var = ttk.BooleanVar(value=False)
-
-    def create_body(self, master):
-        """
-        Crea el cuerpo del diálogo con campos para usuario y contraseña.
-
-        Parameters:
-            master (Widget): Widget padre donde se crearán los elementos.
-        """
-        # Crear un frame principal con padding
-        body_frame = ttk.Frame(master, padding=15)
-        body_frame.pack(fill=BOTH, expand=YES)
-
-        # Logo o imagen (simulada con un label)
-        logo_label = ttk.Label(
-            body_frame,
-            text="🔒",
-            font="-size 32",
-            bootstyle=PRIMARY
-        )
-        logo_label.pack(pady=(0, 15))
-
-        # Mensaje de bienvenida
-        welcome_label = ttk.Label(
-            body_frame,
-            text="Bienvenido al sistema",
-            font="-size 14 -weight bold"
-        )
-        welcome_label.pack(pady=(0, 15))
-
-        # Frame para campos de entrada
-        input_frame = ttk.Frame(body_frame)
-        input_frame.pack(fill=X, pady=5)
-
-        # Campo de usuario
-        username_frame = ttk.Frame(input_frame)
-        username_frame.pack(fill=X, pady=5)
-
-        username_label = ttk.Label(username_frame, text="Usuario:", width=12, anchor=E)
-        username_label.pack(side=LEFT, padx=(0, 5))
-
-        username_entry = ttk.Entry(username_frame, textvariable=self.username_var, width=25)
-        username_entry.pack(side=LEFT, fill=X, expand=YES)
-
-        # Campo de contraseña
-        password_frame = ttk.Frame(input_frame)
-        password_frame.pack(fill=X, pady=5)
-
-        password_label = ttk.Label(password_frame, text="Contraseña:", width=12, anchor=E)
-        password_label.pack(side=LEFT, padx=(0, 5))
-
-        password_entry = ttk.Entry(
-            password_frame,
-            textvariable=self.password_var,
-            width=25,
-            show="•"  # Ocultar la contraseña
-        )
-        password_entry.pack(side=LEFT, fill=X, expand=YES)
-
-        # Opción para recordar credenciales
-        remember_check = ttk.Checkbutton(
-            input_frame,
-            text="Recordar mis datos",
-            variable=self.remember_var,
-            bootstyle=INFO
-        )
-        remember_check.pack(anchor=W, pady=10)
-
-        # Establecer el foco inicial en el campo de usuario
-        self._initial_focus = username_entry
-
-    def create_buttonbox(self, master):
-        """
-        Crea la caja de botones del diálogo.
-
-        Parameters:
-            master (Widget): Widget padre donde se crearán los botones.
-        """
-        # Frame para los botones con padding
-        button_frame = ttk.Frame(master)
-        button_frame.pack(fill=X, padx=15, pady=(0, 15))
-
-        # Botón de cancelar
-        cancel_button = ttk.Button(
-            button_frame,
-            text="Cancelar",
-            command=self._on_cancel,
-            bootstyle=SECONDARY
-        )
-        cancel_button.pack(side=RIGHT, padx=(5, 0))
-
-        # Botón de iniciar sesión
-        login_button = ttk.Button(
-            button_frame,
-            text="Iniciar Sesión",
-            command=self._on_login,
-            bootstyle=PRIMARY
-        )
-        login_button.pack(side=RIGHT)
-
-        # Enlace para recuperar contraseña
-        recover_link = ttk.Button(
-            button_frame,
-            text="¿Olvidaste tu contraseña?",
-            command=self._on_recover_password,
-            bootstyle=(SECONDARY, "link")
-        )
-        recover_link.pack(side=LEFT)
-
-    def _on_login(self):
-        """
-        Manejador para el botón de inicio de sesión.
-        """
-        # Verificar que se hayan ingresado credenciales
-        if not self.username_var.get():
-            self._show_error("Por favor ingrese su nombre de usuario.")
-            return
-
-        if not self.password_var.get():
-            self._show_error("Por favor ingrese su contraseña.")
-            return
-
-        # En una aplicación real, aquí verificaríamos las credenciales
-        # Simular verificación exitosa
-        self._result = {
-            "username": self.username_var.get(),
-            "password": self.password_var.get(),
-            "remember": self.remember_var.get()
-        }
-
-        # Cerrar el diálogo
-        if self._toplevel:
-            self._toplevel.destroy()
-
-    def _on_cancel(self):
-        """
-        Manejador para el botón de cancelar.
-        """
-        self._result = None
-        if self._toplevel:
-            self._toplevel.destroy()
-
-    def _on_recover_password(self):
-        """
-        Manejador para el enlace de recuperación de contraseña.
-        """
-        self._result = "recover_password"
-        if self._toplevel:
-            self._toplevel.destroy()
-
-    def _show_error(self, message):
-        """
-        Muestra un mensaje de error en un diálogo secundario.
-
-        Parameters:
-            message (str): Mensaje de error a mostrar.
-        """
-        error_dialog = MessageDialog(
-            parent=self._toplevel,
-            title="Error",
-            message=message,
-            icon=ERROR,
-            buttons=["Aceptar"]
-        )
-        error_dialog.show()
-
-
-class MessageDialog(Dialog):
-    """
-    Diálogo para mostrar mensajes simples con iconos y botones personalizables.
-    """
-
-    def __init__(self, parent=None, title="Mensaje", message="",
-                 icon=INFO, buttons=["Aceptar", "Cancelar"], alert=False):
-        """
-        Inicializa un diálogo de mensaje.
-
-        Parameters:
-            parent (Widget, optional): Widget padre del diálogo.
-            title (str, optional): Título del diálogo.
-            message (str): Mensaje a mostrar en el diálogo.
-            icon (str, optional): Tipo de icono (INFO, WARNING, ERROR, SUCCESS).
-            buttons (list, optional): Lista de textos para los botones.
-            alert (bool, optional): Si se debe emitir un sonido al mostrar.
-        """
-        self._message = message
-        self._icon = icon
-        self._buttons = buttons
-        super().__init__(parent, title, alert)
-
-    def create_body(self, master):
-        """
-        Crea el cuerpo del diálogo con el mensaje e icono.
-
-        Parameters:
-            master (Widget): Widget padre donde se crearán los elementos.
-        """
-        # Frame principal con padding
-        body_frame = ttk.Frame(master, padding=15)
-        body_frame.pack(fill=BOTH, expand=YES)
-
-        # Frame para el icono y mensaje
-        content_frame = ttk.Frame(body_frame)
-        content_frame.pack(fill=BOTH, expand=YES)
-
-        # Icono según tipo
-        icon_text = {
-            INFO: "ℹ️",
-            WARNING: "⚠️",
-            ERROR: "❌",
-            SUCCESS: "✅",
-        }.get(self._icon, "ℹ️")
-
-        icon_label = ttk.Label(
-            content_frame,
-            text=icon_text,
-            font="-size 32",
-            bootstyle=self._icon
-        )
-        icon_label.pack(side=LEFT, padx=(0, 15))
-
-        # Mensaje
-        message_label = ttk.Label(
-            content_frame,
-            text=self._message,
-            justify=LEFT,
-            wraplength=300
-        )
-        message_label.pack(side=LEFT, fill=BOTH, expand=YES)
-
-    def create_buttonbox(self, master):
-        """
-        Crea la caja de botones del diálogo.
-
-        Parameters:
-            master (Widget): Widget padre donde se crearán los botones.
-        """
-        # Frame para los botones con padding
-        button_frame = ttk.Frame(master)
-        button_frame.pack(fill=X, padx=15, pady=(0, 15))
-
-        # Crear botones según la lista proporcionada
-        for i, button_text in enumerate(self._buttons):
-            # El primer botón tiene estilo principal, los demás secundario
-            style = PRIMARY if i == 0 else SECONDARY
-
-            # Crear el botón
-            button = ttk.Button(
-                button_frame,
-                text=button_text,
-                command=lambda text=button_text: self._on_button(text),
-                bootstyle=style
-            )
-
-            # Posicionar los botones de derecha a izquierda
-            button.pack(side=RIGHT, padx=(5, 0) if i > 0 else 0)
-
-            # El primer botón recibe el foco inicial
-            if i == 0:
-                self._initial_focus = button
-
-    def _on_button(self, button_text):
-        """
-        Manejador para los botones.
-
-        Parameters:
-            button_text (str): Texto del botón que se presionó.
-        """
-        self._result = button_text
-        if self._toplevel:
-            self._toplevel.destroy()
+from ui.themeengine import Dialog
+from ui.themeengine.dialogs.alert.message_dialog import MessageDialog
 
 
 class FormDialog(Dialog):
@@ -447,6 +151,7 @@ class FormDialog(Dialog):
             width=15
         )
         gender_entry.pack(side=LEFT)
+
 
         # Menú desplegable manual como alternativa
         gender_menu = ttk.Menubutton(
@@ -652,26 +357,22 @@ class FormDialog(Dialog):
             parent=self._toplevel,
             title="Error",
             message=message,
-            icon=ERROR,
+            icon=DANGER,
             buttons=["Aceptar"]
         )
         error_dialog.show()
 
-
 def main():
     """
-    Función principal que muestra una demostración de los diferentes tipos de diálogos.
+    Función principal que muestra una demostración del diálogo de formulario.
 
-    Esta función crea una ventana principal con botones para mostrar
-    tres tipos de diálogos: login, mensaje y formulario.
-
-    Nota: Se han implementado alternativas para algunos widgets que pueden
-    causar conflictos en el entorno específico de themeengine.
+    Esta función crea una ventana principal con un botón para mostrar
+    el diálogo de formulario implementado en la clase FormDialog.
     """
     # Crear ventana principal
     app = ttk.Window()
-    app.title("Demostración de Diálogos")
-    app.geometry("500x400")
+    app.title("Demostración de Formulario")
+    app.geometry("500x300")
 
     # Frame principal con padding
     main_frame = ttk.Frame(app, padding=20)
@@ -680,7 +381,7 @@ def main():
     # Título
     title_label = ttk.Label(
         main_frame,
-        text="Demostración de Diálogos",
+        text="Demostración de Formulario",
         font="-size 16 -weight bold"
     )
     title_label.pack(pady=(0, 20))
@@ -688,45 +389,16 @@ def main():
     # Descripción
     desc_label = ttk.Label(
         main_frame,
-        text="Seleccione un tipo de diálogo para ver la demostración:",
+        text="Este ejemplo muestra cómo implementar un formulario complejo " +
+             "utilizando alternativas a widgets que podrían causar conflictos " +
+             "en el entorno específico de themeengine.",
         wraplength=450
     )
     desc_label.pack(pady=(0, 20))
 
-    # Frame para los botones
-    buttons_frame = ttk.Frame(main_frame)
-    buttons_frame.pack(fill=X, pady=10)
-
-    # Función para mostrar diálogo de login
-    def show_login_dialog():
-        dialog = LoginDialog(parent=app, alert=True)
-        dialog.show()
-
-        # Mostrar resultado
-        if dialog.result:
-            if dialog.result == "recover_password":
-                result_text = "Se solicitó recuperación de contraseña"
-            else:
-                result_text = f"Inicio de sesión: {dialog.result['username']}"
-            result_var.set(result_text)
-        else:
-            result_var.set("Inicio de sesión cancelado")
-
-    # Función para mostrar diálogo de mensaje
-    def show_message_dialog():
-        dialog = MessageDialog(
-            parent=app,
-            title="Información",
-            message="Esta es una demostración de un diálogo de mensaje.\n\n" +
-                    "Los diálogos de mensaje son útiles para mostrar información, " +
-                    "advertencias, errores o confirmaciones al usuario.",
-            icon=INFO,
-            buttons=["Aceptar", "Más Info"]
-        )
-        dialog.show()
-
-        # Mostrar resultado
-        result_var.set(f"Respuesta: {dialog.result}")
+    # Frame para el botón
+    button_frame = ttk.Frame(main_frame)
+    button_frame.pack(fill=X, pady=10)
 
     # Función para mostrar diálogo de formulario
     def show_form_dialog():
@@ -734,7 +406,11 @@ def main():
         initial_data = {
             "name": "Usuario Demo",
             "email": "usuario@ejemplo.com",
-            "age": 25
+            "age": 25,
+            "gender": "Masculino",
+            "subscription": True,
+            "notifications": "email",
+            "comments": "Este es un comentario de ejemplo para mostrar cómo se completan los campos automáticamente."
         }
 
         dialog = FormDialog(parent=app, title="Formulario de Datos", data=initial_data)
@@ -742,35 +418,17 @@ def main():
 
         # Mostrar resultado
         if dialog.result:
-            result_text = f"Formulario guardado: {dialog.result['name']}"
+            result_text = f"Formulario guardado para: {dialog.result['name']}"
+            if dialog.result["subscription"]:
+                result_text += f"\nUsuario suscrito, notificaciones vía: {dialog.result['notifications']}"
             result_var.set(result_text)
         else:
             result_var.set("Formulario cancelado")
 
-    # Botón para diálogo de login
-    login_button = ttk.Button(
-        buttons_frame,
-        text="Diálogo de Login",
-        command=show_login_dialog,
-        bootstyle=PRIMARY,
-        width=20
-    )
-    login_button.pack(pady=5)
-
-    # Botón para diálogo de mensaje
-    message_button = ttk.Button(
-        buttons_frame,
-        text="Diálogo de Mensaje",
-        command=show_message_dialog,
-        bootstyle=INFO,
-        width=20
-    )
-    message_button.pack(pady=5)
-
     # Botón para diálogo de formulario
     form_button = ttk.Button(
-        buttons_frame,
-        text="Diálogo de Formulario",
+        button_frame,
+        text="Abrir Formulario",
         command=show_form_dialog,
         bootstyle=SUCCESS,
         width=20

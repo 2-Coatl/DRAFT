@@ -394,7 +394,9 @@ class MessageDialog(Dialog):
         """
         # Extrae el texto del botón y lo almacena como resultado del diálogo
         # Ejemplo: Si el botón muestra "OK", self._result será "OK"
-        self._result = button["text"]
+        #self._result = button["text"]
+        # Usar cget en lugar de acceso por índice
+        self._result = button.cget("text")
 
         # Obtiene el comando asociado con el diálogo
         # Este comando habría sido configurado durante la inicialización

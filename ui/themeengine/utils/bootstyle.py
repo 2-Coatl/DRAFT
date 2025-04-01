@@ -671,6 +671,7 @@ class Bootstyle:
                 # Paso 1: Sobreescribir el constructor del widget
                 # Esto permite que new_args como 'bootstyle' se procesen al crear el widget
                 # Ejemplo: ttk.Button(root, text="Botón", bootstyle="primary")
+                print(f"Procesando widget: {widget.__name__}")
                 _init = Bootstyle.override_ttk_widget_constructor(
                     widget.__init__
                 )
@@ -700,19 +701,26 @@ class Bootstyle:
 
                 def __getitem(self, key):
                     # Caso especial: si la clave es 'bootstyle' o 'style', obtener del configure
+                    print(f"__getitem llamado en {type(self).__name__} con clave: {key}")
                     if key in ("bootstyle", "style"):
                         # Ejemplo: style_value = button["bootstyle"]
                         return _configure(self, cnf=key)
+                    print(f"Delegando a _orig_getitem: {_orig_getitem}")
                     # Para otras claves, comportamiento normal
                     return _orig_getitem(key)
 
                 # Paso 5: Aplicar las nuevas implementaciones, excepto para OptionMenu
                 # OptionMenu tiene su propia implementación específica en otra parte
                 if widget.__name__ != "OptionMenu":
+                    print(f"Aplicando overrides a {widget.__name__}")
                     widget.__setitem__ = __setitem
                     widget.__getitem__ = __getitem
+                else:
+                    print(f"Saltando overrides para {widget.__name__}")
+
 
             except Exception as e:
+                print(f"Error en widget {widget.__name__}: {e}")
                 # Manejo de errores: algunos widgets pueden no existir en versiones
                 # antiguas de Python o tener implementaciones incompatibles
                 # En caso de error, simplemente continuar con el siguiente widget

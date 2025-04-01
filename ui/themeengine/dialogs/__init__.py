@@ -2,7 +2,7 @@
 UI Theme Engine - Dialogs
 =========================
 
-Colección centralizada de todos los diálogos disponibles en la UI Theme Engine.
+Colección de todos los diálogos disponibles en la UI Theme Engine.
 
 Este módulo proporciona acceso a todos los diálogos personalizados organizados
 por categorías específicas, manteniendo una interfaz unificada y coherente
@@ -15,24 +15,22 @@ Categorías de diálogos:
 """
 
 # Importar la clase base de diálogos
-from ui.themeengine.dialogs.base import Dialog
-
-
-
-# Definir la API pública completa de diálogos
-__all__ = [
-    # Clase base
-    'Dialog',
-
-    # Diálogos de alerta
-    #'MessageDialog',
-
-    # Diálogos de entrada
-
-]
+#from ui.themeengine.dialogs.base import Dialog
 
 # Importar y re-exportar desde el subpaquete 'alert'
 # from ui.themeengine.dialogs.alert import (
 #     MessageDialog,
 #     #MessageBox,
 # )
+
+
+# Definir la API pública completa de diálogos
+__all__ = [
+    # Clase base
+#    'MessageDialog',
+
+
+    # Diálogos de entrada
+
+]
+
