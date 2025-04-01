@@ -1,6 +1,7 @@
 import ui.themeengine as ttk
 from ui.themeengine.utils.constants import *
 from ui.themeengine.dialogs.base import Dialog
+import random
 
 
 class LoginDialog(Dialog):
@@ -187,7 +188,7 @@ class LoginDialog(Dialog):
             parent=self._toplevel,
             title="Error",
             message=message,
-            icon=DANGER,
+            icon=ERROR,
             buttons=["Aceptar"]
         )
         error_dialog.show()
@@ -235,7 +236,7 @@ class MessageDialog(Dialog):
         icon_text = {
             INFO: "ℹ️",
             WARNING: "⚠️",
-            DANGER: "❌",
+            ERROR: "❌",
             SUCCESS: "✅",
         }.get(self._icon, "ℹ️")
 
@@ -302,6 +303,9 @@ class MessageDialog(Dialog):
 class FormDialog(Dialog):
     """
     Diálogo con un formulario de entrada de datos complejo.
+
+    Nota: Esta implementación utiliza alternativas para algunos widgets
+    que podrían causar conflictos (Combobox, Spinbox, Meter, Radiobutton)
     """
 
     def __init__(self, parent=None, title="Formulario", data=None, alert=False):
@@ -384,21 +388,50 @@ class FormDialog(Dialog):
         email_entry = ttk.Entry(email_frame, textvariable=self._vars["email"], width=30)
         email_entry.pack(side=LEFT, fill=X, expand=YES)
 
-        # Campo edad
+        # Campo edad (utilizando Entry con botones + y - para evitar conflictos con Spinbox)
         age_frame = ttk.Frame(personal_frame)
         age_frame.pack(fill=X, pady=5)
 
         age_label = ttk.Label(age_frame, text="Edad:", width=15, anchor=W)
         age_label.pack(side=LEFT, padx=(0, 5))
 
-        age_spinbox = ttk.Spinbox(
-            age_frame,
-            textvariable=self._vars["age"],
-            from_=18,
-            to=100,
-            width=5
+        # Control personalizado para la edad
+        age_control_frame = ttk.Frame(age_frame)
+        age_control_frame.pack(side=LEFT)
+
+        # Función para incrementar/decrementar edad
+        def change_age(increment):
+            current = self._vars["age"].get()
+            new_value = current + increment
+            if 18 <= new_value <= 100:
+                self._vars["age"].set(new_value)
+
+        # Botón menos
+        minus_btn = ttk.Button(
+            age_control_frame,
+            text="-",
+            width=2,
+            command=lambda: change_age(-1)
         )
-        age_spinbox.pack(side=LEFT)
+        minus_btn.pack(side=LEFT)
+
+        # Campo de entrada
+        age_entry = ttk.Entry(
+            age_control_frame,
+            textvariable=self._vars["age"],
+            width=3,
+            justify=CENTER
+        )
+        age_entry.pack(side=LEFT, padx=2)
+
+        # Botón más
+        plus_btn = ttk.Button(
+            age_control_frame,
+            text="+",
+            width=2,
+            command=lambda: change_age(1)
+        )
+        plus_btn.pack(side=LEFT)
 
         # Campo género
         gender_frame = ttk.Frame(personal_frame)
@@ -407,14 +440,33 @@ class FormDialog(Dialog):
         gender_label = ttk.Label(gender_frame, text="Género:", width=15, anchor=W)
         gender_label.pack(side=LEFT, padx=(0, 5))
 
-        gender_combobox = ttk.Combobox(
+        # Uso modificado del Entry en lugar de Combobox
+        gender_entry = ttk.Entry(
             gender_frame,
             textvariable=self._vars["gender"],
-            values=["Masculino", "Femenino", "No binario", "Prefiero no decir"],
-            state="readonly",
             width=15
         )
-        gender_combobox.pack(side=LEFT)
+        gender_entry.pack(side=LEFT)
+
+        # Menú desplegable manual como alternativa
+        gender_menu = ttk.Menubutton(
+            gender_frame,
+            text="Seleccionar",
+            bootstyle=SECONDARY
+        )
+        gender_menu.pack(side=LEFT, padx=5)
+
+        # Crear menú
+        gender_dropdown = ttk.Menu(gender_menu)
+        gender_menu["menu"] = gender_dropdown
+
+        # Añadir opciones al menú
+        gender_values = ["Masculino", "Femenino", "No binario", "Prefiero no decir"]
+        for value in gender_values:
+            gender_dropdown.add_command(
+                label=value,
+                command=lambda v=value: self._vars["gender"].set(v)
+            )
 
         # Sección preferencias
         prefs_frame = ttk.Labelframe(body_frame, text="Preferencias", padding=10)
@@ -429,25 +481,46 @@ class FormDialog(Dialog):
         )
         subscription_check.pack(anchor=W, pady=5)
 
-        # Notificaciones
+        # Notificaciones (simplificado para evitar posibles conflictos)
         notify_frame = ttk.Frame(prefs_frame)
         notify_frame.pack(fill=X, pady=5)
 
         notify_label = ttk.Label(notify_frame, text="Notificaciones vía:", width=15, anchor=W)
         notify_label.pack(side=LEFT, padx=(0, 5))
 
-        notify_options = ["email", "sms", "push", "ninguna"]
-        notify_texts = ["Correo electrónico", "SMS", "Notificaciones push", "Ninguna"]
+        # Utilizar botones en vez de radiobuttons para evitar posibles conflictos
+        option_frame = ttk.Frame(notify_frame)
+        option_frame.pack(side=LEFT, fill=X)
 
+        # Crear función para seleccionar opción
+        def select_option(option):
+            self._vars["notifications"].set(option)
+            # Actualizar apariencia de botones
+            for btn, opt in option_buttons:
+                if opt == option:
+                    btn.configure(bootstyle=INFO)
+                else:
+                    btn.configure(bootstyle=(INFO, "outline"))
+
+        # Opciones disponibles
+        notify_options = ["email", "sms", "push", "ninguna"]
+        notify_texts = ["Email", "SMS", "Push", "Ninguna"]
+
+        # Crear botones para cada opción
+        option_buttons = []
         for option, text in zip(notify_options, notify_texts):
-            rb = ttk.Radiobutton(
-                notify_frame,
+            is_selected = self._vars["notifications"].get() == option
+            style = INFO if is_selected else (INFO, "outline")
+
+            btn = ttk.Button(
+                option_frame,
                 text=text,
-                variable=self._vars["notifications"],
-                value=option,
-                bootstyle=INFO
+                bootstyle=style,
+                command=lambda opt=option: select_option(opt),
+                width=8
             )
-            rb.pack(side=LEFT, padx=5)
+            btn.pack(side=LEFT, padx=2)
+            option_buttons.append((btn, option))
 
         # Sección comentarios
         comments_frame = ttk.Labelframe(body_frame, text="Comentarios Adicionales", padding=10)
@@ -455,11 +528,11 @@ class FormDialog(Dialog):
 
         comments_text = ttk.Text(comments_frame, height=5, width=40)
         comments_text.pack(fill=X, pady=5)
-        comments_text.insert(END, self._vars["comments"].get())
+        comments_text.insert("1.0", self._vars["comments"].get())
 
         # Función para actualizar la variable cuando cambie el texto
         def update_comments(*args):
-            self._vars["comments"].set(comments_text.get(1.0, END).strip())
+            self._vars["comments"].set(comments_text.get("1.0", "end-1c").strip())
 
         comments_text.bind("<KeyRelease>", update_comments)
 
@@ -475,6 +548,10 @@ class FormDialog(Dialog):
 
         # Establecer el foco inicial en el campo de nombre
         self._initial_focus = name_entry
+
+        # Verificar que no haya referencias a componentes eliminados
+        # Esto es necesario porque reemplazamos gender_combobox con gender_entry y gender_menu
+        self.gender_entry = gender_entry
 
     def create_buttonbox(self, master):
         """
@@ -575,7 +652,7 @@ class FormDialog(Dialog):
             parent=self._toplevel,
             title="Error",
             message=message,
-            icon=DANGER,
+            icon=ERROR,
             buttons=["Aceptar"]
         )
         error_dialog.show()
@@ -584,6 +661,12 @@ class FormDialog(Dialog):
 def main():
     """
     Función principal que muestra una demostración de los diferentes tipos de diálogos.
+
+    Esta función crea una ventana principal con botones para mostrar
+    tres tipos de diálogos: login, mensaje y formulario.
+
+    Nota: Se han implementado alternativas para algunos widgets que pueden
+    causar conflictos en el entorno específico de themeengine.
     """
     # Crear ventana principal
     app = ttk.Window()
