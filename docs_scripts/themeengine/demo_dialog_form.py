@@ -161,7 +161,7 @@ class FormDialog(Dialog):
         )
         gender_entry.pack(side=LEFT)
 
-        # Menú desplegable manual como alternativa
+        # Menú desplegable manual como alternativa - Usando método configure
         gender_menu = ttk.Menubutton(
             gender_frame,
             text="Seleccionar",
@@ -171,7 +171,9 @@ class FormDialog(Dialog):
 
         # Crear menú
         gender_dropdown = ttk.Menu(gender_menu)
-        gender_menu["menu"] = gender_dropdown
+
+        # Usar configure en lugar de asignación directa
+        gender_menu.configure(menu=gender_dropdown)
 
         # Añadir opciones al menú
         gender_values = ["Masculino", "Femenino", "No binario", "Prefiero no decir"]
