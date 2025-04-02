@@ -2,6 +2,7 @@ import ui.themeengine as ttk
 from ui.themeengine.utils.constants import *
 from ui.themeengine import Dialog
 from ui.themeengine.dialogs.alert.message_dialog import MessageDialog
+from ui.themeengine.widgets.containers.scrolled_frame import ScrolledFrame
 
 
 class FormDialog(Dialog):
@@ -10,6 +11,9 @@ class FormDialog(Dialog):
 
     Esta implementación intenta usar los widgets estándar (Spinbox, Combobox,
     Radiobutton) y solo recurre a alternativas si es necesario.
+
+    Utiliza ScrolledFrame para manejar automáticamente el desplazamiento cuando
+    el contenido excede el tamaño visible del diálogo.
     """
 
     def __init__(self, parent=None, title="Formulario", data=None, alert=False):
@@ -47,21 +51,17 @@ class FormDialog(Dialog):
         Parameters:
             master (Widget): Widget padre donde se crearán los elementos.
         """
-        # Frame principal con padding y scrollbar
+        # Frame principal con ScrolledFrame
         container = ttk.Frame(master)
         container.pack(fill=BOTH, expand=YES)
 
-        # Canvas para permitir scroll
-        canvas = ttk.Canvas(container)
-        scrollbar = ttk.Scrollbar(container, orient=VERTICAL, command=canvas.yview)
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        scrollbar.pack(side=RIGHT, fill=Y)
-        canvas.pack(side=LEFT, fill=BOTH, expand=YES)
+        # Usar ScrolledFrame en lugar de implementar manualmente el sistema de desplazamiento
+        scrolled_frame = ScrolledFrame(container, autohide=True)
+        scrolled_frame.pack(fill=BOTH, expand=YES)
 
         # Frame interior para el contenido
-        body_frame = ttk.Frame(canvas, padding=15)
-        canvas_window = canvas.create_window((0, 0), window=body_frame, anchor=NW)
+        body_frame = ttk.Frame(scrolled_frame, padding=15)
+        body_frame.pack(fill=BOTH, expand=YES)
 
         # Título del formulario
         title_label = ttk.Label(
@@ -292,15 +292,7 @@ class FormDialog(Dialog):
 
         comments_text.bind("<KeyRelease>", update_comments)
 
-        # Ajustar canvas al contenido
-        def update_scrollregion(event):
-            canvas.configure(scrollregion=canvas.bbox("all"))
-
-            # Ajustar ancho del canvas al frame interior
-            width = body_frame.winfo_reqwidth()
-            canvas.itemconfigure(canvas_window, width=width)
-
-        body_frame.bind("<Configure>", update_scrollregion)
+        # Ya no necesitamos la función update_scrollregion porque ScrolledFrame lo maneja automáticamente
 
         # Establecer el foco inicial en el campo de nombre
         self._initial_focus = name_entry
